@@ -8,6 +8,33 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import {
+            getFirestore, collection, getDocs, doc, setDoc,
+            deleteDoc, onSnapshot, writeBatch, serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey:            "AIzaSyDIFrnVgmspIN3g9BMUh07Pn3rfqP3F0HA",
+            authDomain:        "layout-7d511.firebaseapp.com",
+            projectId:         "layout-7d511",
+            storageBucket:     "layout-7d511.firebasestorage.app",
+            messagingSenderId: "542265678815",
+            appId:             "1:542265678815:web:0affabc9fb8a473fe5426a"
+        };
+
+        const COLLECTION = "inspections_rochling";
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+
+        window.__firebase = { db, collection, doc, setDoc, deleteDoc,
+                              getDocs, onSnapshot, writeBatch, serverTimestamp, COLLECTION };
+        window.__firebaseReady = true;
+        window.dispatchEvent(new Event('firebase-ready'));
+        console.log("🔥 Firebase Firestore conectado");
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -548,6 +575,12 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
+                    <!-- Sync Firebase -->
+                    <div id="sync-indicator" class="flex items-center gap-2 px-3 py-2 rounded-xl glass-card" title="Status Firebase">
+                        <i class="fas fa-spinner fa-spin text-yellow-400 text-xs"></i>
+                        <span class="text-yellow-400 text-xs font-medium hidden sm:inline">Conectando...</span>
+                    </div>
+
                     <!-- Theme Toggle -->
                     <button onclick="toggleTheme()" class="w-12 h-12 rounded-xl glass-card flex items-center justify-center text-xl hover:text-blue-400">
                         <i id="theme-icon" class="fas fa-sun"></i>
@@ -991,33 +1024,111 @@
         let currentAttachments = [];
 
         // ============================================
+        // FIREBASE — persistência em nuvem
+        // ============================================
+        function lsSave() {
+            localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
+        }
+
+        function updateSyncStatus(state) {
+            const el = document.getElementById('sync-indicator');
+            if (!el) return;
+            const s = {
+                connecting: { icon: 'fa-spinner fa-spin', color: 'text-yellow-400', text: 'Conectando...' },
+                online:     { icon: 'fa-cloud',           color: 'text-green-400',  text: 'Sincronizado'  },
+                offline:    { icon: 'fa-cloud-slash',     color: 'text-orange-400', text: 'Offline'       },
+                error:      { icon: 'fa-triangle-exclamation', color: 'text-red-400', text: 'Erro sync'  }
+            }[state] || { icon: 'fa-cloud-slash', color: 'text-orange-400', text: 'Offline' };
+            el.innerHTML = `<i class="fas ${s.icon} ${s.color} text-xs"></i><span class="${s.color} text-xs font-medium hidden sm:inline">${s.text}</span>`;
+        }
+
+        async function fbSaveItem(item) {
+            if (!window.__firebaseReady) { lsSave(); return; }
+            const { db, doc, setDoc, serverTimestamp, COLLECTION } = window.__firebase;
+            await setDoc(doc(db, COLLECTION, String(item.id)), { ...item, _updatedAt: serverTimestamp() });
+        }
+
+        async function fbDeleteItem(id) {
+            if (!window.__firebaseReady) return;
+            const { db, doc, deleteDoc, COLLECTION } = window.__firebase;
+            await deleteDoc(doc(db, COLLECTION, String(id)));
+        }
+
+        async function fbSaveAll(dataArray) {
+            if (!window.__firebaseReady) { lsSave(); return; }
+            const { db, writeBatch, doc, serverTimestamp, COLLECTION } = window.__firebase;
+            for (let i = 0; i < dataArray.length; i += 400) {
+                const batch = writeBatch(db);
+                dataArray.slice(i, i + 400).forEach(item =>
+                    batch.set(doc(db, COLLECTION, String(item.id)), { ...item, _updatedAt: serverTimestamp() })
+                );
+                await batch.commit();
+            }
+        }
+
+        // ============================================
         // INICIALIZAÇÃO
         // ============================================
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const savedTheme = localStorage.getItem('rochling_theme') || 'dark';
             setTheme(savedTheme);
-            
+            updateSyncStatus('connecting');
+
+            // Carrega local imediatamente
             try {
                 const saved = localStorage.getItem('rochling_inspections_v12');
                 inspectionsData = saved ? JSON.parse(saved) : [...initialData];
-                
-                // Atualizar status baseado nas datas atuais
                 atualizarStatusPorData();
-                
-            } catch (e) {
-                console.error('Erro ao carregar dados:', e);
+            } catch(e) {
                 inspectionsData = [...initialData];
                 atualizarStatusPorData();
             }
-            
             filteredData = [...inspectionsData];
             renderAll();
-            
-            // Verificar status a cada minuto
-            setInterval(() => {
-                atualizarStatusPorData();
-                renderAll();
-            }, 60000);
+
+            // Depois sincroniza com Firebase
+            const onReady = async () => {
+                const { db, collection, getDocs, onSnapshot, COLLECTION } = window.__firebase;
+                try {
+                    const snap = await getDocs(collection(db, COLLECTION));
+                    if (!snap.empty) {
+                        const docs = [];
+                        snap.forEach(d => docs.push(d.data()));
+                        inspectionsData = docs.sort((a, b) => a.id - b.id);
+                        atualizarStatusPorData();
+                        lsSave();
+                    } else {
+                        await fbSaveAll(inspectionsData);
+                    }
+                    filteredData = [...inspectionsData];
+                    filterTable();
+                    renderAll();
+                    updateSyncStatus('online');
+
+                    // listener em tempo real
+                    onSnapshot(collection(db, COLLECTION), snapshot => {
+                        const docs = [];
+                        snapshot.forEach(d => docs.push(d.data()));
+                        inspectionsData = docs.sort((a, b) => a.id - b.id);
+                        atualizarStatusPorData();
+                        lsSave();
+                        filteredData = [...inspectionsData];
+                        filterTable();
+                        renderAll();
+                        updateSyncStatus('online');
+                    }, () => updateSyncStatus('error'));
+                } catch(e) {
+                    console.error(e);
+                    updateSyncStatus('offline');
+                }
+            };
+
+            if (window.__firebaseReady) onReady();
+            else window.addEventListener('firebase-ready', onReady, { once: true });
+
+            setTimeout(() => { if (!window.__firebaseReady) updateSyncStatus('offline'); }, 5000);
+
+            setInterval(() => { atualizarStatusPorData(); renderAll(); }, 60000);
         });
 
         // ============================================
@@ -1057,7 +1168,8 @@
             });
             
             if (modificou) {
-                localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
+                lsSave();
+                if (window.__firebaseReady) inspectionsData.forEach(item => fbSaveItem(item));
             }
         }
 
@@ -1873,17 +1985,20 @@
             if (id) {
                 const idx = inspectionsData.findIndex(i => i.id === parseInt(id));
                 inspectionsData[idx] = { ...inspectionsData[idx], ...data };
+                fbSaveItem(inspectionsData[idx]);
                 showToast('Inspeção atualizada!');
             } else {
                 const newId = Math.max(...inspectionsData.map(i => i.id), 0) + 1;
-                inspectionsData.push({ id: newId, ...data });
+                const newItem = { id: newId, ...data };
+                inspectionsData.push(newItem);
+                fbSaveItem(newItem);
                 showToast('Nova inspeção adicionada!');
             }
 
             // Atualizar status baseado nas datas
             atualizarStatusPorData();
             
-            localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
+            lsSave();
             filteredData = [...inspectionsData];
             filterTable();
             renderAll();
@@ -1907,8 +2022,9 @@
 
         function confirmDelete() {
             if (deleteId) {
+                fbDeleteItem(deleteId);
                 inspectionsData = inspectionsData.filter(i => i.id !== deleteId);
-                localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
+                lsSave();
                 filteredData = [...inspectionsData];
                 filterTable();
                 renderAll();
@@ -2165,14 +2281,14 @@
         importInput.style.display = 'none';
         importInput.onchange = (e) => {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const backup = JSON.parse(e.target.result);
                     if (backup.data && Array.isArray(backup.data)) {
                         inspectionsData = backup.data;
-                        // Atualizar status após importar
                         atualizarStatusPorData();
-                        localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
+                        lsSave();
+                        await fbSaveAll(inspectionsData);
                         filteredData = [...inspectionsData];
                         renderAll();
                         showToast(`Backup restaurado! ${inspectionsData.length} itens`);
