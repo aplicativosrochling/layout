@@ -31,11 +31,6 @@
             writeBatch,
             serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import {
-            getAuth,
-            signInAnonymously,
-            onAuthStateChanged
-        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey:            "AIzaSyDIFrnVgmspIN3g9BMUh07Pn3rfqP3F0HA",
@@ -46,32 +41,20 @@
             appId:             "1:542265678815:web:0affabc9fb8a473fe5426a"
         };
 
-        // ─────────────────────────────────────────────
-        // Inicialização
-        // ─────────────────────────────────────────────
-        const app  = initializeApp(firebaseConfig);
-        const db   = getFirestore(app);
-        const auth = getAuth(app);
-
         const COLLECTION = "inspections_rochling";
 
-        // Expõe para o escopo global (funções não-module precisam acessar)
+        // Inicialização
+        const app = initializeApp(firebaseConfig);
+        const db  = getFirestore(app);
+
+        // Expõe para o escopo global
         window.__firebase = { db, collection, doc, setDoc, deleteDoc,
                               getDocs, onSnapshot, writeBatch, serverTimestamp, COLLECTION };
 
-        // ─────────────────────────────────────────────
-        // Auth anônima automática (sem login para o usuário)
-        // Para adicionar login com e-mail/Google, edite aqui.
-        // ─────────────────────────────────────────────
-        signInAnonymously(auth).catch(console.error);
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                window.__firebaseReady = true;
-                window.dispatchEvent(new Event('firebase-ready'));
-                console.log("🔥 Firebase conectado | uid:", user.uid);
-            }
-        });
+        // Firebase pronto imediatamente — sem auth
+        window.__firebaseReady = true;
+        window.dispatchEvent(new Event('firebase-ready'));
+        console.log("🔥 Firebase Firestore conectado (acesso público)");
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
