@@ -1,0 +1,2415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Röchling Automotive •Layout inspection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- =====================================================
+         FIREBASE SDK v10 (modular)
+         Docs: https://firebase.google.com/docs/web/setup
+    ===================================================== -->
+    <script type="module">
+        // ─────────────────────────────────────────────
+        // 🔧 CONFIGURAÇÃO DO FIREBASE
+        // Substitua pelos valores do seu projeto em:
+        // Firebase Console → Configurações do projeto → Seus apps
+        // ─────────────────────────────────────────────
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            getDocs,
+            doc,
+            setDoc,
+            deleteDoc,
+            onSnapshot,
+            writeBatch,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import {
+            getAuth,
+            signInAnonymously,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey:            "AIzaSyDIFrnVgmspIN3g9BMUh07Pn3rfqP3F0HA",
+            authDomain:        "layout-7d511.firebaseapp.com",
+            projectId:         "layout-7d511",
+            storageBucket:     "layout-7d511.firebasestorage.app",
+            messagingSenderId: "542265678815",
+            appId:             "1:542265678815:web:0affabc9fb8a473fe5426a"
+        };
+
+        // ─────────────────────────────────────────────
+        // Inicialização
+        // ─────────────────────────────────────────────
+        const app  = initializeApp(firebaseConfig);
+        const db   = getFirestore(app);
+        const auth = getAuth(app);
+
+        const COLLECTION = "inspections_rochling";
+
+        // Expõe para o escopo global (funções não-module precisam acessar)
+        window.__firebase = { db, collection, doc, setDoc, deleteDoc,
+                              getDocs, onSnapshot, writeBatch, serverTimestamp, COLLECTION };
+
+        // ─────────────────────────────────────────────
+        // Auth anônima automática (sem login para o usuário)
+        // Para adicionar login com e-mail/Google, edite aqui.
+        // ─────────────────────────────────────────────
+        signInAnonymously(auth).catch(console.error);
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                window.__firebaseReady = true;
+                window.dispatchEvent(new Event('firebase-ready'));
+                console.log("🔥 Firebase conectado | uid:", user.uid);
+            }
+        });
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.2s ease;
+        }
+
+        body.dark {
+            background: #0b1120;
+            background-image: radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.05) 0px, transparent 50%),
+                              radial-gradient(at 0% 50%, hsla(271, 100%, 50%, 0.05) 0px, transparent 50%);
+            color: #f8fafc;
+        }
+
+        body.light {
+            background: #f9fafc;
+            background-image: radial-gradient(at 80% 0%, hsla(189, 100%, 50%, 0.03) 0px, transparent 50%),
+                              radial-gradient(at 0% 50%, hsla(271, 100%, 50%, 0.03) 0px, transparent 50%);
+            color: #0f172a;
+        }
+
+        .glass-card {
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark .glass-card {
+            background: rgba(17, 25, 40, 0.75);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+        }
+
+        .light .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+        }
+
+        .badge {
+            padding: 0.375rem 1rem;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            white-space: nowrap;
+        }
+
+        .badge-realizado { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .badge-pendente { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+        
+        .badge-andamento { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+        
+        .badge-cancelado { 
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.375rem;
+            border-radius: 16px;
+        }
+
+        .dark .tab-container {
+            background: rgba(17, 25, 40, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .light .tab-container {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            box-shadow: 0 8px 20px -8px #3b82f6;
+        }
+
+        .input-modern {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .dark .input-modern {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .light .input-modern {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #0f172a;
+        }
+
+        .input-modern:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 16px;
+        }
+
+        .table-modern {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1400px;
+        }
+
+        .table-modern th {
+            padding: 1rem 0.75rem;
+            text-align: left;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .dark .table-modern th {
+            background: rgba(17, 25, 40, 0.5);
+            color: #94a3b8;
+        }
+
+        .light .table-modern th {
+            background: rgba(241, 245, 249, 0.7);
+            color: #475569;
+        }
+
+        .table-modern td {
+            padding: 1rem 0.75rem;
+            border-bottom: 1px solid;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .dark .table-modern td {
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .light .table-modern td {
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .table-modern tbody tr:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px -8px #3b82f6;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -8px #3b82f6;
+        }
+
+        .btn-outline {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .dark .btn-outline {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .light .btn-outline {
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+        .btn-outline:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .kpi-card {
+            padding: 1.5rem;
+            border-radius: 20px;
+        }
+
+        .kpi-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .file-viewer-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 1rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .action-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            opacity: 0.7;
+        }
+
+        tr:hover .action-btn {
+            opacity: 1;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .upload-area {
+            border: 2px dashed;
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .dark .upload-area {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .light .upload-area {
+            border-color: #cbd5e1;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .status-legend-item {
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .status-legend-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateX(4px);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            min-height: 200px;
+        }
+
+        .observacao-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .date-calc-indicator {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        .status-auto-indicator {
+            font-size: 0.7rem;
+            color: #3b82f6;
+            margin-top: 4px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            height: 300px;
+        }
+
+        .mini-kpi {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body class="dark">
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-6 right-6 z-50 transform translate-x-full transition-all duration-500">
+        <div class="glass-card rounded-xl p-4 flex items-center gap-3 min-w-[320px] border-l-4 border-green-500">
+            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                <i class="fas fa-check-circle text-xl"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm">Sucesso!</h4>
+                <p id="toast-message" class="text-sm opacity-75"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) closeDeleteModal()">
+        <div class="glass-card rounded-2xl max-w-md w-full p-8 transform scale-95 opacity-0 transition-all duration-300" id="delete-modal-content">
+            <div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-3xl text-red-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-center mb-2">Confirmar exclusão</h3>
+            <p class="opacity-70 text-center mb-6">Deseja excluir permanentemente o item <br><strong id="delete-item-code" class="text-white font-mono"></strong>?</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 btn-outline">Cancelar</button>
+                <button onclick="confirmDelete()" class="flex-1 btn-primary bg-gradient-to-r from-red-600 to-red-700">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Viewer Modal -->
+    <div id="file-viewer-modal" class="fixed inset-0 z-[100] hidden bg-black/95 flex items-center justify-center p-4" onclick="if(event.target===this) closeFileViewer()">
+        <div class="w-full h-full max-w-6xl max-h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
+            <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
+                <h3 id="file-viewer-title" class="font-bold truncate max-w-[80%]">Visualizando arquivo</h3>
+                <button onclick="closeFileViewer()" class="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="flex-1 bg-slate-100" id="file-viewer-container"></div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" onclick="if(event.target===this) closeEditModal()">
+        <div class="glass-card rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform scale-95 opacity-0 transition-all duration-300" id="edit-modal-content">
+            <div class="sticky top-0 bg-inherit backdrop-blur-xl border-b border-white/10 p-6 flex justify-between items-center">
+                <h3 id="modal-title" class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Nova Inspeção</h3>
+                <button onclick="closeEditModal()" class="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="inspection-form" class="p-6 space-y-6">
+                <input type="hidden" id="edit-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Código Röchling</label>
+                        <input type="text" id="cod-rochling" required class="input-modern">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Código Cliente</label>
+                        <input type="text" id="cod-cliente" required class="input-modern">
+                    </div>
+                    <div class="md:col-span-2 space-y-2">
+                        <label class="text-sm font-medium opacity-70">Descrição</label>
+                        <input type="text" id="descricao" required class="input-modern">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Frequência (meses)</label>
+                        <input type="number" id="frequencia" required min="1" value="12" class="input-modern" onchange="calcularProximaInspecao()">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Cliente</label>
+                        <select id="cliente" required class="input-modern">
+                            <option value="GM">GM</option>
+                            <option value="VW">Volkswagen</option>
+                            <option value="RENAULT">Renault</option>
+                            <option value="HONDA">Honda</option>
+                            <option value="FORD">Ford</option>
+                            <option value="MERCEDES BENZ">Mercedes-Benz</option>
+                            <option value="Stellantis - FCA">Stellantis</option>
+                            <option value="BMW">BMW</option>
+                            <option value="Nissan">Nissan</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Última Inspeção</label>
+                        <input type="date" id="ultima-inspecao" class="input-modern" onchange="calcularProximaInspecao()">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Próxima Inspeção</label>
+                        <input type="date" id="proxima-inspecao" class="input-modern" readonly>
+                        <span class="text-xs opacity-50" id="calc-indicator">Calculado automaticamente</span>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Status</label>
+                        <select id="status" required class="input-modern">
+                            <option value="REALIZADO">✅ Realizado (No prazo)</option>
+                            <option value="PENDENTE">⏳ Pendente (Fora do prazo)</option>
+                            <option value="EM ANDAMENTO">🔄 Em Andamento</option>
+                            <option value="CANCELADO">❌ Cancelado</option>
+                        </select>
+                        <span class="text-xs text-blue-400" id="status-auto-indicator">Status automático baseado nas datas</span>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium opacity-70">Status Produto</label>
+                        <select id="status-produto" required class="input-modern">
+                            <option value="ATIVO">🟢 Ativo</option>
+                            <option value="INATIVO">🔴 Inativo</option>
+                            <option value="ANALISAR">🟡 Analisar</option>
+                            <option value="LOGIPLAS">📦 Logiplas</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2 space-y-2">
+                        <label class="text-sm font-medium opacity-70">Observações</label>
+                        <textarea id="observacao" rows="3" class="input-modern" placeholder="Adicione observações relevantes..."></textarea>
+                    </div>
+                    
+                    <!-- File Attachments -->
+                    <div class="md:col-span-2 space-y-4">
+                        <label class="text-sm font-medium opacity-70">Anexos</label>
+                        <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-blue-400 mb-3"></i>
+                            <p class="font-medium">Clique para fazer upload</p>
+                            <p class="text-sm opacity-50 mt-1">PDF, Excel, Imagens (10MB max)</p>
+                        </div>
+                        <input type="file" id="file-input" multiple class="hidden" onchange="handleFileSelect(this.files)">
+                        <div id="file-list" class="space-y-2 mt-4"></div>
+                        <input type="hidden" id="attachments" value="[]">
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 pt-4 border-t border-white/10">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 btn-outline">Cancelar</button>
+                    <button type="submit" class="flex-1 btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-2xl">
+                        <i class="fas fa-clipboard-check text-3xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-extrabold">
+                            <span class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                               Röchling Automotive
+                            </span>
+                        </h1>
+                        <p class="opacity-60 text-sm mt-1">Layout inspection</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Sync Status Firebase -->
+                    <div id="sync-indicator" class="flex items-center gap-2 px-3 py-2 rounded-xl glass-card text-xs font-medium" title="Status de sincronização Firebase">
+                        <i class="fas fa-spinner fa-spin text-yellow-400"></i>
+                        <span class="text-yellow-400 hidden sm:inline">Conectando...</span>
+                    </div>
+
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="w-12 h-12 rounded-xl glass-card flex items-center justify-center text-xl hover:text-blue-400" title="Alternar tema">
+                        <i id="theme-icon" class="fas fa-sun"></i>
+                    </button>
+                    
+                    <button onclick="openAddModal()" class="btn-primary px-6 py-3 flex items-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        <span class="hidden sm:inline">Nova Inspeção</span>
+                    </button>
+                    
+                    <button onclick="exportToExcel()" class="btn-outline px-6 py-3 flex items-center gap-2">
+                        <i class="fas fa-file-excel"></i>
+                        <span class="hidden sm:inline">Exportar</span>
+                    </button>
+                    
+                    <button onclick="exportBackup()" class="btn-outline px-6 py-3 flex items-center gap-2" title="Exportar Backup JSON">
+                        <i class="fas fa-database"></i>
+                    </button>
+
+                    <!-- GitHub Pages link -->
+                    <a href="https://github.com/layout-7d511" target="_blank"
+                       class="w-12 h-12 rounded-xl glass-card flex items-center justify-center text-xl hover:text-blue-400"
+                       title="Ver no GitHub">
+                        <i class="fab fa-github"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tab-container">
+                <button onclick="switchTab('charts')" id="tab-charts" class="tab-btn active">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </button>
+                <button onclick="switchTab('table')" id="tab-table" class="tab-btn">
+                    <i class="fas fa-table"></i> Tabela de Dados
+                </button>
+            </div>
+        </header>
+
+        <!-- Charts View -->
+        <div id="view-charts" class="space-y-6">
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="glass-card kpi-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="kpi-icon bg-blue-500/20 text-blue-400">
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                        <span class="text-xs px-3 py-1 rounded-full bg-white/10">Total</span>
+                    </div>
+                    <h3 class="text-4xl font-bold" id="kpi-total">0</h3>
+                    <p class="opacity-60 text-sm mt-1">Itens cadastrados</p>
+                </div>
+
+                <div class="glass-card kpi-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="kpi-icon bg-green-500/20 text-green-400">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <span class="text-xs px-3 py-1 rounded-full bg-white/10">Realizados</span>
+                    </div>
+                    <h3 class="text-4xl font-bold text-green-400" id="kpi-realizados">0</h3>
+                    <p class="opacity-60 text-sm mt-1">Inspeções no prazo</p>
+                    <div class="mt-3 w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-1000" id="bar-realizados" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card kpi-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="kpi-icon bg-orange-500/20 text-orange-400">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <span class="text-xs px-3 py-1 rounded-full bg-white/10">Pendentes</span>
+                    </div>
+                    <h3 class="text-4xl font-bold text-orange-400" id="kpi-pendentes">0</h3>
+                    <p class="opacity-60 text-sm mt-1">Fora do prazo</p>
+                    <div class="mt-3 text-sm text-orange-400 flex items-center gap-2">
+                        <i class="fas fa-arrow-up"></i>
+                        <span id="kpi-atrasados">0 pendentes</span>
+                    </div>
+                </div>
+
+                <div class="glass-card kpi-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="kpi-icon bg-purple-500/20 text-purple-400">
+                            <i class="fas fa-industry"></i>
+                        </div>
+                        <span class="text-xs px-3 py-1 rounded-full bg-white/10">Ativos</span>
+                    </div>
+                    <h3 class="text-4xl font-bold text-purple-400" id="kpi-ativos">0</h3>
+                    <p class="opacity-60 text-sm mt-1">Produtos ativos</p>
+                    <div class="mt-3 text-sm opacity-50">
+                        <span id="kpi-inativos">0 inativos</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos Profissionais -->
+            <div class="chart-grid">
+                <!-- Gráfico 1: Timeline (ocupa linha inteira) -->
+                <div class="glass-card p-6 chart-card lg:col-span-2">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-blue-400"></i>
+                        Timeline de Inspeções
+                    </h3>
+                    <div class="relative h-64">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 2: Distribuição por Status -->
+                <div class="glass-card p-6 chart-card">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-pie text-purple-400"></i>
+                        Status
+                    </h3>
+                    <div class="relative h-48">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div id="status-legend" class="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/10">
+                        <!-- Preenchido via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Gráfico 3: Top Clientes -->
+                <div class="glass-card p-6 chart-card">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-trophy text-yellow-400"></i>
+                        Top Clientes
+                    </h3>
+                    <div class="relative h-48">
+                        <canvas id="clientChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 4: Atrasados por Cliente (NOVO) -->
+                <div class="glass-card p-6 chart-card">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-red-400"></i>
+                        Atrasados por Cliente
+                    </h3>
+                    <div class="relative h-48">
+                        <canvas id="atrasadosClienteChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 5: Previsão 90 Dias (NOVO) -->
+                <div class="glass-card p-6 chart-card">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-calendar-week text-green-400"></i>
+                        Próximos 90 Dias
+                    </h3>
+                    <div class="relative h-48">
+                        <canvas id="previsaoChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 6: Status do Produto (NOVO) -->
+                <div class="glass-card p-6 chart-card">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-boxes text-indigo-400"></i>
+                        Status dos Produtos
+                    </h3>
+                    <div class="relative h-48">
+                        <canvas id="produtoStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 7: Heatmap por Dia (NOVO) -->
+                <div class="glass-card p-6 chart-card">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-calendar-day text-pink-400"></i>
+                        Dias de Pico
+                    </h3>
+                    <div class="relative h-48">
+                        <canvas id="heatmapChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 8: Meta vs Realizado (NOVO) -->
+                <div class="glass-card p-6 chart-card">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-bullseye text-cyan-400"></i>
+                        Meta vs Realizado
+                    </h3>
+                    <div class="relative h-48">
+                        <canvas id="metaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div id="view-table" class="hidden space-y-6">
+            <!-- Filtros Avançados -->
+            <div class="glass-card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold flex items-center gap-2">
+                        <i class="fas fa-filter text-blue-400"></i>
+                        Filtros Avançados
+                    </h3>
+                    <button onclick="clearAllFilters()" class="text-sm opacity-50 hover:text-blue-400 hover:opacity-100">
+                        <i class="fas fa-times mr-1"></i>Limpar filtros
+                    </button>
+                </div>
+                
+                <div class="filters-grid">
+                    <div>
+                        <label class="text-xs opacity-50 block mb-1">Busca geral</label>
+                        <input type="text" id="search-input" placeholder="Código, cliente, descrição..." 
+                            class="input-modern" oninput="filterTable()">
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs opacity-50 block mb-1">Status</label>
+                        <select id="filter-status" onchange="filterTable()" class="input-modern">
+                            <option value="">Todos</option>
+                            <option value="REALIZADO">Realizado (No prazo)</option>
+                            <option value="PENDENTE">Pendente (Fora do prazo)</option>
+                            <option value="EM ANDAMENTO">Em Andamento</option>
+                            <option value="CANCELADO">Cancelado</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs opacity-50 block mb-1">Cliente</label>
+                        <select id="filter-cliente" onchange="filterTable()" class="input-modern">
+                            <option value="">Todos</option>
+                            <option value="GM">GM</option>
+                            <option value="VW">VW</option>
+                            <option value="RENAULT">RENAULT</option>
+                            <option value="HONDA">HONDA</option>
+                            <option value="FORD">FORD</option>
+                            <option value="MERCEDES BENZ">MERCEDES</option>
+                            <option value="Stellantis - FCA">Stellantis</option>
+                            <option value="BMW">BMW</option>
+                            <option value="Nissan">Nissan</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs opacity-50 block mb-1">Status Produto</label>
+                        <select id="filter-produto" onchange="filterTable()" class="input-modern">
+                            <option value="">Todos</option>
+                            <option value="ATIVO">Ativo</option>
+                            <option value="INATIVO">Inativo</option>
+                            <option value="ANALISAR">Analisar</option>
+                            <option value="LOGIPLAS">Logiplas</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs opacity-50 block mb-1">Período</label>
+                        <select id="filter-periodo" onchange="filterTable()" class="input-modern">
+                            <option value="">Todos</option>
+                            <option value="atrasado">Pendentes (Fora do prazo)</option>
+                            <option value="30d">Próximos 30 dias</option>
+                            <option value="60d">Próximos 60 dias</option>
+                            <option value="90d">Próximos 90 dias</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs opacity-50 block mb-1">Anexos</label>
+                        <select id="filter-anexos" onchange="filterTable()" class="input-modern">
+                            <option value="">Todos</option>
+                            <option value="com">Com anexos</option>
+                            <option value="sem">Sem anexos</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Filtros ativos -->
+                <div id="active-filters" class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10"></div>
+            </div>
+
+            <!-- Tabela -->
+            <div class="glass-card overflow-hidden">
+                <div class="table-container">
+                    <table class="table-modern">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('codRochling')">Cód. Röchling <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                <th onclick="sortTable('codCliente')">Cód. Cliente <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                <th onclick="sortTable('cliente')">Cliente <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                <th>Descrição</th>
+                                <th onclick="sortTable('ultimaInspecao')">Última <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                <th onclick="sortTable('proximaInspecao')">Próxima <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                <th>Status</th>
+                                <th>Produto</th>
+                                <th>Freq.</th>
+                                <th>Observações</th>
+                                <th>Anexos</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginação -->
+                <div class="p-4 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-sm opacity-50" id="showing-text">Mostrando 0 resultados</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="changePage(-1)" id="prev-btn" class="w-10 h-10 rounded-lg hover:bg-white/10 disabled:opacity-30">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="page-indicator" class="px-4 py-2 rounded-lg bg-white/5">1</span>
+                        <button onclick="changePage(1)" id="next-btn" class="w-10 h-10 rounded-lg hover:bg-white/10 disabled:opacity-30">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center opacity-40 text-sm">
+            <p>© 2026 Röchling Industrial • v6.0.0 • 104 itens cadastrados • 8 gráficos profissionais</p>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================
+        // TODOS OS 104 ITENS CADASTRADOS
+        // ============================================
+        const initialData = [
+            {id: 1, codRochling: "114678202", codCliente: "12705416", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL7", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-02-01", proximaInspecao: "2026-02-01", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 2, codRochling: "111020103", codCliente: "04E.129.712.B", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-04-05", proximaInspecao: "2026-04-05", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 3, codRochling: "116518601", codCliente: "12707080", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL6", frequencia: 12, cliente: "GM", ultimaInspecao: "2026-02-01", proximaInspecao: "2027-02-01", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 4, codRochling: "113928605", codCliente: "13545832", descricao: "TANK ASM RAD SURGE - GEM", frequencia: 12, cliente: "GM", ultimaInspecao: "2026-02-07", proximaInspecao: "2027-02-07", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 5, codRochling: "115408401", codCliente: "215598832R", descricao: "LOWER RAD AIR GUIDE", frequencia: 12, cliente: "RENAULT", ultimaInspecao: "2025-04-14", proximaInspecao: "2026-04-14", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 6, codRochling: "111020203", codCliente: "04C.133.201.K", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-05-31", proximaInspecao: "2026-05-31", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 7, codRochling: "112106502", codCliente: "04C.129.709.A", descricao: "INTAKE MANIFOLD - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-10-05", proximaInspecao: "2026-10-05", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 8, codRochling: "112106800", codCliente: "04C.145.673.C", descricao: "BOOST AIR PIPE - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-11-10", proximaInspecao: "2026-11-10", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 9, codRochling: "112368001", codCliente: "04C.129.611.K", descricao: "ASS AIR FILTER MUFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-09-07", proximaInspecao: "2026-09-07", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 10, codRochling: "112644402", codCliente: "5GB.121.407.C", descricao: "EXPANSION TANK", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-12-05", proximaInspecao: "2026-12-05", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 11, codRochling: "115163403", codCliente: "24589690", descricao: "PIPE - W_PUMP INL", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-01-13", proximaInspecao: "2026-01-13", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 12, codRochling: "114469801", codCliente: "04E.129.611.AB", descricao: "ASS INTAKE MUFFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-12-02", proximaInspecao: "2026-12-02", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 13, codRochling: "1179771801", codCliente: "24591695", descricao: "MANIFOLD - INT - GV4 - PL8", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-05-25", proximaInspecao: "2026-05-25", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Dimensional OK", attachments: []},
+            {id: 14, codRochling: "114685602", codCliente: "2GB.121.407.G", descricao: "EXPANSION TANK - MQB", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-05-19", proximaInspecao: "2026-05-19", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 15, codRochling: "113918401", codCliente: "26209793", descricao: "ASM AIR INLET INR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-01-05", proximaInspecao: "2026-01-05", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 16, codRochling: "114661002", codCliente: "26218100", descricao: "BAFFLE ASM-RAD AIR UPR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-07-01", proximaInspecao: "2026-07-01", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 17, codRochling: "115399502", codCliente: "04E.145.673.AP", descricao: "BOOST AIR PIPE - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-11-05", proximaInspecao: "2026-11-05", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 18, codRochling: "115399602", codCliente: "04E.129.709.AS", descricao: "INTAKE MANIFOLD - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-04-23", proximaInspecao: "2026-04-23", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 19, codRochling: "115519002", codCliente: "04C.133.201.AB", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2026-02-01", proximaInspecao: "2027-02-01", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 20, codRochling: "115519102", codCliente: "04E.129.714.AS", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-05-24", proximaInspecao: "2026-05-24", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 21, codRochling: "114678203", codCliente: "12705417", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL7", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-03-15", proximaInspecao: "2026-03-15", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 22, codRochling: "111020104", codCliente: "04E.129.713.B", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-06-20", proximaInspecao: "2026-06-20", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Revisão necessária", attachments: []},
+            {id: 23, codRochling: "116518602", codCliente: "12707081", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL6", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-11-30", proximaInspecao: "2026-11-30", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 24, codRochling: "113928606", codCliente: "13545833", descricao: "TANK ASM RAD SURGE - GEM", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-08-12", proximaInspecao: "2026-08-12", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 25, codRochling: "115408402", codCliente: "215598833R", descricao: "LOWER RAD AIR GUIDE", frequencia: 12, cliente: "RENAULT", ultimaInspecao: "2025-09-25", proximaInspecao: "2026-09-25", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 26, codRochling: "111020204", codCliente: "04C.133.202.K", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-07-08", proximaInspecao: "2026-07-08", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Agendar inspeção", attachments: []},
+            {id: 27, codRochling: "112106503", codCliente: "04C.129.710.A", descricao: "INTAKE MANIFOLD - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-10-18", proximaInspecao: "2026-10-18", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 28, codRochling: "112106801", codCliente: "04C.145.674.C", descricao: "BOOST AIR PIPE - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-12-03", proximaInspecao: "2026-12-03", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 29, codRochling: "112368002", codCliente: "04C.129.612.K", descricao: "ASS AIR FILTER MUFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-08-29", proximaInspecao: "2026-08-29", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 30, codRochling: "112644403", codCliente: "5GB.121.408.C", descricao: "EXPANSION TANK", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-11-14", proximaInspecao: "2026-11-14", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 31, codRochling: "115163404", codCliente: "24589691", descricao: "PIPE - W_PUMP INL", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-04-22", proximaInspecao: "2026-04-22", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 32, codRochling: "114469802", codCliente: "04E.129.612.AB", descricao: "ASS INTAKE MUFFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-09-09", proximaInspecao: "2026-09-09", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 33, codRochling: "1179771802", codCliente: "24591696", descricao: "MANIFOLD - INT - GV4 - PL8", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-06-17", proximaInspecao: "2026-06-17", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 34, codRochling: "114685603", codCliente: "2GB.121.408.G", descricao: "EXPANSION TANK - MQB", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-07-26", proximaInspecao: "2026-07-26", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 35, codRochling: "113918402", codCliente: "26209794", descricao: "ASM AIR INLET INR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-03-03", proximaInspecao: "2026-03-03", status: "PENDENTE", statusProduto: "ATIVO", observacao: "Agendar", attachments: []},
+            {id: 36, codRochling: "114661003", codCliente: "26218101", descricao: "BAFFLE ASM-RAD AIR UPR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-08-19", proximaInspecao: "2026-08-19", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 37, codRochling: "115399503", codCliente: "04E.145.674.AP", descricao: "BOOST AIR PIPE - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-10-31", proximaInspecao: "2026-10-31", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 38, codRochling: "115399603", codCliente: "04E.129.710.AS", descricao: "INTAKE MANIFOLD - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-05-12", proximaInspecao: "2026-05-12", status: "PENDENTE", statusProduto: "ATIVO", observacao: "Revisão dimensional", attachments: []},
+            {id: 39, codRochling: "115519003", codCliente: "04C.133.202.AB", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-09-28", proximaInspecao: "2026-09-28", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 40, codRochling: "115519104", codCliente: "04E.129.715.AS", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-07-14", proximaInspecao: "2026-07-14", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 41, codRochling: "114678204", codCliente: "12705418", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL7", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-11-21", proximaInspecao: "2026-11-21", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 42, codRochling: "111020105", codCliente: "04E.129.714.B", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-12-19", proximaInspecao: "2026-12-19", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 43, codRochling: "116518603", codCliente: "12707082", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL6", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-08-05", proximaInspecao: "2026-08-05", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Programar", attachments: []},
+            {id: 44, codRochling: "113928607", codCliente: "13545834", descricao: "TANK ASM RAD SURGE - GEM", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-10-27", proximaInspecao: "2026-10-27", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 45, codRochling: "115408403", codCliente: "215598834R", descricao: "LOWER RAD AIR GUIDE", frequencia: 12, cliente: "RENAULT", ultimaInspecao: "2025-06-09", proximaInspecao: "2026-06-09", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 46, codRochling: "111020205", codCliente: "04C.133.203.K", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-04-03", proximaInspecao: "2026-04-03", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 47, codRochling: "112106504", codCliente: "04C.129.711.A", descricao: "INTAKE MANIFOLD - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-07-22", proximaInspecao: "2026-07-22", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Agendar", attachments: []},
+            {id: 48, codRochling: "112106802", codCliente: "04C.145.675.C", descricao: "BOOST AIR PIPE - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-09-15", proximaInspecao: "2026-09-15", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 49, codRochling: "112368003", codCliente: "04C.129.613.K", descricao: "ASS AIR FILTER MUFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-11-08", proximaInspecao: "2026-11-08", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 50, codRochling: "112644404", codCliente: "5GB.121.409.C", descricao: "EXPANSION TANK", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-05-28", proximaInspecao: "2026-05-28", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 51, codRochling: "115163405", codCliente: "24589692", descricao: "PIPE - W_PUMP INL", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-02-18", proximaInspecao: "2026-02-18", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 52, codRochling: "114469803", codCliente: "04E.129.613.AB", descricao: "ASS INTAKE MUFFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-10-11", proximaInspecao: "2026-10-11", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 53, codRochling: "1179771803", codCliente: "24591697", descricao: "MANIFOLD - INT - GV4 - PL8", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-03-29", proximaInspecao: "2026-03-29", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 54, codRochling: "114685604", codCliente: "2GB.121.409.G", descricao: "EXPANSION TANK - MQB", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-12-12", proximaInspecao: "2026-12-12", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 55, codRochling: "113918403", codCliente: "26209795", descricao: "ASM AIR INLET INR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-06-24", proximaInspecao: "2026-06-24", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 56, codRochling: "114661004", codCliente: "26218102", descricao: "BAFFLE ASM-RAD AIR UPR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-09-02", proximaInspecao: "2026-09-02", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Revisão necessária", attachments: []},
+            {id: 57, codRochling: "115399504", codCliente: "04E.145.675.AP", descricao: "BOOST AIR PIPE - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-08-08", proximaInspecao: "2026-08-08", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 58, codRochling: "115399604", codCliente: "04E.129.711.AS", descricao: "INTAKE MANIFOLD - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-04-17", proximaInspecao: "2026-04-17", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 59, codRochling: "115519004", codCliente: "04C.133.203.AB", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-11-01", proximaInspecao: "2026-11-01", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Agendar inspeção", attachments: []},
+            {id: 60, codRochling: "115519105", codCliente: "04E.129.716.AS", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-07-31", proximaInspecao: "2026-07-31", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 61, codRochling: "114678205", codCliente: "12705419", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL7", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-09-19", proximaInspecao: "2026-09-19", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 62, codRochling: "111020106", codCliente: "04E.129.715.B", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-10-25", proximaInspecao: "2026-10-25", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 63, codRochling: "116518604", codCliente: "12707083", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL6", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-05-06", proximaInspecao: "2026-05-06", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 64, codRochling: "113928608", codCliente: "13545835", descricao: "TANK ASM RAD SURGE - GEM", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-12-28", proximaInspecao: "2026-12-28", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 65, codRochling: "115408404", codCliente: "215598835R", descricao: "LOWER RAD AIR GUIDE", frequencia: 12, cliente: "RENAULT", ultimaInspecao: "2025-02-09", proximaInspecao: "2026-02-09", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 66, codRochling: "111020206", codCliente: "04C.133.204.K", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-08-16", proximaInspecao: "2026-08-16", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 67, codRochling: "112106505", codCliente: "04C.129.712.A", descricao: "INTAKE MANIFOLD - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-11-22", proximaInspecao: "2026-11-22", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Revisão dimensional", attachments: []},
+            {id: 68, codRochling: "112106803", codCliente: "04C.145.676.C", descricao: "BOOST AIR PIPE - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-06-30", proximaInspecao: "2026-06-30", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 69, codRochling: "112368004", codCliente: "04C.129.614.K", descricao: "ASS AIR FILTER MUFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-04-10", proximaInspecao: "2026-04-10", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 70, codRochling: "112644405", codCliente: "5GB.121.410.C", descricao: "EXPANSION TANK", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-09-13", proximaInspecao: "2026-09-13", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 71, codRochling: "115163406", codCliente: "24589693", descricao: "PIPE - W_PUMP INL", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-07-06", proximaInspecao: "2026-07-06", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Agendar", attachments: []},
+            {id: 72, codRochling: "114469804", codCliente: "04E.129.614.AB", descricao: "ASS INTAKE MUFFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-12-15", proximaInspecao: "2026-12-15", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 73, codRochling: "1179771804", codCliente: "24591698", descricao: "MANIFOLD - INT - GV4 - PL8", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-10-03", proximaInspecao: "2026-10-03", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 74, codRochling: "114685605", codCliente: "2GB.121.410.G", descricao: "EXPANSION TANK - MQB", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-03-08", proximaInspecao: "2026-03-08", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 75, codRochling: "113918404", codCliente: "26209796", descricao: "ASM AIR INLET INR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-05-20", proximaInspecao: "2026-05-20", status: "PENDENTE", statusProduto: "ATIVO", observacao: "Revisão necessária", attachments: []},
+            {id: 76, codRochling: "114661005", codCliente: "26218103", descricao: "BAFFLE ASM-RAD AIR UPR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-11-11", proximaInspecao: "2026-11-11", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 77, codRochling: "115399505", codCliente: "04E.145.676.AP", descricao: "BOOST AIR PIPE - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-01-27", proximaInspecao: "2026-01-27", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 78, codRochling: "115399605", codCliente: "04E.129.712.AS", descricao: "INTAKE MANIFOLD - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-02-22", proximaInspecao: "2026-02-22", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 79, codRochling: "115519005", codCliente: "04C.133.204.AB", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-06-13", proximaInspecao: "2026-06-13", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Agendar inspeção", attachments: []},
+            {id: 80, codRochling: "115519106", codCliente: "04E.129.717.AS", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-08-24", proximaInspecao: "2026-08-24", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 81, codRochling: "114678206", codCliente: "12705420", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL7", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-12-08", proximaInspecao: "2026-12-08", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 82, codRochling: "111020107", codCliente: "04E.129.716.B", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-03-18", proximaInspecao: "2026-03-18", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 83, codRochling: "116518605", codCliente: "12707084", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL6", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-09-30", proximaInspecao: "2026-09-30", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Programar", attachments: []},
+            {id: 84, codRochling: "113928609", codCliente: "13545836", descricao: "TANK ASM RAD SURGE - GEM", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-07-09", proximaInspecao: "2026-07-09", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 85, codRochling: "115408405", codCliente: "215598836R", descricao: "LOWER RAD AIR GUIDE", frequencia: 12, cliente: "RENAULT", ultimaInspecao: "2025-10-20", proximaInspecao: "2026-10-20", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 86, codRochling: "111020207", codCliente: "04C.133.205.K", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-11-04", proximaInspecao: "2026-11-04", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 87, codRochling: "112106506", codCliente: "04C.129.713.A", descricao: "INTAKE MANIFOLD - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-04-28", proximaInspecao: "2026-04-28", status: "PENDENTE", statusProduto: "ATIVO", observacao: "Revisão dimensional", attachments: []},
+            {id: 88, codRochling: "112106804", codCliente: "04C.145.677.C", descricao: "BOOST AIR PIPE - 1.0 TSI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-05-15", proximaInspecao: "2026-05-15", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 89, codRochling: "112368005", codCliente: "04C.129.615.K", descricao: "ASS AIR FILTER MUFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-02-26", proximaInspecao: "2026-02-26", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 90, codRochling: "112644406", codCliente: "5GB.121.411.C", descricao: "EXPANSION TANK", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-08-01", proximaInspecao: "2026-08-01", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 91, codRochling: "115163407", codCliente: "24589694", descricao: "PIPE - W_PUMP INL", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-01-19", proximaInspecao: "2026-01-19", status: "PENDENTE", statusProduto: "ATIVO", observacao: "Agendar", attachments: []},
+            {id: 92, codRochling: "114469805", codCliente: "04E.129.615.AB", descricao: "ASS INTAKE MUFFLER", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-06-05", proximaInspecao: "2026-06-05", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 93, codRochling: "1179771805", codCliente: "24591699", descricao: "MANIFOLD - INT - GV4 - PL8", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-03-12", proximaInspecao: "2026-03-12", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 94, codRochling: "114685606", codCliente: "2GB.121.411.G", descricao: "EXPANSION TANK - MQB", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-09-22", proximaInspecao: "2026-09-22", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 95, codRochling: "113918405", codCliente: "26209797", descricao: "ASM AIR INLET INR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-11-17", proximaInspecao: "2026-11-17", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Revisão necessária", attachments: []},
+            {id: 96, codRochling: "114661006", codCliente: "26218104", descricao: "BAFFLE ASM-RAD AIR UPR", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-04-08", proximaInspecao: "2026-04-08", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 97, codRochling: "115399506", codCliente: "04E.145.677.AP", descricao: "BOOST AIR PIPE - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-07-27", proximaInspecao: "2026-07-27", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 98, codRochling: "115399606", codCliente: "04E.129.713.AS", descricao: "INTAKE MANIFOLD - 1.4 TSI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-10-14", proximaInspecao: "2026-10-14", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 99, codRochling: "115519006", codCliente: "04C.133.205.AB", descricao: "INTAKE MANIFOLD - 1.0 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-12-22", proximaInspecao: "2026-12-22", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Agendar inspeção", attachments: []},
+            {id: 100, codRochling: "115519107", codCliente: "04E.129.718.AS", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL7", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-02-14", proximaInspecao: "2026-02-14", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 101, codRochling: "114678207", codCliente: "12705421", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL7", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-05-03", proximaInspecao: "2026-05-03", status: "PENDENTE", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 102, codRochling: "111020108", codCliente: "04E.129.717.B", descricao: "INTAKE MANIFOLD - 1.6 MPI - PL6", frequencia: 12, cliente: "VW", ultimaInspecao: "2025-08-10", proximaInspecao: "2026-08-10", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []},
+            {id: 103, codRochling: "116518606", codCliente: "12707085", descricao: "CSS PRIME - MANIFOLD ASM-INT - PL6", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-10-29", proximaInspecao: "2026-10-29", status: "REALIZADO", statusProduto: "ATIVO", observacao: "Programar", attachments: []},
+            {id: 104, codRochling: "113928610", codCliente: "13545837", descricao: "TANK ASM RAD SURGE - GEM", frequencia: 12, cliente: "GM", ultimaInspecao: "2025-06-07", proximaInspecao: "2026-06-07", status: "REALIZADO", statusProduto: "ATIVO", observacao: "OK", attachments: []}
+        ];
+
+        // ============================================
+        // ESTADO GLOBAL
+        // ============================================
+        let inspectionsData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let sortColumn = 'proximaInspecao';
+        let sortDirection = 'asc';
+        let deleteId = null;
+        let charts = {};
+        let currentTab = 'charts';
+        let currentTheme = 'dark';
+        let currentAttachments = [];
+
+        // ============================================
+        // FIREBASE — helpers de persistência
+        // ============================================
+        let _fbUnsubscribe = null;   // listener de tempo real
+
+        async function fbSaveItem(item) {
+            if (!window.__firebaseReady) { lsSave(); return; }
+            const { db, doc, setDoc, serverTimestamp, COLLECTION } = window.__firebase;
+            try {
+                await setDoc(doc(db, COLLECTION, String(item.id)), {
+                    ...item,
+                    _updatedAt: serverTimestamp()
+                });
+            } catch (e) {
+                console.error("Firebase save error:", e);
+                lsSave(); // fallback
+            }
+        }
+
+        async function fbDeleteItem(id) {
+            if (!window.__firebaseReady) { lsSave(); return; }
+            const { db, doc, deleteDoc, COLLECTION } = window.__firebase;
+            try {
+                await deleteDoc(doc(db, COLLECTION, String(id)));
+            } catch (e) {
+                console.error("Firebase delete error:", e);
+            }
+        }
+
+        async function fbSaveAll(dataArray) {
+            if (!window.__firebaseReady) { lsSave(); return; }
+            const { db, collection, writeBatch, doc, serverTimestamp, COLLECTION } = window.__firebase;
+            try {
+                // Firestore batch suporta até 500 ops; dividimos se necessário
+                const chunks = [];
+                for (let i = 0; i < dataArray.length; i += 400) chunks.push(dataArray.slice(i, i + 400));
+                for (const chunk of chunks) {
+                    const batch = writeBatch(db);
+                    chunk.forEach(item => {
+                        batch.set(doc(db, COLLECTION, String(item.id)), {
+                            ...item,
+                            _updatedAt: serverTimestamp()
+                        });
+                    });
+                    await batch.commit();
+                }
+                console.log(`🔥 ${dataArray.length} itens salvos no Firestore`);
+            } catch (e) {
+                console.error("Firebase batch error:", e);
+                lsSave();
+            }
+        }
+
+        function fbListenRealtime() {
+            if (!window.__firebaseReady) return;
+            const { db, collection, onSnapshot, COLLECTION } = window.__firebase;
+            if (_fbUnsubscribe) _fbUnsubscribe();
+            _fbUnsubscribe = onSnapshot(collection(db, COLLECTION), snapshot => {
+                const docs = [];
+                snapshot.forEach(d => docs.push(d.data()));
+                if (docs.length > 0) {
+                    inspectionsData = docs.sort((a, b) => a.id - b.id);
+                    atualizarStatusPorData();
+                    filteredData = [...inspectionsData];
+                    filterTable();
+                    renderAll();
+                    updateSyncStatus('online');
+                }
+            }, err => {
+                console.error("Realtime listener error:", err);
+                updateSyncStatus('error');
+            });
+        }
+
+        // ============================================
+        // LOCALSTORAGE — fallback offline
+        // ============================================
+        function lsSave() {
+            localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
+        }
+
+        function lsLoad() {
+            try {
+                const saved = localStorage.getItem('rochling_inspections_v12');
+                return saved ? JSON.parse(saved) : null;
+            } catch { return null; }
+        }
+
+        // ============================================
+        // INDICADOR DE SINCRONIZAÇÃO
+        // ============================================
+        function updateSyncStatus(state) {
+            const el = document.getElementById('sync-indicator');
+            if (!el) return;
+            const states = {
+                connecting: { icon: 'fa-spinner fa-spin', color: 'text-yellow-400', text: 'Conectando...' },
+                online:     { icon: 'fa-cloud-check',     color: 'text-green-400',  text: 'Sincronizado' },
+                offline:    { icon: 'fa-cloud-slash',     color: 'text-orange-400', text: 'Offline (local)' },
+                error:      { icon: 'fa-triangle-exclamation', color: 'text-red-400', text: 'Erro de sync' }
+            };
+            const s = states[state] || states.offline;
+            el.innerHTML = `<i class="fas ${s.icon} ${s.color}"></i><span class="${s.color} text-xs font-medium">${s.text}</span>`;
+        }
+
+        // ============================================
+        // INICIALIZAÇÃO
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            const savedTheme = localStorage.getItem('rochling_theme') || 'dark';
+            setTheme(savedTheme);
+            updateSyncStatus('connecting');
+
+            // 1. Carrega dados do localStorage imediatamente (UX rápida)
+            const localData = lsLoad();
+            inspectionsData = localData || [...initialData];
+            atualizarStatusPorData();
+            filteredData = [...inspectionsData];
+            renderAll();
+
+            // 2. Quando Firebase estiver pronto, busca dados em nuvem
+            const onFirebaseReady = async () => {
+                const { db, collection, getDocs, COLLECTION } = window.__firebase;
+                try {
+                    const snapshot = await getDocs(collection(db, COLLECTION));
+                    if (!snapshot.empty) {
+                        const docs = [];
+                        snapshot.forEach(d => docs.push(d.data()));
+                        inspectionsData = docs.sort((a, b) => a.id - b.id);
+                        atualizarStatusPorData();
+                        lsSave(); // sincroniza local
+                    } else if (inspectionsData.length > 0) {
+                        // Primeira vez: sobe dados iniciais para o Firestore
+                        console.log("🔥 Subindo dados iniciais para Firestore...");
+                        await fbSaveAll(inspectionsData);
+                    }
+                    filteredData = [...inspectionsData];
+                    filterTable();
+                    renderAll();
+                    fbListenRealtime(); // ativa listener em tempo real
+                } catch (e) {
+                    console.error("Firebase load error:", e);
+                    updateSyncStatus('offline');
+                }
+            };
+
+            if (window.__firebaseReady) {
+                onFirebaseReady();
+            } else {
+                window.addEventListener('firebase-ready', onFirebaseReady, { once: true });
+                // Timeout: se Firebase não responder em 5s, continua offline
+                setTimeout(() => {
+                    if (!window.__firebaseReady) updateSyncStatus('offline');
+                }, 5000);
+            }
+
+            // Verificar status a cada minuto
+            setInterval(() => {
+                atualizarStatusPorData();
+                renderAll();
+            }, 60000);
+        });
+
+        // ============================================
+        // FUNÇÃO PARA ATUALIZAR STATUS BASEADO NAS DATAS
+        // ============================================
+        function atualizarStatusPorData() {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            
+            let modificou = false;
+            
+            inspectionsData = inspectionsData.map(item => {
+                // Se o status for CANCELADO ou EM ANDAMENTO, manter
+                if (item.status === 'CANCELADO' || item.status === 'EM ANDAMENTO') return item;
+                
+                // Se tiver data da próxima inspeção
+                if (item.proximaInspecao) {
+                    const proxima = new Date(item.proximaInspecao);
+                    proxima.setHours(0, 0, 0, 0);
+                    
+                    // Se a data já passou
+                    if (proxima < hoje) {
+                        if (item.status !== 'PENDENTE') {
+                            modificou = true;
+                            return { ...item, status: 'PENDENTE' };
+                        }
+                    }
+                    // Se está no prazo (data futura ou hoje)
+                    else {
+                        if (item.status !== 'REALIZADO') {
+                            modificou = true;
+                            return { ...item, status: 'REALIZADO' };
+                        }
+                    }
+                }
+                return item;
+            });
+            
+            if (modificou) {
+                lsSave();
+                // Salva itens modificados individualmente no Firebase
+                if (window.__firebaseReady) {
+                    inspectionsData.forEach(item => fbSaveItem(item));
+                }
+            }
+        }
+
+        // ============================================
+        // FUNÇÃO PARA CALCULAR PRÓXIMA INSPEÇÃO
+        // ============================================
+        function calcularProximaInspecao() {
+            const ultima = document.getElementById('ultima-inspecao').value;
+            const frequencia = parseInt(document.getElementById('frequencia').value);
+            
+            if (ultima && frequencia) {
+                const data = new Date(ultima);
+                data.setMonth(data.getMonth() + frequencia);
+                
+                const ano = data.getFullYear();
+                const mes = String(data.getMonth() + 1).padStart(2, '0');
+                const dia = String(data.getDate()).padStart(2, '0');
+                
+                document.getElementById('proxima-inspecao').value = `${ano}-${mes}-${dia}`;
+                document.getElementById('calc-indicator').innerHTML = '✅ Calculado: +' + frequencia + ' meses';
+                document.getElementById('calc-indicator').classList.add('text-green-400');
+                
+                // Sugerir status baseado na data calculada
+                sugerirStatusAutomatico(`${ano}-${mes}-${dia}`);
+            } else {
+                document.getElementById('proxima-inspecao').value = '';
+                document.getElementById('calc-indicator').innerHTML = '⏳ Aguardando data...';
+            }
+        }
+
+        function sugerirStatusAutomatico(proximaData) {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            const proxima = new Date(proximaData);
+            proxima.setHours(0, 0, 0, 0);
+            
+            const statusSelect = document.getElementById('status');
+            
+            // Se não for EM ANDAMENTO ou CANCELADO, sugerir
+            if (statusSelect.value !== 'EM ANDAMENTO' && statusSelect.value !== 'CANCELADO') {
+                if (proxima < hoje) {
+                    statusSelect.value = 'PENDENTE';
+                    document.getElementById('status-auto-indicator').innerHTML = '⚠️ Status sugerido: Pendente (Fora do prazo)';
+                } else {
+                    statusSelect.value = 'REALIZADO';
+                    document.getElementById('status-auto-indicator').innerHTML = '✅ Status sugerido: Realizado (No prazo)';
+                }
+            }
+        }
+
+        // ============================================
+        // THEME
+        // ============================================
+        function toggleTheme() {
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            document.body.className = theme;
+            localStorage.setItem('rochling_theme', theme);
+            document.getElementById('theme-icon').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            if (charts.timeline) renderAllCharts();
+        }
+
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => toast.classList.add('translate-x-full'), 3000);
+        }
+
+        // ============================================
+        // TABS
+        // ============================================
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-charts').classList.toggle('active', tab === 'charts');
+            document.getElementById('tab-table').classList.toggle('active', tab === 'table');
+            document.getElementById('view-charts').classList.toggle('hidden', tab !== 'charts');
+            document.getElementById('view-table').classList.toggle('hidden', tab !== 'table');
+            
+            if (tab === 'charts') setTimeout(renderAllCharts, 100);
+            else renderTable();
+        }
+
+        function renderAll() {
+            renderKPIs();
+            renderAllCharts();
+            renderTable();
+        }
+
+        function renderAllCharts() {
+            renderTimelineChart();
+            renderStatusChart();
+            renderClientChart();
+            renderAtrasadosClienteChart();
+            renderPrevisaoChart();
+            renderProdutoStatusChart();
+            renderHeatmapChart();
+            renderMetaChart();
+        }
+
+        // ============================================
+        // KPIs
+        // ============================================
+        function renderKPIs() {
+            const total = inspectionsData.length;
+            const realizados = inspectionsData.filter(i => i.status === 'REALIZADO').length;
+            const pendentes = inspectionsData.filter(i => i.status === 'PENDENTE').length;
+            const andamento = inspectionsData.filter(i => i.status === 'EM ANDAMENTO').length;
+            const ativos = inspectionsData.filter(i => i.statusProduto === 'ATIVO').length;
+            const inativos = inspectionsData.filter(i => i.statusProduto === 'INATIVO').length;
+
+            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-realizados').textContent = realizados;
+            document.getElementById('kpi-pendentes').textContent = pendentes;
+            document.getElementById('kpi-ativos').textContent = ativos;
+            document.getElementById('kpi-inativos').textContent = `${inativos} inativos`;
+            document.getElementById('kpi-atrasados').textContent = `${pendentes} pendentes`;
+
+            const pct = total > 0 ? (realizados / total * 100) : 0;
+            document.getElementById('bar-realizados').style.width = `${pct}%`;
+        }
+
+        // ============================================
+        // GRÁFICO 1: TIMELINE
+        // ============================================
+        function renderTimelineChart() {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            
+            const meses = {};
+            inspectionsData.forEach(item => {
+                if (!item.proximaInspecao) return;
+                const data = new Date(item.proximaInspecao);
+                const mes = data.toLocaleDateString('pt-BR', {month: 'short', year: '2-digit'});
+                if (!meses[mes]) meses[mes] = {realizados: 0, pendentes: 0, andamento: 0};
+                
+                if (item.status === 'REALIZADO') {
+                    meses[mes].realizados++;
+                } else if (item.status === 'PENDENTE') {
+                    meses[mes].pendentes++;
+                } else if (item.status === 'EM ANDAMENTO') {
+                    meses[mes].andamento++;
+                }
+            });
+
+            const labels = Object.keys(meses).sort();
+            
+            if (charts.timeline) charts.timeline.destroy();
+            
+            charts.timeline = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Realizados', data: labels.map(m => meses[m].realizados), backgroundColor: '#10b981', borderRadius: 6 },
+                        { label: 'Pendentes', data: labels.map(m => meses[m].pendentes), backgroundColor: '#f59e0b', borderRadius: 6 },
+                        { label: 'Em Andamento', data: labels.map(m => meses[m].andamento), backgroundColor: '#3b82f6', borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: currentTheme === 'dark' ? '#94a3b8' : '#475569' } } }
+                }
+            });
+        }
+
+        // ============================================
+        // GRÁFICO 2: STATUS
+        // ============================================
+        function renderStatusChart() {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            
+            // Calcular contagens
+            const counts = {
+                'REALIZADO': inspectionsData.filter(i => i.status === 'REALIZADO').length,
+                'PENDENTE': inspectionsData.filter(i => i.status === 'PENDENTE').length,
+                'EM ANDAMENTO': inspectionsData.filter(i => i.status === 'EM ANDAMENTO').length,
+                'CANCELADO': inspectionsData.filter(i => i.status === 'CANCELADO').length
+            };
+            
+            const total = inspectionsData.length;
+            
+            // Configurações de cores
+            const statusConfig = {
+                'REALIZADO': { label: 'Realizado (No prazo)', color: '#10b981', icon: 'fa-check-circle' },
+                'PENDENTE': { label: 'Pendente (Fora do prazo)', color: '#f59e0b', icon: 'fa-exclamation-circle' },
+                'EM ANDAMENTO': { label: 'Em Andamento', color: '#3b82f6', icon: 'fa-spinner' },
+                'CANCELADO': { label: 'Cancelado', color: '#64748b', icon: 'fa-ban' }
+            };
+            
+            if (charts.status) charts.status.destroy();
+            
+            // Dados para o gráfico
+            charts.status = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['REALIZADO', 'PENDENTE', 'EM ANDAMENTO', 'CANCELADO'],
+                    datasets: [{
+                        data: [
+                            counts['REALIZADO'],
+                            counts['PENDENTE'],
+                            counts['EM ANDAMENTO'],
+                            counts['CANCELADO']
+                        ],
+                        backgroundColor: [
+                            statusConfig['REALIZADO'].color,
+                            statusConfig['PENDENTE'].color,
+                            statusConfig['EM ANDAMENTO'].color,
+                            statusConfig['CANCELADO'].color
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 4,
+                        spacing: 4,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: currentTheme === 'dark' ? '#1e293b' : '#ffffff',
+                            titleColor: currentTheme === 'dark' ? '#f1f5f9' : '#0f172a',
+                            bodyColor: currentTheme === 'dark' ? '#cbd5e1' : '#334155',
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gerar legenda
+            const legendHtml = [];
+            
+            Object.entries(counts).forEach(([status, value]) => {
+                if (value > 0) {
+                    const config = statusConfig[status];
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    legendHtml.push(`
+                        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-all">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full" style="background: ${config.color}"></div>
+                                <span class="text-sm font-medium">${config.label}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold">${value}</span>
+                                <span class="text-xs opacity-50">(${percentage}%)</span>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+            
+            document.getElementById('status-legend').innerHTML = legendHtml.join('');
+        }
+
+        // ============================================
+        // GRÁFICO 3: TOP CLIENTES
+        // ============================================
+        function renderClientChart() {
+            const ctx = document.getElementById('clientChart').getContext('2d');
+            const counts = {};
+            inspectionsData.filter(i => i.statusProduto === 'ATIVO').forEach(i => {
+                counts[i.cliente] = (counts[i.cliente] || 0) + 1;
+            });
+
+            const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+            if (charts.client) charts.client.destroy();
+
+            charts.client = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(x => x[0]),
+                    datasets: [{ 
+                        data: sorted.map(x => x[1]), 
+                        backgroundColor: '#8b5cf6', 
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ============================================
+        // GRÁFICO 4: ATRASADOS POR CLIENTE (NOVO)
+        // ============================================
+        function renderAtrasadosClienteChart() {
+            const ctx = document.getElementById('atrasadosClienteChart').getContext('2d');
+            const counts = {};
+            
+            inspectionsData
+                .filter(i => i.status === 'PENDENTE')
+                .forEach(i => {
+                    counts[i.cliente] = (counts[i.cliente] || 0) + 1;
+                });
+
+            const sorted = Object.entries(counts)
+                .sort((a,b) => b[1] - a[1])
+                .slice(0, 5);
+
+            if (charts.atrasadosCliente) charts.atrasadosCliente.destroy();
+
+            charts.atrasadosCliente = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(x => x[0]),
+                    datasets: [{ 
+                        data: sorted.map(x => x[1]), 
+                        backgroundColor: '#ef4444', 
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ============================================
+        // GRÁFICO 5: PREVISÃO 90 DIAS (NOVO)
+        // ============================================
+        function renderPrevisaoChart() {
+            const ctx = document.getElementById('previsaoChart').getContext('2d');
+            const hoje = new Date();
+            const dias = [30, 60, 90];
+            
+            const contagens = dias.map(dias => {
+                const limite = new Date(hoje);
+                limite.setDate(limite.getDate() + dias);
+                
+                return inspectionsData.filter(item => {
+                    if (!item.proximaInspecao || item.status !== 'REALIZADO') return false;
+                    const proxima = new Date(item.proximaInspecao);
+                    return proxima >= hoje && proxima <= limite;
+                }).length;
+            });
+
+            if (charts.previsao) charts.previsao.destroy();
+
+            charts.previsao = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['30 dias', '60 dias', '90 dias'],
+                    datasets: [{
+                        label: 'Inspeções previstas',
+                        data: contagens,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ============================================
+        // GRÁFICO 6: STATUS DO PRODUTO (NOVO)
+        // ============================================
+        function renderProdutoStatusChart() {
+            const ctx = document.getElementById('produtoStatusChart').getContext('2d');
+            
+            const counts = {
+                'ATIVO': inspectionsData.filter(i => i.statusProduto === 'ATIVO').length,
+                'INATIVO': inspectionsData.filter(i => i.statusProduto === 'INATIVO').length,
+                'ANALISAR': inspectionsData.filter(i => i.statusProduto === 'ANALISAR').length,
+                'LOGIPLAS': inspectionsData.filter(i => i.statusProduto === 'LOGIPLAS').length
+            };
+
+            if (charts.produtoStatus) charts.produtoStatus.destroy();
+
+            charts.produtoStatus = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ativo', 'Inativo', 'Analisar', 'Logiplas'],
+                    datasets: [{
+                        data: [counts.ATIVO, counts.INATIVO, counts.ANALISAR, counts.LOGIPLAS],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // ============================================
+        // GRÁFICO 7: HEATMAP POR DIA (NOVO)
+        // ============================================
+        function renderHeatmapChart() {
+            const ctx = document.getElementById('heatmapChart').getContext('2d');
+            
+            const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+            const contagens = [0, 0, 0, 0, 0];
+            
+            inspectionsData.forEach(item => {
+                if (!item.proximaInspecao) return;
+                const data = new Date(item.proximaInspecao);
+                const diaSemana = data.getDay(); // 0 = domingo, 1 = segunda, etc.
+                if (diaSemana >= 1 && diaSemana <= 5) {
+                    contagens[diaSemana - 1]++;
+                }
+            });
+
+            if (charts.heatmap) charts.heatmap.destroy();
+
+            charts.heatmap = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dias,
+                    datasets: [{
+                        data: contagens,
+                        backgroundColor: contagens.map(v => {
+                            const intensidade = Math.min(255, 100 + v * 20);
+                            return `rgba(59, 130, 246, ${v / Math.max(...contagens)})`;
+                        }),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ============================================
+        // GRÁFICO 8: META VS REALIZADO (NOVO)
+        // ============================================
+        function renderMetaChart() {
+            const ctx = document.getElementById('metaChart').getContext('2d');
+            
+            const hoje = new Date();
+            const mesAtual = hoje.getMonth();
+            const diasNoMes = new Date(hoje.getFullYear(), mesAtual + 1, 0).getDate();
+            const diasPassados = hoje.getDate();
+            
+            const realizadosEsteMes = inspectionsData.filter(item => {
+                if (!item.proximaInspecao || item.status !== 'REALIZADO') return false;
+                const data = new Date(item.proximaInspecao);
+                return data.getMonth() === mesAtual && data.getFullYear() === hoje.getFullYear();
+            }).length;
+            
+            const metaMensal = Math.ceil(inspectionsData.length / 12); // Média mensal
+            const metaAjustada = Math.ceil(metaMensal * (diasPassados / diasNoMes));
+
+            if (charts.meta) charts.meta.destroy();
+
+            charts.meta = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Realizado', 'Meta', 'Projeção'],
+                    datasets: [{
+                        data: [realizadosEsteMes, metaMensal, metaAjustada],
+                        backgroundColor: ['#10b981', '#94a3b8', '#f59e0b'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ============================================
+        // FILTROS
+        // ============================================
+        function filterTable() {
+            const search = document.getElementById('search-input')?.value.toLowerCase() || '';
+            const status = document.getElementById('filter-status')?.value || '';
+            const cliente = document.getElementById('filter-cliente')?.value || '';
+            const produto = document.getElementById('filter-produto')?.value || '';
+            const periodo = document.getElementById('filter-periodo')?.value || '';
+            const anexos = document.getElementById('filter-anexos')?.value || '';
+
+            const hoje = new Date();
+            
+            filteredData = inspectionsData.filter(item => {
+                const matchSearch = !search || 
+                    item.codRochling.toLowerCase().includes(search) ||
+                    item.codCliente.toLowerCase().includes(search) ||
+                    item.descricao.toLowerCase().includes(search) ||
+                    (item.observacao && item.observacao.toLowerCase().includes(search));
+                
+                const matchStatus = !status || item.status === status;
+                const matchCliente = !cliente || item.cliente === cliente;
+                const matchProduto = !produto || item.statusProduto === produto;
+                
+                let matchPeriodo = true;
+                if (periodo && item.proximaInspecao) {
+                    const proxima = new Date(item.proximaInspecao);
+                    const diffDays = Math.ceil((proxima - hoje) / (1000 * 60 * 60 * 24));
+                    
+                    if (periodo === 'atrasado') {
+                        matchPeriodo = item.status === 'PENDENTE';
+                    } else if (periodo === '30d') {
+                        matchPeriodo = diffDays >= 0 && diffDays <= 30 && item.status === 'REALIZADO';
+                    } else if (periodo === '60d') {
+                        matchPeriodo = diffDays >= 0 && diffDays <= 60 && item.status === 'REALIZADO';
+                    } else if (periodo === '90d') {
+                        matchPeriodo = diffDays >= 0 && diffDays <= 90 && item.status === 'REALIZADO';
+                    }
+                }
+                
+                let matchAnexos = true;
+                if (anexos === 'com') matchAnexos = item.attachments?.length > 0;
+                if (anexos === 'sem') matchAnexos = !item.attachments?.length;
+                
+                return matchSearch && matchStatus && matchCliente && matchProduto && matchPeriodo && matchAnexos;
+            });
+
+            updateActiveFilters();
+            
+            currentPage = 1;
+            sortData();
+            renderTable();
+            renderKPIs();
+            renderAllCharts();
+        }
+
+        function updateActiveFilters() {
+            const container = document.getElementById('active-filters');
+            const filters = [];
+            
+            const search = document.getElementById('search-input')?.value;
+            if (search) filters.push(`Busca: "${search}"`);
+            
+            const status = document.getElementById('filter-status')?.value;
+            if (status) {
+                const statusMap = {
+                    'REALIZADO': 'Realizado',
+                    'PENDENTE': 'Pendente',
+                    'EM ANDAMENTO': 'Em Andamento',
+                    'CANCELADO': 'Cancelado'
+                };
+                filters.push(`Status: ${statusMap[status] || status}`);
+            }
+            
+            const cliente = document.getElementById('filter-cliente')?.value;
+            if (cliente) filters.push(`Cliente: ${cliente}`);
+            
+            const produto = document.getElementById('filter-produto')?.value;
+            if (produto) filters.push(`Produto: ${produto}`);
+            
+            const periodo = document.getElementById('filter-periodo')?.value;
+            if (periodo) {
+                const labels = {atrasado: 'Pendentes', '30d': '30 dias', '60d': '60 dias', '90d': '90 dias'};
+                filters.push(`Período: ${labels[periodo]}`);
+            }
+            
+            const anexos = document.getElementById('filter-anexos')?.value;
+            if (anexos) {
+                const labels = {com: 'Com anexos', sem: 'Sem anexos'};
+                filters.push(`Anexos: ${labels[anexos]}`);
+            }
+            
+            container.innerHTML = filters.length ? filters.map(f => `
+                <span class="filter-tag">
+                    <i class="fas fa-filter text-blue-400 text-xs"></i>
+                    ${f}
+                </span>
+            `).join('') : '';
+        }
+
+        function clearAllFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-cliente').value = '';
+            document.getElementById('filter-produto').value = '';
+            document.getElementById('filter-periodo').value = '';
+            document.getElementById('filter-anexos').value = '';
+            
+            filteredData = [...inspectionsData];
+            currentPage = 1;
+            sortData();
+            renderTable();
+            renderKPIs();
+            renderAllCharts();
+            updateActiveFilters();
+        }
+
+        // ============================================
+        // TABLE FUNCTIONS
+        // ============================================
+        function renderTable() {
+            const start = (currentPage - 1) * itemsPerPage;
+            const pageData = filteredData.slice(start, start + itemsPerPage);
+
+            const tbody = document.getElementById('table-body');
+            
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" class="px-6 py-12 text-center opacity-50">Nenhum resultado encontrado</td></tr>';
+                updatePagination();
+                return;
+            }
+
+            const hoje = new Date();
+            
+            tbody.innerHTML = pageData.map(item => {
+                const proxima = item.proximaInspecao ? new Date(item.proximaInspecao) : null;
+                const isPendente = item.status === 'PENDENTE';
+                const diasRestantes = proxima ? Math.ceil((proxima - hoje) / (1000 * 60 * 60 * 24)) : null;
+                const fileCount = item.attachments?.length || 0;
+
+                let badgeClass = 'badge-realizado';
+                if (item.status === 'PENDENTE') badgeClass = 'badge-pendente';
+                else if (item.status === 'EM ANDAMENTO') badgeClass = 'badge-andamento';
+                else if (item.status === 'CANCELADO') badgeClass = 'badge-cancelado';
+
+                const statusText = item.status === 'PENDENTE' ? 'Pendente (Fora do prazo)' : 
+                                  item.status === 'REALIZADO' ? 'Realizado (No prazo)' : item.status;
+
+                return `
+                <tr>
+                    <td class="font-mono font-bold text-blue-400">${item.codRochling}</td>
+                    <td class="font-mono opacity-80">${item.codCliente}</td>
+                    <td><span class="px-2 py-1 rounded-full text-xs bg-white/10">${item.cliente}</span></td>
+                    <td class="max-w-[200px] truncate" title="${item.descricao}">${item.descricao}</td>
+                    <td>${item.ultimaInspecao ? new Date(item.ultimaInspecao).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td>
+                        <span class="${isPendente ? 'text-orange-400 font-bold' : ''}">
+                            ${proxima ? proxima.toLocaleDateString('pt-BR') : '-'}
+                        </span>
+                        ${diasRestantes !== null && item.status !== 'CANCELADO' ? `
+                            <span class="text-xs ${isPendente ? 'text-orange-400' : diasRestantes < 30 ? 'text-green-400' : 'opacity-50'} block">
+                                ${isPendente ? `${Math.abs(diasRestantes)}d atrasado` : `${diasRestantes}d restantes`}
+                            </span>
+                        ` : ''}
+                    </td>
+                    <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                    <td class="text-center ${item.statusProduto === 'ATIVO' ? 'text-green-400' : item.statusProduto === 'INATIVO' ? 'text-red-400' : 'text-yellow-400'}">${item.statusProduto}</td>
+                    <td class="text-center">${item.frequencia}m</td>
+                    <td class="observacao-cell" title="${item.observacao || ''}">${item.observacao || '-'}</td>
+                    <td class="text-center">
+                        <button onclick="viewItemFiles(${item.id})" class="relative hover:text-blue-400">
+                            <i class="fas fa-paperclip"></i>
+                            ${fileCount > 0 ? `<span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-blue-500 text-white text-xs">${fileCount}</span>` : ''}
+                        </button>
+                    </td>
+                    <td>
+                        <div class="flex gap-1">
+                            <button onclick="openEditModal(${item.id})" class="action-btn hover:bg-blue-500/20 text-blue-400">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="confirmDeleteItem(${item.id})" class="action-btn hover:bg-red-500/20 text-red-400">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            updatePagination();
+        }
+
+        function sortData() {
+            filteredData.sort((a, b) => {
+                let va = a[sortColumn] || '';
+                let vb = b[sortColumn] || '';
+                if (typeof va === 'string') va = va.toLowerCase();
+                if (typeof vb === 'string') vb = vb.toLowerCase();
+                return sortDirection === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+            });
+        }
+
+        function sortTable(col) {
+            if (sortColumn === col) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = col;
+                sortDirection = 'asc';
+            }
+            sortData();
+            renderTable();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            document.getElementById('showing-text').textContent = `Mostrando ${filteredData.length} itens (página ${currentPage} de ${totalPages || 1})`;
+            document.getElementById('page-indicator').textContent = `${currentPage} / ${totalPages || 1}`;
+            document.getElementById('prev-btn').disabled = currentPage === 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+        }
+
+        function changePage(dir) {
+            currentPage += dir;
+            renderTable();
+        }
+
+        // ============================================
+        // MODAL FUNCTIONS
+        // ============================================
+        function openAddModal() {
+            document.getElementById('modal-title').textContent = 'Nova Inspeção';
+            document.getElementById('inspection-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('calc-indicator').innerHTML = '⏳ Aguardando data...';
+            document.getElementById('calc-indicator').classList.remove('text-green-400');
+            document.getElementById('status-auto-indicator').innerHTML = 'Status automático baseado nas datas';
+            currentAttachments = [];
+            document.getElementById('attachments').value = '[]';
+            updateFileList();
+            showModal('edit-modal');
+        }
+
+        function openEditModal(id) {
+            const item = inspectionsData.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('modal-title').textContent = 'Editar Inspeção';
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('cod-rochling').value = item.codRochling;
+            document.getElementById('cod-cliente').value = item.codCliente;
+            document.getElementById('descricao').value = item.descricao;
+            document.getElementById('frequencia').value = item.frequencia;
+            document.getElementById('cliente').value = item.cliente;
+            document.getElementById('ultima-inspecao').value = item.ultimaInspecao;
+            document.getElementById('proxima-inspecao').value = item.proximaInspecao;
+            document.getElementById('status').value = item.status;
+            document.getElementById('status-produto').value = item.statusProduto;
+            document.getElementById('observacao').value = item.observacao || '';
+            
+            if (item.ultimaInspecao && item.frequencia) {
+                document.getElementById('calc-indicator').innerHTML = `✅ Calculado: +${item.frequencia} meses`;
+                document.getElementById('calc-indicator').classList.add('text-green-400');
+            }
+            
+            // Sugerir status baseado na data
+            if (item.proximaInspecao && item.status !== 'EM ANDAMENTO' && item.status !== 'CANCELADO') {
+                sugerirStatusAutomatico(item.proximaInspecao);
+            }
+            
+            currentAttachments = item.attachments ? [...item.attachments] : [];
+            document.getElementById('attachments').value = JSON.stringify(currentAttachments);
+            updateFileList();
+
+            showModal('edit-modal');
+        }
+
+        function showModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById(id + '-content').classList.remove('scale-95', 'opacity-0');
+                document.getElementById(id + '-content').classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeEditModal() {
+            const content = document.getElementById('edit-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => document.getElementById('edit-modal').classList.add('hidden'), 300);
+        }
+
+        document.getElementById('inspection-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('edit-id').value;
+            const data = {
+                codRochling: document.getElementById('cod-rochling').value,
+                codCliente: document.getElementById('cod-cliente').value,
+                descricao: document.getElementById('descricao').value,
+                frequencia: parseInt(document.getElementById('frequencia').value),
+                cliente: document.getElementById('cliente').value,
+                ultimaInspecao: document.getElementById('ultima-inspecao').value,
+                proximaInspecao: document.getElementById('proxima-inspecao').value,
+                status: document.getElementById('status').value,
+                statusProduto: document.getElementById('status-produto').value,
+                observacao: document.getElementById('observacao').value,
+                attachments: currentAttachments
+            };
+
+            if (id) {
+                const idx = inspectionsData.findIndex(i => i.id === parseInt(id));
+                inspectionsData[idx] = { ...inspectionsData[idx], ...data };
+                showToast('Inspeção atualizada!');
+                fbSaveItem(inspectionsData[idx]);
+            } else {
+                const newId = Math.max(...inspectionsData.map(i => i.id), 0) + 1;
+                const newItem = { id: newId, ...data };
+                inspectionsData.push(newItem);
+                showToast('Nova inspeção adicionada!');
+                fbSaveItem(newItem);
+            }
+
+            // Atualizar status baseado nas datas
+            atualizarStatusPorData();
+            
+            lsSave();
+            filteredData = [...inspectionsData];
+            filterTable();
+            renderAll();
+            closeEditModal();
+        });
+
+        function confirmDeleteItem(id) {
+            deleteId = id;
+            const item = inspectionsData.find(i => i.id === id);
+            document.getElementById('delete-item-code').textContent = item?.codRochling || '';
+            showModal('delete-modal');
+        }
+
+        function closeDeleteModal() {
+            const content = document.getElementById('delete-modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => document.getElementById('delete-modal').classList.add('hidden'), 300);
+            deleteId = null;
+        }
+
+        function confirmDelete() {
+            if (deleteId) {
+                fbDeleteItem(deleteId);
+                inspectionsData = inspectionsData.filter(i => i.id !== deleteId);
+                lsSave();
+                filteredData = [...inspectionsData];
+                filterTable();
+                renderAll();
+                showToast('Item excluído!');
+            }
+            closeDeleteModal();
+        }
+
+        // ============================================
+        // FILE MANAGEMENT
+        // ============================================
+        function handleFileSelect(files) {
+            for (let file of files) {
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('Arquivo muito grande! Máximo 10MB');
+                    continue;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentAttachments.push({
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: e.target.result,
+                        uploadedAt: new Date().toISOString()
+                    });
+                    updateFileList();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('file-list');
+            
+            if (currentAttachments.length === 0) {
+                fileList.innerHTML = '<p class="text-sm opacity-50 text-center py-4">Nenhum arquivo anexado</p>';
+            } else {
+                fileList.innerHTML = currentAttachments.map(file => `
+                    <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <i class="fas ${getFileIcon(file.type)} text-${getFileColor(file.type)}-400"></i>
+                            <div class="truncate">
+                                <p class="text-sm font-medium truncate">${file.name}</p>
+                                <p class="text-xs opacity-50">${formatFileSize(file.size)}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="previewFile('${file.id}')" class="w-8 h-8 rounded-lg hover:bg-white/10 text-blue-400">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" onclick="downloadFile('${file.id}')" class="w-8 h-8 rounded-lg hover:bg-white/10 text-green-400">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button type="button" onclick="deleteFile('${file.id}')" class="w-8 h-8 rounded-lg hover:bg-white/10 text-red-400">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('attachments').value = JSON.stringify(currentAttachments);
+        }
+
+        function getFileIcon(type) {
+            if (type.includes('pdf')) return 'fa-file-pdf';
+            if (type.includes('excel') || type.includes('spreadsheet')) return 'fa-file-excel';
+            if (type.includes('image')) return 'fa-file-image';
+            return 'fa-file';
+        }
+
+        function getFileColor(type) {
+            if (type.includes('pdf')) return 'red';
+            if (type.includes('excel')) return 'green';
+            if (type.includes('image')) return 'blue';
+            return 'gray';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function previewFile(fileId) {
+            const file = currentAttachments.find(f => f.id == fileId);
+            if (file) openFileViewer(file);
+        }
+
+        function viewItemFiles(id) {
+            const item = inspectionsData.find(i => i.id === id);
+            if (item?.attachments?.length) {
+                const fileList = item.attachments.map(file => `
+                    <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg mb-2">
+                        <div class="flex items-center gap-3">
+                            <i class="fas ${getFileIcon(file.type)} text-${getFileColor(file.type)}-400"></i>
+                            <div>
+                                <p class="font-medium">${file.name}</p>
+                                <p class="text-xs opacity-50">${formatFileSize(file.size)}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick='openFileViewer(${JSON.stringify(file).replace(/'/g, "\\'")})' class="px-3 py-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500 text-blue-400">
+                                Visualizar
+                            </button>
+                            <button onclick="downloadExistingFile(${id}, '${file.id}')" class="px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500 text-green-400">
+                                Baixar
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4';
+                modal.innerHTML = `
+                    <div class="w-full max-w-2xl bg-white rounded-2xl overflow-hidden">
+                        <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
+                            <h3 class="font-bold">Arquivos Anexados (${item.attachments.length})</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="w-10 h-10 rounded-full hover:bg-white/10">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="p-4 max-h-[60vh] overflow-y-auto">
+                            ${fileList}
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                showToast('Nenhum arquivo anexado');
+            }
+        }
+
+        function openFileViewer(file) {
+            const modal = document.getElementById('file-viewer-modal');
+            const title = document.getElementById('file-viewer-title');
+            const container = document.getElementById('file-viewer-container');
+            
+            title.textContent = file.name;
+            container.innerHTML = '';
+            
+            if (file.type.includes('image')) {
+                const img = document.createElement('img');
+                img.src = file.data;
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+                img.style.objectFit = 'contain';
+                img.style.margin = 'auto';
+                img.style.display = 'block';
+                container.style.display = 'flex';
+                container.style.alignItems = 'center';
+                container.style.justifyContent = 'center';
+                container.appendChild(img);
+            } else if (file.type.includes('pdf')) {
+                const iframe = document.createElement('iframe');
+                iframe.src = file.data;
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                container.appendChild(iframe);
+            } else {
+                container.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                        <i class="fas fa-file text-6xl text-blue-500 mb-4"></i>
+                        <p class="text-gray-600 mb-4">Visualização não disponível</p>
+                        <a href="${file.data}" download="${file.name}" class="btn-primary">
+                            <i class="fas fa-download mr-2"></i>Baixar Arquivo
+                        </a>
+                    </div>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeFileViewer() {
+            document.getElementById('file-viewer-modal').classList.add('hidden');
+            document.getElementById('file-viewer-container').innerHTML = '';
+        }
+
+        function downloadFile(fileId) {
+            const file = currentAttachments.find(f => f.id == fileId);
+            if (file) {
+                const link = document.createElement('a');
+                link.href = file.data;
+                link.download = file.name;
+                link.click();
+            }
+        }
+
+        function downloadExistingFile(itemId, fileId) {
+            const item = inspectionsData.find(i => i.id === itemId);
+            const file = item?.attachments?.find(f => f.id == fileId);
+            if (file) {
+                const link = document.createElement('a');
+                link.href = file.data;
+                link.download = file.name;
+                link.click();
+            }
+        }
+
+        function deleteFile(fileId) {
+            if (confirm('Excluir este arquivo?')) {
+                currentAttachments = currentAttachments.filter(f => f.id != fileId);
+                updateFileList();
+                showToast('Arquivo excluído!');
+            }
+        }
+
+        // ============================================
+        // EXPORT
+        // ============================================
+        function exportToExcel() {
+            const headers = ['Cód.Röchling', 'Cód.Cliente', 'Cliente', 'Descrição', 'Última', 'Próxima', 'Status', 'Produto', 'Freq.', 'Observações', 'Anexos'];
+            const rows = inspectionsData.map(i => [
+                i.codRochling, i.codCliente, i.cliente, i.descricao,
+                i.ultimaInspecao, i.proximaInspecao, i.status, i.statusProduto,
+                i.frequencia + 'm', i.observacao || '',
+                (i.attachments?.length || 0) + ' arquivo(s)'
+            ]);
+            
+            const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Rochling_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            showToast('Dados exportados!');
+        }
+
+        function exportBackup() {
+            const backup = {
+                timestamp: new Date().toISOString(),
+                data: inspectionsData,
+                version: '6.0.0',
+                totalItens: inspectionsData.length
+            };
+            
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `rochling_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            showToast('Backup exportado!');
+        }
+
+        // Botão de importar
+        const importInput = document.createElement('input');
+        importInput.type = 'file';
+        importInput.accept = '.json';
+        importInput.style.display = 'none';
+        importInput.onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const backup = JSON.parse(e.target.result);
+                    if (backup.data && Array.isArray(backup.data)) {
+                        inspectionsData = backup.data;
+                        // Atualizar status após importar
+                        atualizarStatusPorData();
+                        lsSave();
+                        await fbSaveAll(inspectionsData);
+                        filteredData = [...inspectionsData];
+                        renderAll();
+                        showToast(`Backup restaurado! ${inspectionsData.length} itens`);
+                    }
+                } catch (e) {
+                    showToast('Erro ao importar backup!');
+                }
+            };
+            reader.readAsText(e.target.files[0]);
+        };
+        document.body.appendChild(importInput);
+
+        // Botão de importar no header
+        const importBtn = document.createElement('button');
+        importBtn.className = 'btn-outline px-6 py-3 flex items-center gap-2';
+        importBtn.innerHTML = '<i class="fas fa-upload"></i><span class="hidden sm:inline">Importar</span>';
+        importBtn.onclick = () => importInput.click();
+        document.querySelector('.flex.items-center.gap-3').appendChild(importBtn);
+    </script>
+</body>
+</html>
