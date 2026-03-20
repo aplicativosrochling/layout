@@ -4,67 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Röchling Automotive •Layout inspection</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
-    <!-- =====================================================
-         FIREBASE SDK v10 (modular)
-         Docs: https://firebase.google.com/docs/web/setup
-    ===================================================== -->
-    <script type="module">
-        // ─────────────────────────────────────────────
-        // 🔧 CONFIGURAÇÃO DO FIREBASE
-        // Substitua pelos valores do seu projeto em:
-        // Firebase Console → Configurações do projeto → Seus apps
-        // ─────────────────────────────────────────────
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import {
-            getFirestore,
-            collection,
-            getDocs,
-            doc,
-            setDoc,
-            deleteDoc,
-            onSnapshot,
-            writeBatch,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey:            "AIzaSyDIFrnVgmspIN3g9BMUh07Pn3rfqP3F0HA",
-            authDomain:        "layout-7d511.firebaseapp.com",
-            projectId:         "layout-7d511",
-            storageBucket:     "layout-7d511.firebasestorage.app",
-            messagingSenderId: "542265678815",
-            appId:             "1:542265678815:web:0affabc9fb8a473fe5426a"
-        };
-
-        const COLLECTION = "inspections_rochling";
-
-        // Inicialização
-        const app = initializeApp(firebaseConfig);
-        const db  = getFirestore(app);
-
-        // Expõe para o escopo global
-        window.__firebase = { db, collection, doc, setDoc, deleteDoc,
-                              getDocs, onSnapshot, writeBatch, serverTimestamp, COLLECTION };
-
-        // Firebase pronto imediatamente — sem auth
-        window.__firebaseReady = true;
-        window.dispatchEvent(new Event('firebase-ready'));
-        console.log("🔥 Firebase Firestore conectado (acesso público)");
-    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', sans-serif;
             transition: background-color 0.3s ease, color 0.2s ease;
-            width: 100%;
-            min-height: 100vh;
         }
 
         body.dark {
@@ -208,34 +157,31 @@
         .table-modern {
             width: 100%;
             border-collapse: collapse;
-            table-layout: auto; /* colunas ajustam ao conteúdo */
+            min-width: 1400px;
         }
 
         .table-modern th {
-            padding: 0.875rem 0.75rem;
+            padding: 1rem 0.75rem;
             text-align: left;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 600;
             white-space: nowrap;
-            position: sticky;
-            top: 0;
-            z-index: 2;
         }
 
         .dark .table-modern th {
-            background: rgba(17, 25, 40, 0.95);
+            background: rgba(17, 25, 40, 0.5);
             color: #94a3b8;
         }
 
         .light .table-modern th {
-            background: rgba(241, 245, 249, 0.97);
+            background: rgba(241, 245, 249, 0.7);
             color: #475569;
         }
 
         .table-modern td {
-            padding: 0.5rem 0.75rem;
+            padding: 1rem 0.75rem;
             border-bottom: 1px solid;
             font-size: 0.85rem;
             white-space: nowrap;
@@ -250,64 +196,7 @@
         }
 
         .table-modern tbody tr:hover {
-            background: rgba(59, 130, 246, 0.07);
-        }
-
-        /* ── Edição inline ── */
-        .cell-editable {
-            cursor: text;
-            position: relative;
-            transition: background 0.15s;
-        }
-
-        .cell-editable:focus-within {
-            background: rgba(59, 130, 246, 0.15) !important;
-            outline: 2px solid #3b82f6;
-            outline-offset: -2px;
-            border-radius: 4px;
-        }
-
-        .inline-input {
-            background: transparent;
-            border: none;
-            outline: none;
-            width: 100%;
-            font-size: inherit;
-            font-family: inherit;
-            color: inherit;
-            padding: 0;
-            min-width: 60px;
-        }
-
-        .inline-select {
-            background: transparent;
-            border: none;
-            outline: none;
-            font-size: inherit;
-            font-family: inherit;
-            color: inherit;
-            padding: 0;
-            cursor: pointer;
-            appearance: auto;
-        }
-
-        .dark .inline-select option {
-            background: #1e293b;
-            color: #f8fafc;
-        }
-
-        .saving-row td {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .saved-flash {
-            animation: savedPulse 0.6s ease;
-        }
-
-        @keyframes savedPulse {
-            0%   { background: rgba(16, 185, 129, 0.3); }
-            100% { background: transparent; }
+            background: rgba(59, 130, 246, 0.1);
         }
 
         .btn-primary {
@@ -475,17 +364,11 @@
 
         .chart-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
         }
 
-        @media (max-width: 1400px) {
-            .chart-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 900px) {
+        @media (max-width: 1200px) {
             .chart-grid {
                 grid-template-columns: 1fr;
             }
@@ -646,7 +529,7 @@
     </div>
 
     <!-- Main Container -->
-    <div class="w-full px-6 py-6">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
         <!-- Header -->
         <header class="mb-8">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
@@ -665,14 +548,8 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <!-- Sync Status Firebase -->
-                    <div id="sync-indicator" class="flex items-center gap-2 px-3 py-2 rounded-xl glass-card text-xs font-medium" title="Status de sincronização Firebase">
-                        <i class="fas fa-spinner fa-spin text-yellow-400"></i>
-                        <span class="text-yellow-400 hidden sm:inline">Conectando...</span>
-                    </div>
-
                     <!-- Theme Toggle -->
-                    <button onclick="toggleTheme()" class="w-12 h-12 rounded-xl glass-card flex items-center justify-center text-xl hover:text-blue-400" title="Alternar tema">
+                    <button onclick="toggleTheme()" class="w-12 h-12 rounded-xl glass-card flex items-center justify-center text-xl hover:text-blue-400">
                         <i id="theme-icon" class="fas fa-sun"></i>
                     </button>
                     
@@ -686,16 +563,9 @@
                         <span class="hidden sm:inline">Exportar</span>
                     </button>
                     
-                    <button onclick="exportBackup()" class="btn-outline px-6 py-3 flex items-center gap-2" title="Exportar Backup JSON">
+                    <button onclick="exportBackup()" class="btn-outline px-6 py-3 flex items-center gap-2" title="Exportar Backup">
                         <i class="fas fa-database"></i>
                     </button>
-
-                    <!-- GitHub Pages link -->
-                    <a href="https://github.com/layout-7d511" target="_blank"
-                       class="w-12 h-12 rounded-xl glass-card flex items-center justify-center text-xl hover:text-blue-400"
-                       title="Ver no GitHub">
-                        <i class="fab fa-github"></i>
-                    </a>
                 </div>
             </div>
 
@@ -713,7 +583,7 @@
         <!-- Charts View -->
         <div id="view-charts" class="space-y-6">
             <!-- KPI Cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="glass-card kpi-card">
                     <div class="flex justify-between items-start mb-4">
                         <div class="kpi-icon bg-blue-500/20 text-blue-400">
@@ -1121,160 +991,28 @@
         let currentAttachments = [];
 
         // ============================================
-        // FIREBASE — helpers de persistência
-        // ============================================
-        let _fbUnsubscribe = null;   // listener de tempo real
-
-        async function fbSaveItem(item) {
-            if (!window.__firebaseReady) { lsSave(); return; }
-            const { db, doc, setDoc, serverTimestamp, COLLECTION } = window.__firebase;
-            try {
-                await setDoc(doc(db, COLLECTION, String(item.id)), {
-                    ...item,
-                    _updatedAt: serverTimestamp()
-                });
-            } catch (e) {
-                console.error("Firebase save error:", e);
-                lsSave(); // fallback
-            }
-        }
-
-        async function fbDeleteItem(id) {
-            if (!window.__firebaseReady) { lsSave(); return; }
-            const { db, doc, deleteDoc, COLLECTION } = window.__firebase;
-            try {
-                await deleteDoc(doc(db, COLLECTION, String(id)));
-            } catch (e) {
-                console.error("Firebase delete error:", e);
-            }
-        }
-
-        async function fbSaveAll(dataArray) {
-            if (!window.__firebaseReady) { lsSave(); return; }
-            const { db, collection, writeBatch, doc, serverTimestamp, COLLECTION } = window.__firebase;
-            try {
-                // Firestore batch suporta até 500 ops; dividimos se necessário
-                const chunks = [];
-                for (let i = 0; i < dataArray.length; i += 400) chunks.push(dataArray.slice(i, i + 400));
-                for (const chunk of chunks) {
-                    const batch = writeBatch(db);
-                    chunk.forEach(item => {
-                        batch.set(doc(db, COLLECTION, String(item.id)), {
-                            ...item,
-                            _updatedAt: serverTimestamp()
-                        });
-                    });
-                    await batch.commit();
-                }
-                console.log(`🔥 ${dataArray.length} itens salvos no Firestore`);
-            } catch (e) {
-                console.error("Firebase batch error:", e);
-                lsSave();
-            }
-        }
-
-        function fbListenRealtime() {
-            if (!window.__firebaseReady) return;
-            const { db, collection, onSnapshot, COLLECTION } = window.__firebase;
-            if (_fbUnsubscribe) _fbUnsubscribe();
-            _fbUnsubscribe = onSnapshot(collection(db, COLLECTION), snapshot => {
-                const docs = [];
-                snapshot.forEach(d => docs.push(d.data()));
-                if (docs.length > 0) {
-                    inspectionsData = docs.sort((a, b) => a.id - b.id);
-                    atualizarStatusPorData();
-                    filteredData = [...inspectionsData];
-                    filterTable();
-                    renderAll();
-                    updateSyncStatus('online');
-                }
-            }, err => {
-                console.error("Realtime listener error:", err);
-                updateSyncStatus('error');
-            });
-        }
-
-        // ============================================
-        // LOCALSTORAGE — fallback offline
-        // ============================================
-        function lsSave() {
-            localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
-        }
-
-        function lsLoad() {
-            try {
-                const saved = localStorage.getItem('rochling_inspections_v12');
-                return saved ? JSON.parse(saved) : null;
-            } catch { return null; }
-        }
-
-        // ============================================
-        // INDICADOR DE SINCRONIZAÇÃO
-        // ============================================
-        function updateSyncStatus(state) {
-            const el = document.getElementById('sync-indicator');
-            if (!el) return;
-            const states = {
-                connecting: { icon: 'fa-spinner fa-spin', color: 'text-yellow-400', text: 'Conectando...' },
-                online:     { icon: 'fa-cloud-check',     color: 'text-green-400',  text: 'Sincronizado' },
-                offline:    { icon: 'fa-cloud-slash',     color: 'text-orange-400', text: 'Offline (local)' },
-                error:      { icon: 'fa-triangle-exclamation', color: 'text-red-400', text: 'Erro de sync' }
-            };
-            const s = states[state] || states.offline;
-            el.innerHTML = `<i class="fas ${s.icon} ${s.color}"></i><span class="${s.color} text-xs font-medium">${s.text}</span>`;
-        }
-
-        // ============================================
         // INICIALIZAÇÃO
         // ============================================
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('rochling_theme') || 'dark';
             setTheme(savedTheme);
-            updateSyncStatus('connecting');
-
-            // 1. Carrega dados do localStorage imediatamente (UX rápida)
-            const localData = lsLoad();
-            inspectionsData = localData || [...initialData];
-            atualizarStatusPorData();
+            
+            try {
+                const saved = localStorage.getItem('rochling_inspections_v12');
+                inspectionsData = saved ? JSON.parse(saved) : [...initialData];
+                
+                // Atualizar status baseado nas datas atuais
+                atualizarStatusPorData();
+                
+            } catch (e) {
+                console.error('Erro ao carregar dados:', e);
+                inspectionsData = [...initialData];
+                atualizarStatusPorData();
+            }
+            
             filteredData = [...inspectionsData];
             renderAll();
-
-            // 2. Quando Firebase estiver pronto, busca dados em nuvem
-            const onFirebaseReady = async () => {
-                const { db, collection, getDocs, COLLECTION } = window.__firebase;
-                try {
-                    const snapshot = await getDocs(collection(db, COLLECTION));
-                    if (!snapshot.empty) {
-                        const docs = [];
-                        snapshot.forEach(d => docs.push(d.data()));
-                        inspectionsData = docs.sort((a, b) => a.id - b.id);
-                        atualizarStatusPorData();
-                        lsSave(); // sincroniza local
-                    } else if (inspectionsData.length > 0) {
-                        // Primeira vez: sobe dados iniciais para o Firestore
-                        console.log("🔥 Subindo dados iniciais para Firestore...");
-                        await fbSaveAll(inspectionsData);
-                    }
-                    filteredData = [...inspectionsData];
-                    filterTable();
-                    renderAll();
-                    fbListenRealtime(); // ativa listener em tempo real
-                } catch (e) {
-                    console.error("Firebase load error:", e);
-                    updateSyncStatus('offline');
-                }
-            };
-
-            if (window.__firebaseReady) {
-                onFirebaseReady();
-            } else {
-                window.addEventListener('firebase-ready', onFirebaseReady, { once: true });
-                // Timeout: se Firebase não responder em 5s, continua offline
-                setTimeout(() => {
-                    if (!window.__firebaseReady) updateSyncStatus('offline');
-                }, 5000);
-            }
-
+            
             // Verificar status a cada minuto
             setInterval(() => {
                 atualizarStatusPorData();
@@ -1319,11 +1057,7 @@
             });
             
             if (modificou) {
-                lsSave();
-                // Salva itens modificados individualmente no Firebase
-                if (window.__firebaseReady) {
-                    inspectionsData.forEach(item => fbSaveItem(item));
-                }
+                localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
             }
         }
 
@@ -1972,101 +1706,45 @@
                 else if (item.status === 'EM ANDAMENTO') badgeClass = 'badge-andamento';
                 else if (item.status === 'CANCELADO') badgeClass = 'badge-cancelado';
 
+                const statusText = item.status === 'PENDENTE' ? 'Pendente (Fora do prazo)' : 
+                                  item.status === 'REALIZADO' ? 'Realizado (No prazo)' : item.status;
+
                 return `
-                <tr data-id="${item.id}">
-                    <td class="cell-editable font-mono font-bold text-blue-400">
-                        <input class="inline-input font-mono font-bold text-blue-400"
-                               value="${item.codRochling}"
-                               data-field="codRochling"
-                               data-id="${item.id}"
-                               onchange="saveInlineField(${item.id}, 'codRochling', this.value, this)"
-                               style="min-width:${Math.max(80, item.codRochling.length * 8)}px">
-                    </td>
-                    <td class="cell-editable font-mono opacity-80">
-                        <input class="inline-input font-mono opacity-80"
-                               value="${item.codCliente}"
-                               data-field="codCliente"
-                               data-id="${item.id}"
-                               onchange="saveInlineField(${item.id}, 'codCliente', this.value, this)"
-                               style="min-width:${Math.max(80, item.codCliente.length * 7.5)}px">
-                    </td>
-                    <td class="cell-editable">
-                        <select class="inline-select px-1 py-0.5 rounded"
-                                data-id="${item.id}"
-                                onchange="saveInlineField(${item.id}, 'cliente', this.value, this)">
-                            ${['GM','VW','RENAULT','STELLANTIS','FORD','TOYOTA','HONDA','OUTRO'].map(c =>
-                                `<option value="${c}" ${item.cliente===c?'selected':''}>${c}</option>`
-                            ).join('')}
-                        </select>
-                    </td>
-                    <td class="cell-editable">
-                        <input class="inline-input"
-                               value="${item.descricao}"
-                               data-id="${item.id}"
-                               onchange="saveInlineField(${item.id}, 'descricao', this.value, this)"
-                               style="min-width:${Math.max(120, item.descricao.length * 7)}px">
-                    </td>
-                    <td class="cell-editable">
-                        <input class="inline-input" type="date"
-                               value="${item.ultimaInspecao || ''}"
-                               data-id="${item.id}"
-                               onchange="saveInlineField(${item.id}, 'ultimaInspecao', this.value, this)">
-                    </td>
-                    <td class="cell-editable">
-                        <input class="inline-input ${isPendente ? 'text-orange-400 font-bold' : ''}" type="date"
-                               value="${item.proximaInspecao || ''}"
-                               data-id="${item.id}"
-                               onchange="saveInlineField(${item.id}, 'proximaInspecao', this.value, this)">
+                <tr>
+                    <td class="font-mono font-bold text-blue-400">${item.codRochling}</td>
+                    <td class="font-mono opacity-80">${item.codCliente}</td>
+                    <td><span class="px-2 py-1 rounded-full text-xs bg-white/10">${item.cliente}</span></td>
+                    <td class="max-w-[200px] truncate" title="${item.descricao}">${item.descricao}</td>
+                    <td>${item.ultimaInspecao ? new Date(item.ultimaInspecao).toLocaleDateString('pt-BR') : '-'}</td>
+                    <td>
+                        <span class="${isPendente ? 'text-orange-400 font-bold' : ''}">
+                            ${proxima ? proxima.toLocaleDateString('pt-BR') : '-'}
+                        </span>
                         ${diasRestantes !== null && item.status !== 'CANCELADO' ? `
-                            <span class="text-xs ${isPendente ? 'text-orange-400' : diasRestantes < 30 ? 'text-yellow-400' : 'opacity-40'} block mt-0.5">
+                            <span class="text-xs ${isPendente ? 'text-orange-400' : diasRestantes < 30 ? 'text-green-400' : 'opacity-50'} block">
                                 ${isPendente ? `${Math.abs(diasRestantes)}d atrasado` : `${diasRestantes}d restantes`}
                             </span>
                         ` : ''}
                     </td>
-                    <td>
-                        <select class="inline-select badge ${badgeClass} text-white"
-                                data-id="${item.id}"
-                                onchange="saveInlineField(${item.id}, 'status', this.value, this)">
-                            ${['REALIZADO','PENDENTE','EM ANDAMENTO','CANCELADO'].map(s =>
-                                `<option value="${s}" ${item.status===s?'selected':''}>${s}</option>`
-                            ).join('')}
-                        </select>
-                    </td>
-                    <td class="text-center">
-                        <select class="inline-select text-sm font-semibold ${item.statusProduto==='ATIVO'?'text-green-400':item.statusProduto==='INATIVO'?'text-red-400':'text-yellow-400'}"
-                                data-id="${item.id}"
-                                onchange="saveInlineField(${item.id}, 'statusProduto', this.value, this)">
-                            ${['ATIVO','INATIVO'].map(s =>
-                                `<option value="${s}" ${item.statusProduto===s?'selected':''}>${s}</option>`
-                            ).join('')}
-                        </select>
-                    </td>
-                    <td class="cell-editable text-center">
-                        <input class="inline-input text-center" type="number" min="1" max="60"
-                               value="${item.frequencia}"
-                               data-id="${item.id}"
-                               onchange="saveInlineField(${item.id}, 'frequencia', parseInt(this.value), this)"
-                               style="min-width:40px;max-width:52px">
-                        <span class="opacity-50 text-xs">m</span>
-                    </td>
-                    <td class="cell-editable">
-                        <input class="inline-input opacity-80"
-                               value="${item.observacao || ''}"
-                               placeholder="—"
-                               data-id="${item.id}"
-                               onchange="saveInlineField(${item.id}, 'observacao', this.value, this)"
-                               style="min-width:${Math.max(60, (item.observacao||'').length * 7)}px">
-                    </td>
+                    <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                    <td class="text-center ${item.statusProduto === 'ATIVO' ? 'text-green-400' : item.statusProduto === 'INATIVO' ? 'text-red-400' : 'text-yellow-400'}">${item.statusProduto}</td>
+                    <td class="text-center">${item.frequencia}m</td>
+                    <td class="observacao-cell" title="${item.observacao || ''}">${item.observacao || '-'}</td>
                     <td class="text-center">
                         <button onclick="viewItemFiles(${item.id})" class="relative hover:text-blue-400">
                             <i class="fas fa-paperclip"></i>
-                            ${fileCount > 0 ? `<span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center">${fileCount}</span>` : ''}
+                            ${fileCount > 0 ? `<span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-blue-500 text-white text-xs">${fileCount}</span>` : ''}
                         </button>
                     </td>
                     <td>
-                        <button onclick="confirmDeleteItem(${item.id})" class="action-btn hover:bg-red-500/20 text-red-400" title="Excluir">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="flex gap-1">
+                            <button onclick="openEditModal(${item.id})" class="action-btn hover:bg-blue-500/20 text-blue-400">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="confirmDeleteItem(${item.id})" class="action-btn hover:bg-red-500/20 text-red-400">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 `;
@@ -2075,39 +1753,6 @@
             updatePagination();
         }
 
-        // ============================================
-        // SALVAR CAMPO INLINE
-        // ============================================
-        async function saveInlineField(id, field, value, el) {
-            const idx = inspectionsData.findIndex(i => i.id === id);
-            if (idx === -1) return;
-
-            // Atualiza em memória
-            inspectionsData[idx] = { ...inspectionsData[idx], [field]: value };
-
-            // Feedback visual na linha
-            const row = el.closest('tr');
-            row.classList.add('saving-row');
-
-            try {
-                await fbSaveItem(inspectionsData[idx]);
-                lsSave();
-                row.classList.remove('saving-row');
-                row.classList.add('saved-flash');
-                setTimeout(() => row.classList.remove('saved-flash'), 600);
-
-                // Re-render só se mudou campo que afeta badge/cores
-                if (['status','statusProduto','proximaInspecao'].includes(field)) {
-                    atualizarStatusPorData();
-                    filteredData = filteredData.map(i => i.id === id ? inspectionsData[idx] : i);
-                    renderTable();
-                    renderKPIs();
-                }
-            } catch(e) {
-                row.classList.remove('saving-row');
-                showToast('Erro ao salvar!');
-            }
-        }
         function sortData() {
             filteredData.sort((a, b) => {
                 let va = a[sortColumn] || '';
@@ -2229,19 +1874,16 @@
                 const idx = inspectionsData.findIndex(i => i.id === parseInt(id));
                 inspectionsData[idx] = { ...inspectionsData[idx], ...data };
                 showToast('Inspeção atualizada!');
-                fbSaveItem(inspectionsData[idx]);
             } else {
                 const newId = Math.max(...inspectionsData.map(i => i.id), 0) + 1;
-                const newItem = { id: newId, ...data };
-                inspectionsData.push(newItem);
+                inspectionsData.push({ id: newId, ...data });
                 showToast('Nova inspeção adicionada!');
-                fbSaveItem(newItem);
             }
 
             // Atualizar status baseado nas datas
             atualizarStatusPorData();
             
-            lsSave();
+            localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
             filteredData = [...inspectionsData];
             filterTable();
             renderAll();
@@ -2265,9 +1907,8 @@
 
         function confirmDelete() {
             if (deleteId) {
-                fbDeleteItem(deleteId);
                 inspectionsData = inspectionsData.filter(i => i.id !== deleteId);
-                lsSave();
+                localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
                 filteredData = [...inspectionsData];
                 filterTable();
                 renderAll();
@@ -2524,15 +2165,14 @@
         importInput.style.display = 'none';
         importInput.onchange = (e) => {
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     const backup = JSON.parse(e.target.result);
                     if (backup.data && Array.isArray(backup.data)) {
                         inspectionsData = backup.data;
                         // Atualizar status após importar
                         atualizarStatusPorData();
-                        lsSave();
-                        await fbSaveAll(inspectionsData);
+                        localStorage.setItem('rochling_inspections_v12', JSON.stringify(inspectionsData));
                         filteredData = [...inspectionsData];
                         renderAll();
                         showToast(`Backup restaurado! ${inspectionsData.length} itens`);
