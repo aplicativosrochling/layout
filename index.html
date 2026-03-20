@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Röchling Automotive •Layout inspection</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -207,31 +208,34 @@
         .table-modern {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1400px;
+            table-layout: auto; /* colunas ajustam ao conteúdo */
         }
 
         .table-modern th {
-            padding: 1rem 0.75rem;
+            padding: 0.875rem 0.75rem;
             text-align: left;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 600;
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
 
         .dark .table-modern th {
-            background: rgba(17, 25, 40, 0.5);
+            background: rgba(17, 25, 40, 0.95);
             color: #94a3b8;
         }
 
         .light .table-modern th {
-            background: rgba(241, 245, 249, 0.7);
+            background: rgba(241, 245, 249, 0.97);
             color: #475569;
         }
 
         .table-modern td {
-            padding: 1rem 0.75rem;
+            padding: 0.5rem 0.75rem;
             border-bottom: 1px solid;
             font-size: 0.85rem;
             white-space: nowrap;
@@ -246,7 +250,72 @@
         }
 
         .table-modern tbody tr:hover {
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(59, 130, 246, 0.07);
+        }
+
+        /* ── Edição inline ── */
+        .cell-editable {
+            cursor: text;
+            position: relative;
+            transition: background 0.15s;
+        }
+        .cell-editable:hover::after {
+            content: '✏️';
+            font-size: 0.65rem;
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+        }
+        .cell-editable:focus-within {
+            background: rgba(59, 130, 246, 0.15) !important;
+            outline: 2px solid #3b82f6;
+            outline-offset: -2px;
+            border-radius: 4px;
+        }
+
+        .inline-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: inherit;
+            font-family: inherit;
+            color: inherit;
+            padding: 0;
+            min-width: 60px;
+        }
+
+        .inline-select {
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: inherit;
+            font-family: inherit;
+            color: inherit;
+            padding: 0;
+            cursor: pointer;
+            appearance: auto;
+        }
+
+        .dark .inline-select option {
+            background: #1e293b;
+            color: #f8fafc;
+        }
+
+        .saving-row td {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .saved-flash {
+            animation: savedPulse 0.6s ease;
+        }
+
+        @keyframes savedPulse {
+            0%   { background: rgba(16, 185, 129, 0.3); }
+            100% { background: transparent; }
         }
 
         .btn-primary {
@@ -1911,45 +1980,101 @@
                 else if (item.status === 'EM ANDAMENTO') badgeClass = 'badge-andamento';
                 else if (item.status === 'CANCELADO') badgeClass = 'badge-cancelado';
 
-                const statusText = item.status === 'PENDENTE' ? 'Pendente (Fora do prazo)' : 
-                                  item.status === 'REALIZADO' ? 'Realizado (No prazo)' : item.status;
-
                 return `
-                <tr>
-                    <td class="font-mono font-bold text-blue-400">${item.codRochling}</td>
-                    <td class="font-mono opacity-80">${item.codCliente}</td>
-                    <td><span class="px-2 py-1 rounded-full text-xs bg-white/10">${item.cliente}</span></td>
-                    <td class="max-w-[200px] truncate" title="${item.descricao}">${item.descricao}</td>
-                    <td>${item.ultimaInspecao ? new Date(item.ultimaInspecao).toLocaleDateString('pt-BR') : '-'}</td>
-                    <td>
-                        <span class="${isPendente ? 'text-orange-400 font-bold' : ''}">
-                            ${proxima ? proxima.toLocaleDateString('pt-BR') : '-'}
-                        </span>
+                <tr data-id="${item.id}">
+                    <td class="cell-editable font-mono font-bold text-blue-400">
+                        <input class="inline-input font-mono font-bold text-blue-400"
+                               value="${item.codRochling}"
+                               data-field="codRochling"
+                               data-id="${item.id}"
+                               onchange="saveInlineField(${item.id}, 'codRochling', this.value, this)"
+                               style="min-width:${Math.max(80, item.codRochling.length * 8)}px">
+                    </td>
+                    <td class="cell-editable font-mono opacity-80">
+                        <input class="inline-input font-mono opacity-80"
+                               value="${item.codCliente}"
+                               data-field="codCliente"
+                               data-id="${item.id}"
+                               onchange="saveInlineField(${item.id}, 'codCliente', this.value, this)"
+                               style="min-width:${Math.max(80, item.codCliente.length * 7.5)}px">
+                    </td>
+                    <td class="cell-editable">
+                        <select class="inline-select px-1 py-0.5 rounded"
+                                data-id="${item.id}"
+                                onchange="saveInlineField(${item.id}, 'cliente', this.value, this)">
+                            ${['GM','VW','RENAULT','STELLANTIS','FORD','TOYOTA','HONDA','OUTRO'].map(c =>
+                                `<option value="${c}" ${item.cliente===c?'selected':''}>${c}</option>`
+                            ).join('')}
+                        </select>
+                    </td>
+                    <td class="cell-editable">
+                        <input class="inline-input"
+                               value="${item.descricao}"
+                               data-id="${item.id}"
+                               onchange="saveInlineField(${item.id}, 'descricao', this.value, this)"
+                               style="min-width:${Math.max(120, item.descricao.length * 7)}px">
+                    </td>
+                    <td class="cell-editable">
+                        <input class="inline-input" type="date"
+                               value="${item.ultimaInspecao || ''}"
+                               data-id="${item.id}"
+                               onchange="saveInlineField(${item.id}, 'ultimaInspecao', this.value, this)">
+                    </td>
+                    <td class="cell-editable">
+                        <input class="inline-input ${isPendente ? 'text-orange-400 font-bold' : ''}" type="date"
+                               value="${item.proximaInspecao || ''}"
+                               data-id="${item.id}"
+                               onchange="saveInlineField(${item.id}, 'proximaInspecao', this.value, this)">
                         ${diasRestantes !== null && item.status !== 'CANCELADO' ? `
-                            <span class="text-xs ${isPendente ? 'text-orange-400' : diasRestantes < 30 ? 'text-green-400' : 'opacity-50'} block">
+                            <span class="text-xs ${isPendente ? 'text-orange-400' : diasRestantes < 30 ? 'text-yellow-400' : 'opacity-40'} block mt-0.5">
                                 ${isPendente ? `${Math.abs(diasRestantes)}d atrasado` : `${diasRestantes}d restantes`}
                             </span>
                         ` : ''}
                     </td>
-                    <td><span class="badge ${badgeClass}">${statusText}</span></td>
-                    <td class="text-center ${item.statusProduto === 'ATIVO' ? 'text-green-400' : item.statusProduto === 'INATIVO' ? 'text-red-400' : 'text-yellow-400'}">${item.statusProduto}</td>
-                    <td class="text-center">${item.frequencia}m</td>
-                    <td class="observacao-cell" title="${item.observacao || ''}">${item.observacao || '-'}</td>
+                    <td>
+                        <select class="inline-select badge ${badgeClass} text-white"
+                                data-id="${item.id}"
+                                onchange="saveInlineField(${item.id}, 'status', this.value, this)">
+                            ${['REALIZADO','PENDENTE','EM ANDAMENTO','CANCELADO'].map(s =>
+                                `<option value="${s}" ${item.status===s?'selected':''}>${s}</option>`
+                            ).join('')}
+                        </select>
+                    </td>
+                    <td class="text-center">
+                        <select class="inline-select text-sm font-semibold ${item.statusProduto==='ATIVO'?'text-green-400':item.statusProduto==='INATIVO'?'text-red-400':'text-yellow-400'}"
+                                data-id="${item.id}"
+                                onchange="saveInlineField(${item.id}, 'statusProduto', this.value, this)">
+                            ${['ATIVO','INATIVO'].map(s =>
+                                `<option value="${s}" ${item.statusProduto===s?'selected':''}>${s}</option>`
+                            ).join('')}
+                        </select>
+                    </td>
+                    <td class="cell-editable text-center">
+                        <input class="inline-input text-center" type="number" min="1" max="60"
+                               value="${item.frequencia}"
+                               data-id="${item.id}"
+                               onchange="saveInlineField(${item.id}, 'frequencia', parseInt(this.value), this)"
+                               style="min-width:40px;max-width:52px">
+                        <span class="opacity-50 text-xs">m</span>
+                    </td>
+                    <td class="cell-editable">
+                        <input class="inline-input opacity-80"
+                               value="${item.observacao || ''}"
+                               placeholder="—"
+                               data-id="${item.id}"
+                               onchange="saveInlineField(${item.id}, 'observacao', this.value, this)"
+                               style="min-width:${Math.max(60, (item.observacao||'').length * 7)}px">
+                    </td>
                     <td class="text-center">
                         <button onclick="viewItemFiles(${item.id})" class="relative hover:text-blue-400">
                             <i class="fas fa-paperclip"></i>
-                            ${fileCount > 0 ? `<span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-blue-500 text-white text-xs">${fileCount}</span>` : ''}
+                            ${fileCount > 0 ? `<span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center">${fileCount}</span>` : ''}
                         </button>
                     </td>
                     <td>
-                        <div class="flex gap-1">
-                            <button onclick="openEditModal(${item.id})" class="action-btn hover:bg-blue-500/20 text-blue-400">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="confirmDeleteItem(${item.id})" class="action-btn hover:bg-red-500/20 text-red-400">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                        <button onclick="confirmDeleteItem(${item.id})" class="action-btn hover:bg-red-500/20 text-red-400" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </td>
                 </tr>
                 `;
@@ -1958,6 +2083,39 @@
             updatePagination();
         }
 
+        // ============================================
+        // SALVAR CAMPO INLINE
+        // ============================================
+        async function saveInlineField(id, field, value, el) {
+            const idx = inspectionsData.findIndex(i => i.id === id);
+            if (idx === -1) return;
+
+            // Atualiza em memória
+            inspectionsData[idx] = { ...inspectionsData[idx], [field]: value };
+
+            // Feedback visual na linha
+            const row = el.closest('tr');
+            row.classList.add('saving-row');
+
+            try {
+                await fbSaveItem(inspectionsData[idx]);
+                lsSave();
+                row.classList.remove('saving-row');
+                row.classList.add('saved-flash');
+                setTimeout(() => row.classList.remove('saved-flash'), 600);
+
+                // Re-render só se mudou campo que afeta badge/cores
+                if (['status','statusProduto','proximaInspecao'].includes(field)) {
+                    atualizarStatusPorData();
+                    filteredData = filteredData.map(i => i.id === id ? inspectionsData[idx] : i);
+                    renderTable();
+                    renderKPIs();
+                }
+            } catch(e) {
+                row.classList.remove('saving-row');
+                showToast('Erro ao salvar!');
+            }
+        }
         function sortData() {
             filteredData.sort((a, b) => {
                 let va = a[sortColumn] || '';
