@@ -517,6 +517,15 @@ body.li-open .sidebar,body.li-open .topbar{filter:none}
 .li-info .cell{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
 .li-info .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);margin-bottom:2px}
 .li-info input{width:100%;background:transparent;border:0;color:var(--text);font-size:12.5px;font-family:inherit;outline:none}
+.li-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.li-tab{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px 8px 0 0;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--text-secondary);transition:.15s}
+.li-tab:hover{color:var(--text)}
+.li-tab.active{background:var(--card);border-color:var(--accent);color:var(--text);font-weight:600;box-shadow:0 -2px 0 var(--accent) inset}
+.li-tab-name{white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.li-tab-close{opacity:.55;font-size:11px;padding:1px 3px;border-radius:4px}
+.li-tab-close:hover{opacity:1;background:rgba(255,71,87,.15);color:var(--danger)}
+.li-tab-add{background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--text-secondary);padding:6px 10px;cursor:pointer;font-size:13px;line-height:1}
+.li-tab-add:hover{color:var(--accent);border-color:var(--accent)}
 table.li-dim{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
 table.li-dim th,table.li-dim td{border:1px solid var(--border);padding:0}
 table.li-dim th{background:var(--card2);color:var(--text-secondary);font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:5px 3px;text-align:center;outline:none}
@@ -574,7 +583,7 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
   <div class="modal" style="max-width:380px;">
     <div style="padding:32px 28px 8px;text-align:center;">
       <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;background:var(--grad,linear-gradient(135deg,#00c6ff,#7b61ff));-webkit-background-clip:text;background-clip:text;color:transparent;">ROCHLING AUTOMOTIVE</div>
-      <div style="font-size:11px;color:var(--text-secondary);letter-spacing:1px;margin-top:2px;">LAYOUT INSPECTION — LOGIN</div>
+      <div style="font-size:11px;color:var(--text-secondary);letter-spacing:1px;margin-top:2px;">PRODUCT AUDIT — LOGIN</div>
     </div>
     <div style="padding:20px 28px 28px;display:flex;flex-direction:column;gap:12px;">
       <input class="form-input" id="loginEmail" type="email" placeholder="E-mail" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus();">
@@ -599,10 +608,6 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
     </div>
     <div class="nav-item" id="navLayout" onclick="switchView('layout',this)">
       <span class="nav-icon">📐</span><span>Insp. de Layout</span>
-    </div>
-    <div class="nav-item" id="navChecklist" onclick="switchView('checklist',this)" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:14px;position:relative;">
-      <span class="nav-icon">📋</span><span>Checklist</span>
-      <span id="navChecklistDot" style="position:absolute;top:10px;right:12px;width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);display:none;"></span>
     </div>
   </nav>
   <div class="sidebar-footer">
@@ -637,7 +642,7 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
     <div class="topbar-title" id="viewTitle">Dashboard — Inspeção de Layout</div>
     <div class="topbar-actions">
       <button class="btn btn-primary" id="newItemBtn" onclick="openNewModal()">
-        <span>＋</span> <span id="newItemBtnLabel">Novo Item de Layout</span>
+        <span>＋</span> <span id="newItemBtnLabel">Nova Auditoria</span>
       </button>
       <button class="btn" onclick="openImportModal()" style="background:var(--card2);border:1px solid var(--border);">
         📥 Importar Excel
@@ -656,14 +661,6 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
       </div>
     </div>
   </div>
-
-  <!-- DASHBOARD -->
-
-  <!-- GANTT -->
-
-  <!-- ANALYTICS -->
-
-  <!-- RISK -->
 
   <!-- CRONOGRAMA DE INSPEÇÃO DE LAYOUT -->
   <!-- Estrutura, armazenamento (state.audits + Firebase), checklist e funcionalidades
@@ -1018,282 +1015,6 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
   </div>
 </div>
 
-
-
-<!-- ===== CHECKLIST DE EXECUÇÃO DE AUDITORIA ===== -->
-<div class="checklist-overlay" id="checklistOverlay">
-
-  <!-- TOP BAR -->
-  <div class="cl-header">
-    <div class="cl-title">
-      <span style="font-size:20px;">🗂</span>
-      <span class="cl-title-text" id="clTitle">Execução de Auditoria</span>
-      <span id="clReadonlyBadge" class="cl-readonly-badge" style="display:none;">👁 Modo Leitura</span>
-      <span id="clEditingTag" class="cl-editing-tag">✏️ Editando</span>
-    </div>
-    <div class="cl-actions">
-      <button class="btn cl-back-btn" onclick="closeChecklist()">← Voltar para o Cronograma</button>
-      <label class="btn" style="cursor:pointer;" title="Importar dados de uma planilha Excel preenchida com a mesma estrutura de grupos">
-        📊 Importar Excel
-        <input type="file" id="clImportFile" accept=".xlsx,.xls,.xlsm" style="display:none;" onchange="clImportExcel(this)">
-      </label>
-      <label class="btn" style="cursor:pointer;background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.4);color:#c084fc;" title="Importar checklist salvo em formato JSON">
-        📂 Importar JSON
-        <input type="file" id="clImportJSONFile" accept=".json" style="display:none;" onchange="clImportJSON(this)">
-      </label>
-      <button class="btn" onclick="showExcelStructureHelp()" title="Ver estrutura correta do Excel">
-        ❓ Guia Excel
-      </button>
-      <button class="btn" onclick="printChecklist()" title="Imprimir checklist ou salvar como PDF (Ctrl+P)" style="background:rgba(0,114,255,.12);border-color:rgba(0,114,255,.4);color:#60a5fa;">📄 Exportar PDF</button>
-      <button class="btn cl-edit-btn" id="clEditBtn" onclick="clEnableEdit()" style="display:none;">✎ Editar Checklist</button>
-      <button class="btn cl-del-checklist-btn" id="clDelBtn" onclick="clDeleteChecklist()" style="display:none;">🗑 Excluir Checklist</button>
-      <button class="btn" id="clSaveBtn" onclick="saveChecklist()">💾 Salvar Alterações</button>
-      <button class="btn btn-primary" id="clFinalizeBtn" onclick="finalizeChecklist()">✅ Finalizar</button>
-    </div>
-  </div>
-
-  <!-- BODY -->
-  <div class="cl-body" id="clBody">
-
-    <!-- TITLE BANNER -->
-    <div class="cl-xl-banner">
-      <span style="font-size:22px;">📋</span>
-      Check List de Auditoria de Produto
-    </div>
-
-    <!-- HEADER INFO (replicates Excel rows 4-7) -->
-    <div class="cl-xl-header-grid">
-      <div class="cl-xl-row">
-        <div class="cl-xl-label">Número do item</div>
-        <div class="cl-xl-field"><input class="cl-xl-input" id="clNumItem" placeholder="Ex: 001"></div>
-        <div class="cl-xl-label"># Relatório</div>
-        <div class="cl-xl-field"><input class="cl-xl-input" id="clReportNum" placeholder="Ex: PA-2026-001"></div>
-      </div>
-      <div class="cl-xl-row">
-        <div class="cl-xl-label">Descrição</div>
-        <div class="cl-xl-field cl-xl-wide"><input class="cl-xl-input" id="clDesc" placeholder="Descrição do produto"></div>
-        <div class="cl-xl-label">Auditor</div>
-        <div class="cl-xl-field"><input class="cl-xl-input" id="clAuditor" placeholder="Nome do auditor"></div>
-      </div>
-      <div class="cl-xl-row">
-        <div class="cl-xl-label">Família do Produto</div>
-        <div class="cl-xl-field">
-          <select class="cl-xl-input" id="clFamily">
-            <option>Engine/Radiator/AGS</option>
-            <option>Under hood</option>
-            <option>Under Carpet/Ducts</option>
-            <option>Interior/Trunk</option>
-            <option>Underbody/Wheelhouse</option>
-            <option>Engine/Firewall</option>
-            <option>Selective Catalytic Reduction (SCR)</option>
-            <option>Degas Bottle</option>
-          </select>
-        </div>
-        <div class="cl-xl-label">Data</div>
-        <div class="cl-xl-field"><input class="cl-xl-input" type="date" id="clDate"></div>
-      </div>
-      <div class="cl-xl-row">
-        <div class="cl-xl-label">Lote # / # Embalagem</div>
-        <div class="cl-xl-field"><input class="cl-xl-input" id="clLot" placeholder="Ex: LOT-2026-001"></div>
-        <div class="cl-xl-label">Planta</div>
-        <div class="cl-xl-field cl-xl-wide">
-          <select class="cl-xl-input" id="clPlant">
-            <option>Röchling Automotive do Brasil Ltda</option>
-            <option>Röchling Automotive USA LLP - DUNCAN</option>
-            <option>Röchling Automotive USA LLP - AKRON</option>
-            <option>Röchling Automotive Mexico S. de RL de CV</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- INFO BANNER -->
-    <div class="cl-xl-info-banner">ℹ️ <strong>Amostras:</strong> 0 = Aprovado (verde) · 1 = Reprovado (vermelho). &nbsp;|&nbsp; <strong>Valores Encontrados:</strong> Digite <strong style="color:#0a7a33;">OK</strong> → <span style="background:#0a7a33;color:#fff;padding:0 4px;border-radius:2px;">verde</span>, &nbsp;<strong style="color:#b52a2a;">NOK</strong> → <span style="background:#b52a2a;color:#fff;padding:0 4px;border-radius:2px;">vermelho</span>, &nbsp;ou valor numérico (comparado com LIC/LSC). &nbsp;A coluna <strong>Aprov?</strong> atualiza automaticamente.</div>
-
-    <!-- MAIN INSPECTION TABLE -->
-    <div class="cl-table-wrap">
-      <table class="cl-table" id="clTable">
-        <thead>
-          <tr class="cl-thead-main">
-            <th rowspan="2" style="width:26px;">#</th>
-            <th rowspan="2" class="left" style="min-width:180px;">Ponto de Inspeção</th>
-            <th rowspan="2" style="width:52px;">LIC</th>
-            <th rowspan="2" style="width:52px;">LSC</th>
-            <th rowspan="2" style="width:80px;min-width:80px;" title="A=20pts | B=10pts | C=5pts">
-              Categoria
-              <div style="font-size:8px;font-weight:400;opacity:.75;margin-top:2px;">A/B/C</div>
-            </th>
-            <th rowspan="2" style="min-width:120px;">Método de Inspeção</th>
-            <th colspan="5" style="background:rgba(0,198,255,.12);">Resultado ("0"=Aprovado ; "1"=Reprovado)</th>
-            <th rowspan="2" style="width:42px;">Val. Total</th>
-            <th rowspan="2" style="width:42px;">Val. Repr.</th>
-            <th colspan="5" style="min-width:260px;background:rgba(0,230,118,.10);">
-              Valores Encontrados
-              <div style="font-size:9px;font-weight:400;margin-top:4px;display:flex;justify-content:center;gap:6px;">
-                <span style="background:#0a7a33;color:#fff;padding:1px 6px;border-radius:3px;">✓ OK</span>
-                <span style="background:#b52a2a;color:#fff;padding:1px 6px;border-radius:3px;">✕ NOK</span>
-                <span style="background:rgba(255,179,0,.35);color:#7a4e00;padding:1px 6px;border-radius:3px;">⚠ S/limite</span>
-              </div>
-            </th>
-            <th rowspan="2" style="width:72px;">APROVADO?</th>
-            <th rowspan="2" class="cl-no-print" style="width:28px;"></th>
-          </tr>
-          <tr class="cl-thead-samples">
-            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
-            <th style="background:rgba(0,230,118,.10);">V1</th>
-            <th style="background:rgba(0,230,118,.10);">V2</th>
-            <th style="background:rgba(0,230,118,.10);">V3</th>
-            <th style="background:rgba(0,230,118,.10);">V4</th>
-            <th style="background:rgba(0,230,118,.10);">V5</th>
-          </tr>
-        </thead>
-        <tbody id="clTableBody">
-          <!-- rendered by JS -->
-        </tbody>
-        <tfoot id="clTableFoot">
-          <!-- rendered by JS -->
-        </tfoot>
-      </table>
-    </div>
-
-    <!-- SCORE + CLASSIFICATION SECTION -->
-    <div class="cl-xl-two-col">
-      <!-- Left: classification table (mirrors Excel rows 65-68) -->
-      <div class="cl-xl-section" style="flex:1.2;">
-        <div class="cl-xl-section-title">Classificação de Pontuação</div>
-        <table class="cl-class-table">
-          <thead>
-            <tr><th>Pontuação</th><th>Classificação</th><th>Cat.</th><th>Penalidade/item</th></tr>
-          </thead>
-          <tbody id="clClassTable">
-            <tr id="clTierExcellent" style="background:rgba(0,230,118,.1)"><td>100</td><td>🏆 Qualidade Excepcional</td><td><span class="cl-cat-badge cl-cat-A">A</span></td><td style="text-align:center;font-weight:700;">20 pts</td></tr>
-            <tr id="clTierAcceptable" style="background:rgba(0,198,255,.1)"><td>90 – 99</td><td>✅ Qualidade Aceitável</td><td><span class="cl-cat-badge cl-cat-B">B</span></td><td style="text-align:center;font-weight:700;">10 pts</td></tr>
-            <tr id="clTierRisk" style="background:rgba(255,179,0,.1)"><td>70 – 89</td><td>⚠️ Permissível sob Derroga</td><td><span class="cl-cat-badge cl-cat-C">C</span></td><td style="text-align:center;font-weight:700;">5 pts</td></tr>
-            <tr id="clTierFail" style="background:rgba(255,61,87,.1)"><td>&lt; 70</td><td>❌ Qualidade não aceitável</td><td>—</td><td style="text-align:center;color:var(--danger);font-weight:700;">Reprovado</td></tr>
-          </tbody>
-        </table>
-        <div style="margin-top:12px;font-size:10px;color:var(--text-secondary);line-height:1.5;">
-          <strong style="color:var(--text);">Definição de Categoria:</strong><br>
-          <strong>A</strong> — Não atendimento de regulamentos legais/segurança; 100% detectável pelo cliente.<br>
-          <strong>B</strong> — Função restrita percebida aleatoriamente; impacta na montagem.<br>
-          <strong>C</strong> — Pequenos defeitos de cor/encaixe; passíveis de retrabalho.
-        </div>
-      </div>
-      <!-- Right: score card -->
-      <div class="cl-xl-section" style="flex:1;text-align:center;">
-        <div class="cl-xl-section-title">Pontuação Total</div>
-        <div class="cl-score-card" style="margin:0;">
-          <div class="cl-score-value" id="clScoreValue" style="font-size:64px;">—</div>
-          <div class="cl-score-label" id="clScoreLabel">Preencha a tabela para calcular</div>
-        </div>
-
-        <!-- Breakdown por categoria -->
-        <div style="margin-top:16px;">
-          <table style="width:100%;border-collapse:collapse;font-size:11px;text-align:left;">
-            <thead>
-              <tr style="border-bottom:1px solid var(--border);">
-                <th style="padding:5px 8px;color:var(--text-secondary);font-weight:600;">Cat.</th>
-                <th style="padding:5px 8px;color:var(--text-secondary);font-weight:600;">Penalidade</th>
-                <th style="padding:5px 8px;color:var(--text-secondary);font-weight:600;text-align:center;">Reprov.</th>
-                <th style="padding:5px 8px;color:var(--danger);font-weight:700;text-align:right;">Val. Deduzido</th>
-              </tr>
-            </thead>
-            <tbody id="clCatBreakdown">
-              <tr><td colspan="4" style="padding:8px;color:var(--border);text-align:center;font-size:10px;">—</td></tr>
-            </tbody>
-            <tfoot id="clCatBreakdownFoot" style="border-top:2px solid var(--border);"></tfoot>
-          </table>
-        </div>
-
-        <!-- Contadores gerais -->
-        <div style="margin-top:10px;font-size:11px;color:var(--text-secondary);display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;text-align:left;">
-          <div>Itens avaliados: <strong id="clCountEval">—</strong></div>
-          <div>Amostras totais: <strong id="clCountSamples">—</strong></div>
-          <div>Itens reprovados: <strong id="clCountFail" style="color:var(--danger);">—</strong></div>
-          <div>Val. reprovação: <strong id="clValReprova" style="color:var(--danger);">—</strong></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DECISÃO + QRQC -->
-    <div class="cl-xl-section">
-      <div class="cl-xl-section-title">Resultado da Auditoria</div>
-
-      <!-- Banner dinâmico do resultado -->
-      <div id="clResultBanner" style="display:none;padding:12px 18px;border-radius:10px;margin-bottom:14px;font-weight:700;font-size:14px;text-align:center;transition:all .3s;"></div>
-
-      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-        <button class="cl-decision-btn" id="decAprovado" onclick="setDecision('Aprovado')">
-          <div style="font-size:26px;">✅</div>
-          <div style="font-weight:700;margin-top:4px;">Aprovado</div>
-          <div style="font-size:10px;opacity:.7;margin-top:2px;">Score = 100</div>
-        </button>
-        <button class="cl-decision-btn" id="decCondicional" onclick="setDecision('Aprovado Condicionalmente')">
-          <div style="font-size:26px;">⚠️</div>
-          <div style="font-weight:700;margin-top:4px;">Aprovado Condicionalmente</div>
-          <div style="font-size:10px;opacity:.7;margin-top:2px;">Score 70–99</div>
-        </button>
-        <button class="cl-decision-btn" id="decReprovado" onclick="setDecision('Reprovado')">
-          <div style="font-size:26px;">❌</div>
-          <div style="font-weight:700;margin-top:4px;">Reprovado</div>
-          <div style="font-size:10px;opacity:.7;margin-top:2px;">Score &lt; 70</div>
-        </button>
-      </div>
-      <div class="form-group">
-        <label class="form-label">
-          Comentários / Ações no QRQC
-          <span id="clCommentsRequired" style="color:var(--danger);display:none;"> ★ Obrigatório para Condicional/Reprovado</span>
-        </label>
-        <textarea class="form-input" id="clComments" rows="3" placeholder="Descreva as ações corretivas, observações técnicas ou referências ao QRQC..."></textarea>
-      </div>
-    </div>
-
-    <!-- PARTICIPANTES (mirrors Excel rows 106-118) -->
-    <div class="cl-xl-section">
-      <div class="cl-xl-section-title">Participantes da Auditoria</div>
-      <table class="cl-part-table">
-        <thead>
-          <tr>
-            <th style="width:200px;">Função</th>
-            <th>Nome</th>
-            <th>Assinatura Digital</th>
-            <th style="width:150px;">Data</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="font-weight:600;color:var(--text);">Auditor de Qualidade</td>
-            <td><input class="cl-xl-input" id="clAuditorName" placeholder="Nome completo"></td>
-            <td><input class="cl-xl-input" id="clAuditorSig" placeholder="Assinatura digital"></td>
-            <td><input class="cl-xl-input" type="date" id="clAuditorDate"></td>
-          </tr>
-          <tr>
-            <td style="font-weight:600;color:var(--text);">Co-Auditor</td>
-            <td><input class="cl-xl-input" id="clCoAuditorName" placeholder="Nome completo"></td>
-            <td><input class="cl-xl-input" id="clCoAuditorSig" placeholder="Assinatura digital"></td>
-            <td><input class="cl-xl-input" type="date" id="clCoAuditorDate"></td>
-          </tr>
-          <tr>
-            <td style="font-weight:600;color:var(--text);">Coordenador de Qualidade</td>
-            <td><input class="cl-xl-input" id="clCoordName" placeholder="Nome completo"></td>
-            <td><input class="cl-xl-input" id="clCoordSig" placeholder="Assinatura digital"></td>
-            <td><input class="cl-xl-input" type="date" id="clCoordDate"></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </div><!-- /cl-body -->
-
-  <!-- FOOTER -->
-  <div class="cl-footer">
-    <div style="flex:1;font-size:12px;color:var(--text-secondary);" id="clFooterInfo">Preencha o checklist e clique em Finalizar.</div>
-    <button class="btn" onclick="closeChecklist()">✕ Fechar</button>
-    <button class="btn btn-danger" id="clClearBtn" onclick="clClearForm()">🔄 Limpar Formulário</button>
-    <button class="btn" id="clSaveBtnFooter" onclick="saveChecklist()">💾 Salvar Rascunho</button>
-    <button class="btn btn-primary" id="clFinalizeBtnFooter" onclick="finalizeChecklist()">✅ Finalizar Auditoria</button>
-  </div>
-</div>
 
 
 <script type="module">
@@ -1878,379 +1599,11 @@ function switchView(view, el) {
     const el = document.getElementById('view-' + v);
     if (el) el.style.display = v === view ? '' : 'none';
   });
-  const titles = {dashboard:'Dash. Auditoria', gantt:'Auditoria', analytics:'Analytics', risk:'Risk Assessment', layout:'Cronograma de Inspeção de Layout', layoutdash:'Dashboard — Inspeção de Layout'};
+  const titles = {layout:'Cronograma de Inspeção de Layout', layoutdash:'Dashboard — Inspeção de Layout'};
   document.getElementById('viewTitle').textContent = titles[view] || view;
-  if (view === 'analytics') renderAnalytics();
-  if (view === 'gantt') renderGantt();
-  if (view === 'dashboard') renderCharts();
-  if (view === 'risk') renderRisk();
   if (view === 'layout') { updateLayoutFilterOptions(); filterLayout(); }
   if (view === 'layoutdash') renderLayoutDash();
   updateTopbarForView(view);
-}
-
-// ===== DASHBOARD =====
-function renderMetrics() {
-  atualizarAtrasos(); // garante que auditorias agendadas e não realizadas já apareçam como "Atrasado"
-  const total  = state.filtered.length;
-  const approv = state.filtered.filter(a => a.status === 'Aprovado').length;
-  const reprov = state.filtered.filter(a => a.status === 'Reprovado').length;
-  const pend   = state.filtered.filter(a => a.status === 'Pendente').length;
-  const pct    = total > 0 ? Math.round((approv/total)*100) : 0;
-  document.getElementById('metricsGrid').innerHTML = `
-    <div class="metric-card"><div class="metric-icon blue">📋</div><div class="metric-value">${total}</div><div class="metric-label">Total Auditorias</div></div>
-    <div class="metric-card"><div class="metric-icon green">✅</div><div class="metric-value">${approv}</div><div class="metric-label">Aprovadas</div></div>
-    <div class="metric-card"><div class="metric-icon red">❌</div><div class="metric-value">${reprov}</div><div class="metric-label">Reprovadas</div></div>
-    <div class="metric-card"><div class="metric-icon orange">🕐</div><div class="metric-value">${pend}</div><div class="metric-label">Pendentes</div></div>
-    <div class="metric-card"><div class="metric-icon purple">🎯</div><div class="metric-value">${pct}<span style="font-size:16px;font-weight:400;">%</span></div><div class="metric-label">Taxa Aprovação</div></div>
-  `;
-}
-
-function renderCharts() {
-  atualizarAtrasos(); // garante que os gráficos reflitam auditorias que viraram "Atrasado" automaticamente
-  const {text, grid} = getChartColors();
-  destroyCharts('monthly','status','dashRiskChart','client','alertMonthChart','alertClientChart');
-
-  const monthly = Array(12).fill(0);
-  auditOnly().forEach(a => a.months.forEach((v,i) => { if(v>0) monthly[i]++; }));
-
-  state.charts.monthly = new Chart('monthlyChart', {
-    type: 'bar',
-    data: {
-      labels: MONTHS,
-      datasets:[{
-        data: monthly,
-        backgroundColor: monthly.map(v => v>0 ? 'rgba(0,198,255,.75)' : 'rgba(255,255,255,.05)'),
-        borderRadius: 7,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {title:([i]) => MONTHS[i.dataIndex], label: ctx => `${ctx.raw} auditoria(s)`}}
-      },
-      scales: {
-        y:{beginAtZero:true,grid:{color:grid},ticks:{color:text,stepSize:1}},
-        x:{grid:{display:false},ticks:{color:text}}
-      },
-      onClick(e, els) {
-        if (!els.length) return;
-        const idx = els[0].index;
-        applyChartFilter('month', String(idx));
-        notify('Filtro aplicado: ' + MONTHS[idx]);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-
-  const appr = auditOnly().filter(a => a.status==='Aprovado').length;
-  const repr = auditOnly().filter(a => a.status==='Reprovado').length;
-  const pend = auditOnly().filter(a => a.status==='Pendente').length;
-  const statusLabelsMap = ['Aprovado','Reprovado','Pendente'];
-  state.charts.status = new Chart('statusChart', {
-    type: 'doughnut',
-    data: {
-      labels: statusLabelsMap,
-      datasets:[{
-        data:[appr,repr,pend],
-        backgroundColor:['rgba(0,230,118,.8)','rgba(255,61,87,.8)','rgba(255,179,0,.85)'],
-        borderWidth:0, hoverOffset:8
-      }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{color:text,padding:16,usePointStyle:true}}},
-      cutout:'72%',
-      onClick(e, els) {
-        if (!els.length) return;
-        const val = statusLabelsMap[els[0].index];
-        applyChartFilter('status', val);
-        notify('Filtro aplicado: ' + val);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-
-  const rc = {Baixo:0, Médio:0, Alto:0, Crítico:0};
-  auditOnly().forEach(a => rc[a.risk] = (rc[a.risk]||0)+1);
-  const rcLabels = Object.keys(rc);
-  state.charts.dashRiskChart = new Chart('dashRiskChart', {
-    type: 'bar',
-    data: {
-      labels: rcLabels,
-      datasets:[{
-        data: Object.values(rc),
-        backgroundColor:['rgba(0,230,118,.8)','rgba(255,179,0,.8)','rgba(255,108,47,.8)','rgba(255,61,87,.8)'],
-        borderRadius:7
-      }]
-    },
-    options: {
-      indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{x:{beginAtZero:true,grid:{color:grid},ticks:{color:text,stepSize:1}},y:{grid:{display:false},ticks:{color:text}}},
-      onClick(e, els) {
-        if (!els.length) return;
-        const val = rcLabels[els[0].index];
-        applyChartFilter('risk', val);
-        notify('Filtro aplicado: Risco ' + val);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-
-  const cc = {};
-  auditOnly().forEach(a => cc[a.client] = (cc[a.client]||0)+1);
-  const sorted = Object.entries(cc).sort((a,b) => b[1]-a[1]).slice(0,6);
-  state.charts.client = new Chart('clientChart', {
-    type: 'bar',
-    data: {
-      labels: sorted.map(c=>c[0]),
-      datasets:[{data:sorted.map(c=>c[1]), backgroundColor:'rgba(0,198,255,.7)', borderRadius:7}]
-    },
-    options: {
-      indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{x:{beginAtZero:true,grid:{color:grid},ticks:{color:text,stepSize:1}},y:{grid:{display:false},ticks:{color:text}}},
-      onClick(e, els) {
-        if (!els.length) return;
-        const val = sorted[els[0].index][0];
-        applyChartFilter('client', val);
-        notify('Filtro aplicado: ' + val);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-
-  const alertByMonth = Array(12).fill(0);
-  auditOnly().forEach(a => a.months.forEach((v,i) => { if(v === 4) alertByMonth[i]++; }));
-  const totalAlerts = alertByMonth.reduce((s,x) => s+x, 0);
-  const badge = document.getElementById('alertTotBadge');
-  if (badge) badge.textContent = totalAlerts > 0 ? totalAlerts + ' atrasado' + (totalAlerts > 1 ? 's' : '') : '—';
-
-  state.charts.alertMonthChart = new Chart('alertMonthChart', {
-    type: 'bar',
-    data: {
-      labels: MONTHS,
-      datasets:[{
-        data: alertByMonth,
-        backgroundColor: alertByMonth.map(v => v > 0 ? 'rgba(255,61,87,.8)' : 'rgba(255,255,255,.05)'),
-        borderRadius: 6, borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {legend: {display: false}},
-      scales: {
-        y:{beginAtZero:true,grid:{color:grid},ticks:{color:text,stepSize:1}},
-        x:{grid:{display:false},ticks:{color:text}}
-      },
-      onClick(e, els) {
-        if (!els.length) return;
-        const idx = els[0].index;
-        applyChartFilter('month', String(idx), {id:'monthStatusFilter', value:'4'});
-        notify('Filtro: Atrasados em ' + MONTHS[idx]);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-
-  const alertByClient = {};
-  auditOnly().forEach(a => {
-    const hasAlert = a.months.some(v => v === 4);
-    if (hasAlert) alertByClient[a.client] = (alertByClient[a.client] || 0) + 1;
-  });
-  const sortedAlert = Object.entries(alertByClient).sort((a,b) => b[1]-a[1]).slice(0, 8);
-
-  state.charts.alertClientChart = new Chart('alertClientChart', {
-    type: 'bar',
-    data: {
-      labels: sortedAlert.map(c => c[0]),
-      datasets:[{data: sortedAlert.map(c => c[1]), backgroundColor: 'rgba(255,108,47,.8)', borderRadius: 6}]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: {legend: {display: false}},
-      scales: {
-        x:{beginAtZero:true,grid:{color:grid},ticks:{color:text,stepSize:1}},
-        y:{grid:{display:false},ticks:{color:text,font:{size:11}}}
-      },
-      onClick(e, els) {
-        if (!els.length) return;
-        const val = sortedAlert[els[0].index][0];
-        applyChartFilter('client', val, {id:'monthStatusFilter', value:'4'});
-        notify('Filtro: Atrasados — ' + val);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-}
-
-function applyChartFilter(filterType, value, extraFilter) {
-  const ganttNav = document.querySelector('.nav-item[onclick*="gantt"]');
-  if (ganttNav) {
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    ganttNav.classList.add('active');
-    ['dashboard','gantt','analytics','risk'].forEach(v => {
-      const el = document.getElementById('view-' + v);
-      if (el) el.style.display = v === 'gantt' ? '' : 'none';
-    });
-    document.getElementById('viewTitle').textContent = 'Auditoria';
-  }
-  clearFilters(true);
-  setTimeout(() => {
-    if (filterType === 'client') {
-      const el = document.getElementById('clientFilter');
-      if (el) el.value = value;
-    } else if (filterType === 'risk') {
-      const el = document.getElementById('riskFilter');
-      if (el) el.value = value;
-    } else if (filterType === 'status') {
-      const el = document.getElementById('statusFilter');
-      if (el) el.value = value;
-    } else if (filterType === 'month') {
-      const el = document.getElementById('monthFilter');
-      if (el) el.value = value;
-    } else if (filterType === 'monthStatus') {
-      const el = document.getElementById('monthStatusFilter');
-      if (el) el.value = value;
-    }
-    if (extraFilter) {
-      const el = document.getElementById(extraFilter.id);
-      if (el) el.value = extraFilter.value;
-    }
-    filterGantt();
-  }, 30);
-}
-
-// ===== GANTT =====
-function updateFilterOptions() {
-  const clients  = [...new Set(auditOnly().map(a => a.client))].sort();
-  const families = [...new Set(auditOnly().map(a => a.family).filter(Boolean))].sort();
-
-  const clEl = document.getElementById('clientFilter');
-  if (clEl) {
-    const cur = clEl.value;
-    clEl.innerHTML = '<option value="">Todos Clientes</option>' + clients.map(c => `<option>${c}</option>`).join('');
-    if (cur && clients.includes(cur)) clEl.value = cur;
-  }
-
-  const ff = document.getElementById('familyFilter');
-  if (ff) {
-    const cur = ff.value;
-    ff.innerHTML = '<option value="">Todas Famílias</option>' + families.map(f => `<option>${f}</option>`).join('');
-    if (cur && families.includes(cur)) ff.value = cur;
-  }
-}
-
-function filterGantt() {
-  const s   = (document.getElementById('searchInput')?.value || '').toLowerCase();
-  const cl  = document.getElementById('clientFilter')?.value || '';
-  const ri  = document.getElementById('riskFilter')?.value || '';
-  const st  = document.getElementById('statusFilter')?.value || '';
-  const fa  = document.getElementById('familyFilter')?.value || '';
-  const mo  = document.getElementById('monthFilter')?.value;
-  const mst = document.getElementById('monthStatusFilter')?.value || '';
-
-  state.filtered = auditOnly().filter(a => {
-    const ms = !s || [a.sap, a.pn, a.client, a.desc, a.resp, a.family].some(x => (x||'').toLowerCase().includes(s));
-    if (!ms) return false;
-    if (cl && a.client !== cl) return false;
-    if (ri && a.risk   !== ri) return false;
-    if (st && a.status !== st) return false;
-    if (fa && a.family !== fa) return false;
-    if (mo !== '' && mo !== undefined && mo !== null) {
-      const idx = parseInt(mo);
-      const monthVal = a.months[idx] ?? 0;
-      if (mst === 'active') return monthVal > 0;
-      if (mst === 'empty')  return monthVal === 0;
-      if (mst !== '')       return monthVal === parseInt(mst);
-      return monthVal > 0;
-    } else if (mst !== '') {
-      if (mst === 'active') return a.months.some(v => v > 0);
-      if (mst === 'empty')  return a.months.every(v => v === 0);
-      return a.months.some(v => v === parseInt(mst));
-    }
-    return true;
-  });
-  renderGantt();
-  renderMetrics();
-  updateFilterBadge();
-  // mantém as telas de layout sincronizadas (mesma base de dados)
-  if (typeof filterLayout === 'function') filterLayout();
-  if (typeof renderLayoutDash === 'function') renderLayoutDash();
-}
-
-function clearFilters(silently) {
-  ['searchInput','clientFilter','riskFilter','statusFilter','familyFilter','monthFilter','monthStatusFilter'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  if (!silently) filterGantt();
-}
-
-function updateFilterBadge() {
-  const active = ['clientFilter','riskFilter','statusFilter','familyFilter','monthFilter','monthStatusFilter']
-    .filter(id => { const el = document.getElementById(id); return el && el.value !== ''; }).length
-    + (document.getElementById('searchInput')?.value ? 1 : 0);
-  const btn = document.querySelector('[onclick="clearFilters()"]');
-  if (btn) {
-    btn.style.background  = active > 0 ? 'rgba(0,198,255,.15)' : '';
-    btn.style.borderColor = active > 0 ? 'var(--accent)' : '';
-    btn.style.color       = active > 0 ? 'var(--accent)' : '';
-    btn.textContent = active > 0 ? `✕ Limpar (${active})` : '✕ Limpar';
-  }
-}
-
-function renderGantt() {
-  atualizarAtrasos(); // garante que as barras do gantt já apareçam como "Atrasado" quando aplicável
-  document.getElementById('ganttHead').innerHTML = MONTHS.map(m => `<div class="gantt-month-label">${m}</div>`).join('');
-  document.getElementById('ganttCount').textContent = `${state.filtered.length} de ${auditOnly().length} registros`;
-  document.getElementById('ganttRows').innerHTML = state.filtered.map(a => {
-    const rColor  = RISK_COLORS[a.risk] || 'var(--accent)';
-    return `
-      <div class="gantt-row" onclick="viewAudit(${a.id})">
-        <div class="gantt-info">
-          <div class="gantt-item-title">
-            ${a.sap}
-          </div>
-          <div class="gantt-item-sub">
-            <span class="badge badge-client" style="background:${rColor}20;color:${rColor};">${a.client}</span>
-            <span>${a.desc}</span>
-          </div>
-          <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="badge ${a.status==='Aprovado'?'badge-green':a.status==='Pendente'?'badge-yellow':'badge-red'}">${a.status}</span>
-            ${(a.checklist?.completedAt || (a.checklistsByMonth && Object.values(a.checklistsByMonth).some(c=>c?.completedAt))) ? '<span class="cl-done-badge" style="font-size:10px;background:rgba(0,230,118,.15);color:var(--success);padding:1px 8px;border-radius:10px;">✓ Checklist</span>' : ''}
-          </div>
-        </div>
-        <div class="gantt-bars">
-          ${a.months.map((v,i) => {
-            const cls     = ['bar-empty','bar-scheduled','bar-completed','bar-inprogress','bar-alert'][v] || 'bar-empty';
-            const icon    = ['','📅','✓','⚡','⚠'][v] || '';
-            const active  = v > 0;
-            const hasCl = !!(a.checklistsByMonth && a.checklistsByMonth[i]?.completedAt);
-            const execPill = active ? `<button class="gantt-bar-exec" title="${hasCl?'Ver / Editar Checklist':'Executar Checklist em '+MONTHS[i]}"
-              onclick="event.stopPropagation();openChecklist(${a.id},${i})">${hasCl?'📋':'▶'}</button>` : '';
-            if (active) {
-              return `<div class="gantt-bar ${cls}" style="position:relative;" onclick="event.stopPropagation();openChecklist(${a.id},${i})">
-                ${execPill}
-                ${icon}
-                <div class="gantt-tooltip">
-                  <div class="gantt-tooltip-title">${MONTHS[i]}: ${STATUS_LABELS[v]||'Não agendado'}</div>
-                  <div style="font-size:10px;color:var(--accent);margin-top:3px;">▶ Clique para ${hasCl?'ver':'executar'} o checklist</div>
-                </div>
-              </div>`;
-            }
-            return `<div class="gantt-bar ${cls}" onclick="event.stopPropagation();toggleMonth(${a.id},${i})">
-              ${icon}
-              <div class="gantt-tooltip"><div class="gantt-tooltip-title">${MONTHS[i]}: ${STATUS_LABELS[v]||'Não agendado'}</div></div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`;
-  }).join('');
 }
 
 function toggleMonth(id, month) {
@@ -2259,9 +1612,8 @@ function toggleMonth(id, month) {
     a.months[month] = (a.months[month]+1) % 5;
     saveAudits(id);
     state.filtered = auditOnly();
-    filterGantt();
-    renderMetrics();
-    renderCharts();
+    if (typeof filterLayout === 'function') filterLayout();
+    if (typeof renderLayoutDash === 'function') renderLayoutDash();
     notify('Status de ' + MONTHS[month] + ' atualizado');
   }
 }
@@ -2305,10 +1657,9 @@ function saveNew() {
   });
   saveAudits(newId);
   state.filtered = auditOnly();
-  updateFilterOptions();
-  filterGantt();
-  renderMetrics();
-  renderCharts();
+  updateLayoutFilterOptions();
+  if (typeof filterLayout === 'function') filterLayout();
+  if (typeof renderLayoutDash === 'function') renderLayoutDash();
   closeModal('newModal');
   updateLayoutFilterOptions();
   filterLayout();
@@ -2350,10 +1701,9 @@ function saveEdit() {
   a.months = getMonths('e');
   saveAudits(a.id);
   state.filtered = auditOnly();
-  updateFilterOptions();
-  filterGantt();
-  renderMetrics();
-  renderCharts();
+  updateLayoutFilterOptions();
+  if (typeof filterLayout === 'function') filterLayout();
+  if (typeof renderLayoutDash === 'function') renderLayoutDash();
   closeModal('editModal');
   notify('Auditoria ' + a.sap + ' atualizada!');
 }
@@ -2369,10 +1719,9 @@ function deleteAudit() {
   }
   saveAudits();
   state.filtered = auditOnly();
-  updateFilterOptions();
-  filterGantt();
-  renderMetrics();
-  renderCharts();
+  updateLayoutFilterOptions();
+  if (typeof filterLayout === 'function') filterLayout();
+  if (typeof renderLayoutDash === 'function') renderLayoutDash();
   closeModal('editModal');
   notify('Auditoria excluída', 'warn');
 }
@@ -2607,10 +1956,9 @@ function importBackupJSON(file) {
       state.audits   = list;
       state.filtered = auditOnly();
       try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(err) {}
-      updateFilterOptions();
-      renderMetrics();
-      renderCharts();
-      renderGantt();
+      updateLayoutFilterOptions();
+      if (typeof renderLayoutDash === 'function') renderLayoutDash();
+      if (typeof filterLayout === 'function') filterLayout();
 
       if (window.CloudSync && window.CloudSync.ready && window.CloudSync.replaceAll) {
         setCloudStatus('saving');
@@ -2628,251 +1976,6 @@ function importBackupJSON(file) {
   };
   reader.readAsText(file);
 }
-
-// ===== IMPORT CHECKLIST JSON =====
-function clImportJSON(input) {
-  const file = input?.files?.[0];
-  if (!file) return;
-  if (!file.name.endsWith('.json')) { notify('Selecione um arquivo .json válido', 'error'); return; }
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const raw = JSON.parse(e.target.result);
-      // Suporta: checklist salvo direto (objeto com groups) ou backup completo de auditoria
-      const cl = raw.checklist || raw;
-      if (!cl || !Array.isArray(cl.groups)) {
-        notify('❌ JSON inválido: não contém dados de checklist (falta "groups")', 'error');
-        input.value = '';
-        return;
-      }
-      if (clReadonly) { notify('⚠️ Checklist finalizado. Clique em "Editar Checklist" primeiro.', 'warn'); return; }
-      if (!confirm(`Importar checklist do JSON "${file.name}"?\n\nOs dados atuais serão SUBSTITUÍDOS.\n\nDeseja continuar?`)) { input.value=''; return; }
-
-      // Restaura campos de cabeçalho
-      const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
-      set('clNumItem',       cl.numItem);
-      set('clReportNum',     cl.reportNumber);
-      set('clDate',          cl.date);
-      set('clAuditor',       cl.auditor);
-      set('clLot',           cl.lot);
-      set('clPlant',         cl.plant);
-      set('clComments',      cl.comments);
-      set('clAuditorName',   cl.auditorName);
-      set('clAuditorSig',    cl.auditorSig);
-      set('clAuditorDate',   cl.auditorDate);
-      set('clCoAuditorName', cl.coAuditorName);
-      set('clCoAuditorSig',  cl.coAuditorSig);
-      set('clCoAuditorDate', cl.coAuditorDate);
-      set('clCoordName',     cl.coordName);
-      set('clCoordSig',      cl.coordSig);
-      set('clCoordDate',     cl.coordDate);
-      if (cl.family) set('clFamily', cl.family);
-
-      // Restaura decisão
-      clDecision = cl.decision || '';
-      _clRowSeq  = cl._rowSeq  || 0;
-
-      // Restaura grupos
-      clGroups = cl.groups.map(sg => ({
-        id:    sg.id,
-        label: CL_GROUPS_META.find(m => m.id === sg.id)?.label || sg.label,
-        items: sg.items.map(it => ({
-          ...it,
-          samples: (it.samples || []).concat(Array(NUM_SAMPLES)).slice(0, NUM_SAMPLES).map(s => (s === undefined ? null : s)),
-        })),
-      }));
-
-      updateDecisionUI();
-      renderChecklistTable();
-      recalcChecklist();
-      input.value = '';
-      notify('✅ Checklist importado do JSON com sucesso!');
-    } catch(err) {
-      notify('❌ Erro ao ler JSON: ' + (err.message || err), 'error');
-      input.value = '';
-    }
-  };
-  reader.readAsText(file);
-}
-
-// ===== ANALYTICS =====
-function renderAnalytics() {
-  const {text, grid} = getChartColors();
-  destroyCharts('trend','forecast','approval');
-
-  const total = auditOnly().length;
-  const appr  = auditOnly().filter(a => a.status==='Aprovado').length;
-  const pct   = total > 0 ? Math.round((appr/total)*100) : 0;
-  const alerts   = auditOnly().filter(a => a.months.includes(4)).length;
-  const alertPct = total > 0 ? Math.round((alerts/total)*100) : 0;
-  const withFile = auditOnly().filter(a => Object.values(a.files||{}).some(f=>f?.name)).length;
-  const filePct  = total > 0 ? Math.round((withFile/total)*100) : 0;
-
-  const kpis = [
-    {label:'Taxa de Aprovação',    val:pct,      color:'#00e676'},
-    {label:'Risco de Alerta',      val:alertPct, color:'#ff3d57'},
-    {label:'Documentação Anexada', val:filePct,  color:'#00c6ff'},
-  ];
-  document.getElementById('analyticsKpis').innerHTML = kpis.map(k => `
-    <div class="kpi-card">
-      <div class="kpi-ring">
-        <svg width="80" height="80" viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" stroke-width="7"/>
-          <circle cx="40" cy="40" r="32" fill="none" stroke="${k.color}" stroke-width="7"
-            stroke-dasharray="${2*Math.PI*32}" stroke-dashoffset="${2*Math.PI*32*(1-k.val/100)}"
-            stroke-linecap="round"/>
-        </svg>
-        <div class="kpi-ring-val" style="color:${k.color};">${k.val}%</div>
-      </div>
-      <div class="kpi-name">${k.label}</div>
-    </div>`).join('');
-
-  const monthly = Array(12).fill(0);
-  auditOnly().forEach(a => a.months.forEach((v,i) => { if(v>0) monthly[i]++; }));
-  const avg = monthly.slice(0,6).reduce((s,x) => s+x, 0) / 6;
-  const forecast = monthly.map((v,i) => i < 6 ? v : Math.round(avg));
-
-  state.charts.trend = new Chart('trendChart', {
-    type: 'line',
-    data: {labels:MONTHS, datasets:[{label:'Realizado', data:monthly, borderColor:'rgba(0,198,255,1)', backgroundColor:'rgba(0,198,255,.1)', tension:.4, fill:true, pointBackgroundColor:'rgba(0,198,255,1)', pointRadius:4, pointHoverRadius:6}]},
-    options: {responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:text}}}, scales:{y:{beginAtZero:true,grid:{color:grid},ticks:{color:text,stepSize:1}},x:{grid:{display:false},ticks:{color:text}}}}
-  });
-
-  state.charts.forecast = new Chart('forecastChart', {
-    type: 'line',
-    data: {labels:MONTHS, datasets:[
-      {label:'Realizado', data:monthly, borderColor:'rgba(0,198,255,1)', backgroundColor:'transparent', tension:.4, pointRadius:4},
-      {label:'Projeção',  data:forecast, borderColor:'rgba(0,230,118,1)', backgroundColor:'transparent', borderDash:[6,4], tension:.4, pointRadius:3, pointStyle:'triangle'}
-    ]},
-    options: {responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:text,usePointStyle:true}}}, scales:{y:{beginAtZero:true,grid:{color:grid},ticks:{color:text,stepSize:1}},x:{grid:{display:false},ticks:{color:text}}}}
-  });
-
-  const clients  = [...new Set(auditOnly().map(a => a.client))];
-  const appRates = clients.map(c => {
-    const all = auditOnly().filter(a => a.client === c);
-    const ap  = all.filter(a => a.status === 'Aprovado').length;
-    return all.length > 0 ? Math.round((ap/all.length)*100) : 0;
-  });
-  state.charts.approval = new Chart('approvalChart', {
-    type: 'bar',
-    data: {
-      labels: clients,
-      datasets:[{
-        label:'% Aprovação',
-        data: appRates,
-        backgroundColor: appRates.map(v => v>=80 ? 'rgba(0,230,118,.8)' : v>=50 ? 'rgba(255,179,0,.8)' : 'rgba(255,61,87,.8)'),
-        borderRadius: 8
-      }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true,max:100,grid:{color:grid},ticks:{color:text,callback:v=>v+'%'}},x:{grid:{display:false},ticks:{color:text}}},
-      onClick(e, els) {
-        if (!els.length) return;
-        const val = clients[els[0].index];
-        applyChartFilter('client', val);
-        notify('Filtro aplicado: ' + val);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-}
-
-// ===== RISK =====
-const RISK_DATA = [
-  {produto:'Cowl Grilles',           familia:'Sob o capô',          complexidade:3,reclamacoes:1,csr:0,score:4},
-  {produto:'Guide Rails',            familia:'Sob o capô',          complexidade:3,reclamacoes:1,csr:0,score:4},
-  {produto:'Baffles / Defletores',   familia:'Sob o capô',          complexidade:2,reclamacoes:1,csr:0,score:3},
-  {produto:'Coletores de admissão',  familia:'Motor/Radiador/AGS',  complexidade:4,reclamacoes:2,csr:1,score:7},
-  {produto:'Filtro de ar',           familia:'Motor/Radiador/AGS',  complexidade:3,reclamacoes:1,csr:1,score:5},
-  {produto:'Duto de ar',             familia:'Motor/Radiador/AGS',  complexidade:4,reclamacoes:2,csr:1,score:7},
-  {produto:'Reservatórios',          familia:'Motor/Radiador/AGS',  complexidade:4,reclamacoes:1,csr:1,score:6},
-  {produto:'Tampa/Módulo combustível',familia:'Motor/Radiador/AGS', complexidade:4,reclamacoes:1,csr:1,score:6},
-  {produto:'Tubo pescador de óleo',  familia:'Motor/Radiador/AGS',  complexidade:4,reclamacoes:0,csr:0,score:4},
-];
-
-function getRiskLevel(score) {
-  if (score >= 5) return {label:'Crítico', color:'var(--danger)',  badge:'badge-red'};
-  if (score >= 3) return {label:'Alto',    color:'var(--orange)',  badge:'badge-red'};
-  return               {label:'Baixo',   color:'var(--success)', badge:'badge-green'};
-}
-
-function renderRisk() {
-  const critico = RISK_DATA.filter(r => r.score >= 5).length;
-  const alto    = RISK_DATA.filter(r => r.score >= 3 && r.score < 5).length;
-  const baixo   = RISK_DATA.filter(r => r.score < 3).length;
-  document.getElementById('riskCountCritico').textContent = critico;
-  document.getElementById('riskCountAlto').textContent    = alto;
-  document.getElementById('riskCountMedio').textContent   = 0;
-  document.getElementById('riskCountBaixo').textContent   = baixo;
-
-  const sorted = [...RISK_DATA].sort((a, b) => b.score - a.score);
-  document.getElementById('riskTableBody').innerHTML = sorted.map(r => {
-    const lv = getRiskLevel(r.score);
-    const bar = `<div style="display:inline-flex;align-items:center;gap:6px;">
-      <div style="width:${r.score*10}px;height:8px;border-radius:4px;background:${lv.color};min-width:8px;"></div>
-      <b style="color:${lv.color}">${r.score}</b>
-    </div>`;
-    return `<tr>
-      <td style="padding:8px 10px;border-bottom:1px solid var(--border);">${r.produto}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text-secondary);font-size:11px;">${r.familia}</td>
-      <td style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border);">${r.complexidade}</td>
-      <td style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border);">${r.reclamacoes}</td>
-      <td style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border);">${r.csr}</td>
-      <td style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border);">${bar}</td>
-      <td style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border);"><span class="badge ${lv.badge}">${lv.label}</span></td>
-    </tr>`;
-  }).join('');
-
-  destroyCharts('riskBarChart');
-  const {text} = getChartColors();
-  const labels = sorted.map(r => r.produto.length > 18 ? r.produto.substring(0,18)+'…' : r.produto);
-  const scores = sorted.map(r => r.score);
-
-  state.charts.riskBarChart = new Chart('riskBarChart', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Score de Risco',
-        data: scores,
-        backgroundColor: sorted.map(r => {
-          if (r.score >= 5) return 'rgba(255,61,87,.8)';
-          if (r.score >= 3) return 'rgba(255,140,60,.8)';
-          return 'rgba(0,230,118,.8)';
-        }),
-        borderRadius: 6,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: 'y',
-      plugins: {
-        legend: {display: false},
-        tooltip: {callbacks: {label: ctx => `Score: ${ctx.raw} — ${getRiskLevel(ctx.raw).label}`}},
-      },
-      scales: {
-        x: {min:0, max:10, grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:text, stepSize:1}},
-        y: {grid:{display:false}, ticks:{color:text, font:{size:11}}}
-      },
-      onClick(e, els) {
-        if (!els.length) return;
-        const r = sorted[els[0].index];
-        const lv = getRiskLevel(r.score);
-        const riskMap = {Crítico:'Alto', Alto:'Alto', Baixo:'Baixo'};
-        applyChartFilter('risk', riskMap[lv.label] || 'Alto');
-        notify('Filtro: ' + lv.label + ' → ' + r.produto);
-      },
-      onHover(e) { e.native.target.style.cursor = 'pointer'; }
-    }
-  });
-}
-
-// ===== IMPORTAÇÃO EXCEL =====
-let state_importedAudits = [];
 
 function openImportModal() {
   state_importedAudits = [];
@@ -3083,10 +2186,9 @@ async function applyImport(mode) {
   }
   state.filtered = auditOnly();
   try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
-  updateFilterOptions();
-  renderMetrics();
-  renderCharts();
-  renderGantt();
+  updateLayoutFilterOptions();
+  if (typeof renderLayoutDash === 'function') renderLayoutDash();
+  if (typeof filterLayout === 'function') filterLayout();
 
   // Mesma proteção do restore: pausa o listener, grava direto (sem debounce),
   // religa só depois de confirmado — evita reversão por snapshot antigo.
@@ -3126,10 +2228,9 @@ function _verifyWriteSettled(expectedList, label, useReplaceAll) {
           state.audits   = expectedList;
           state.filtered = auditOnly();
           try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
-          updateFilterOptions();
-          renderMetrics();
-          renderCharts();
-          renderGantt();
+          updateLayoutFilterOptions();
+          if (typeof renderLayoutDash === 'function') renderLayoutDash();
+          if (typeof filterLayout === 'function') filterLayout();
           notify('⚠️ Detectada outra sessão/aba gravando ao mesmo tempo. Dados reafirmados — feche outras abas deste app.', 'warn');
         }
       } catch (e) { console.warn('Falha ao verificar consistência pós-restore:', e); }
@@ -3196,7 +2297,7 @@ function applyRemoteAudits(audits) {
   _markCloudSyncedOnce();
   state.audits = audits;
   try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
-  updateFilterOptions();
+  updateLayoutFilterOptions();
   // BUGFIX: antes disto fazia state.filtered = auditOnly() (mostrando TODAS
   // as auditorias) sempre que os dados chegavam da nuvem — o que acontece a cada
   // save() (inclusive o seu próprio, que "ecoa" de volta pelo listener em tempo
@@ -3204,8 +2305,8 @@ function applyRemoteAudits(audits) {
   // no Cronograma, a lista voltava a mostrar tudo, como se o filtro tivesse sido
   // perdido. filterGantt() reaplica os filtros que já estão selecionados na tela
   // em vez de descartá-los.
-  filterGantt();
-  renderCharts();
+  if (typeof filterLayout === 'function') filterLayout();
+  if (typeof renderLayoutDash === 'function') renderLayoutDash();
   migrateLegacyLayoutItems();
   updateLayoutFilterOptions();
   filterLayout();
@@ -3268,1611 +2369,9 @@ function toggleTheme() {
   try { localStorage.setItem('theme_t1', isLight ? 'light' : 'dark'); } catch(e) {}
   document.getElementById('themeIcon').textContent = isLight ? '☀️' : '🌙';
   setTimeout(() => {
-    renderCharts();
-    if (document.getElementById('view-analytics').style.display !== 'none') renderAnalytics();
+    if (typeof filterLayout === 'function') filterLayout();
+    if (typeof renderLayoutDash === 'function') renderLayoutDash();
   }, 50);
-}
-
-// ===== CHECKLIST =====
-const CL_PLANTS = [
-  'Röchling Automotive do Brasil Ltda',
-  'Röchling Automotive USA LLP - DUNCAN',
-  'Röchling Automotive USA LLP - AKRON',
-  'Röchling Automotive Mexico S. de RL de CV',
-];
-const CL_FAMILIES = ['Engine/Radiator/AGS','Under hood','Under Carpet/Ducts','Interior/Trunk','Underbody/Wheelhouse','Engine/Firewall','Selective Catalytic Reduction (SCR)','Degas Bottle'];
-const CL_CAT_WEIGHT = {A:20, B:10, C:5};
-const CL_GROUPS_META = [
-  {id:'A', label:'Características Gerais — Atributivas'},
-  {id:'B', label:'Características Gerais — Variável'},
-  {id:'C', label:'Critérios específicos do Cliente (Não variável)'},
-  {id:'D', label:'Requisitos de Segurança / Regulamentação / CC (Não variáveis)'},
-];
-
-let clCurrentAuditId = null;
-let clCurrentMonthIndex = null;
-
-// Migra o formato antigo (a.checklist único) para o novo formato por mês (a.checklistsByMonth).
-// Executa uma única vez por auditoria, na primeira abertura, para não perder dados já preenchidos.
-function _clMigrateLegacy(a) {
-  if (!a.checklist) return;
-  a.checklistsByMonth = a.checklistsByMonth || {};
-  let mi = null;
-  if (a.checklist.date) {
-    const d = new Date(a.checklist.date + 'T12:00:00');
-    if (!isNaN(d)) mi = d.getMonth();
-  }
-  // Prioriza a data real gravada no checklist. Só recorre à adivinhação
-  // (primeiro mês ativo em `months`) quando não há data alguma no checklist.
-  if (mi == null) {
-    mi = a.months ? a.months.findIndex(v => v > 0) : -1;
-    if (mi < 0) mi = new Date().getMonth();
-  }
-  if (!a.checklistsByMonth[mi]) a.checklistsByMonth[mi] = a.checklist;
-  delete a.checklist;
-}
-
-function _clDefaultMonthFor(a) {
-  if (!a.months) return new Date().getMonth();
-  const now = new Date().getMonth();
-  if (a.months[now] > 0) return now;
-  const firstActive = a.months.findIndex(v => v > 0);
-  return firstActive >= 0 ? firstActive : now;
-}
-let clGroups = [];
-let clDecision = '';
-let clReadonly  = false;
-let _clRowSeq   = 0;
-
-function _clNewRow(overrides) {
-  return Object.assign({
-    id: ++_clRowSeq,
-    pontoInspecao: '',
-    lic: '',
-    lsc: '',
-    categoria: '',
-    metodo: '',
-    samples: Array(NUM_SAMPLES).fill(null),
-    valoresEncontrados: Array(NUM_SAMPLES).fill(''),
-  }, overrides || {});
-}
-
-function _clNormalizeVE(v){
-  if (Array.isArray(v)){
-    const out = v.slice(0, NUM_SAMPLES).map(x => (x==null?'':String(x)));
-    while(out.length < NUM_SAMPLES) out.push('');
-    return out;
-  }
-  if (v == null) return Array(NUM_SAMPLES).fill('');
-  const parts = String(v).split(/[;,|]+|\s{2,}/).map(s=>s.trim()).filter(Boolean);
-  const out = parts.slice(0, NUM_SAMPLES);
-  while(out.length < NUM_SAMPLES) out.push('');
-  return out;
-}
-
-function _isOKWord(s){ const u=String(s||'').trim().toUpperCase().replace(/\s/g,''); return u==='OK'||u==='APROVADO'||u==='SIM'||u==='PASS'||u==='PASSOU'||u==='CONFORME'||u==='ACEITO'||u==='ACCEPT'||u==='C'; }
-function _isNOKWord(s){ const u=String(s||'').trim().toUpperCase().replace(/\s/g,''); return u==='NOK'||u==='NG'||u==='REPROVADO'||u==='NAO'||u==='NÃO'||u==='FAIL'||u==='FALHOU'||u==='NC'||u==='REJECT'||u==='RECUSADO'||u==='NCONFORME'||u.startsWith('NOK')||u.startsWith('NAOOK'); }
-
-function _clVEClass(raw, lic, lsc){
-  const s = String(raw||'').trim();
-  if (!s) return '';
-  if (_isOKWord(s))  return 'ok';
-  if (_isNOKWord(s)) return 'nok';
-  const num  = parseFloat(s.replace(',', '.'));
-  const nLic = parseFloat(String(lic||'').replace(',','.'));
-  const nLsc = parseFloat(String(lsc||'').replace(',','.'));
-  if (!isNaN(num)){
-    const hasLic = !isNaN(nLic), hasLsc = !isNaN(nLsc);
-    if (hasLic && hasLsc) return (num >= nLic && num <= nLsc) ? 'ok' : 'nok';
-    if (hasLic)           return (num >= nLic) ? 'ok' : 'nok';
-    if (hasLsc)           return (num <= nLsc) ? 'ok' : 'nok';
-    return 'neutral';
-  }
-  return 'neutral';
-}
-
-const CL_GROUP_ROWS = { A: 22, B: 14, C: 7, D: 6 };
-function _clDefaultGroups() {
-  return CL_GROUPS_META.map(g => ({
-    id: g.id,
-    label: g.label,
-    items: Array.from({length: CL_GROUP_ROWS[g.id] || 6}, () => _clNewRow()),
-  }));
-}
-
-function _setVal(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.value = val;
-}
-
-function _clGetRowApproval(item) {
-  const filled  = item.samples.filter(s => s !== null);
-  const veVals  = (item.valoresEncontrados || []).filter(v => String(v||'').trim() !== '');
-  if (filled.length > 0) {
-    const failed = item.samples.filter(s => s === 1).length;
-    return failed === 0 ? 'ok' : 'nok';
-  }
-  if (veVals.length > 0) {
-    const classes = veVals.map(v => _clVEClass(v, item.lic, item.lsc));
-    if (classes.every(c => c === 'ok'))  return 'ok';
-    if (classes.some(c => c === 'nok'))  return 'nok';
-    return 'neutral';
-  }
-  return '';
-}
-
-function _clRefreshApprovalCell(groupId, itemIdx) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g || !g.items[itemIdx]) return;
-  const item = g.items[itemIdx];
-  const tbody = document.getElementById('clTableBody');
-  if (!tbody) return;
-  const targetRow = tbody.querySelector(`tr.cl-data-row[data-group="${groupId}"][data-idx="${itemIdx}"]`);
-  if (!targetRow) return;
-
-  const approval   = _clGetRowApproval(item);
-  const catWeight  = CL_CAT_WEIGHT[item.categoria] || 5;
-  const filled     = item.samples.filter(s => s !== null);
-  const total      = filled.length;
-  const failed     = item.samples.filter(s => s === 1).length;
-  const valTotal   = total * catWeight;
-  const valRepr    = failed * catWeight;
-
-  const approvalCell = targetRow.querySelector('td[data-cl-approval]');
-  if (approvalCell) {
-    if (approval === 'ok')
-      approvalCell.innerHTML = '<span style="color:var(--success);font-weight:800;font-size:13px;">✅ SIM</span>';
-    else if (approval === 'nok')
-      approvalCell.innerHTML = '<span style="color:var(--danger);font-weight:800;font-size:13px;">❌ NÃO</span>';
-    else
-      approvalCell.innerHTML = '<span style="color:var(--border);">—</span>';
-  }
-
-  const vtCell = targetRow.querySelector('td[data-val-total]');
-  if (vtCell) {
-    vtCell.innerHTML = total === 0
-      ? '<span style="color:var(--border);">—</span>'
-      : `<strong style="color:var(--accent);">${valTotal}</strong>`;
-  }
-
-  const vrCell = targetRow.querySelector('td[data-val-repr]');
-  if (vrCell) {
-    vrCell.innerHTML = total === 0
-      ? '<span style="color:var(--border);">—</span>'
-      : failed > 0
-        ? `<strong style="color:var(--danger);">${valRepr}</strong>`
-        : `<span style="color:var(--success);">0</span>`;
-  }
-}
-
-function _clRefreshVERow(groupId, itemIdx) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g || !g.items[itemIdx]) return;
-  const item = g.items[itemIdx];
-  const tbody = document.getElementById('clTableBody');
-  if (!tbody) return;
-  const inputs = tbody.querySelectorAll(`input.cl-ve-input[oninput*="'${groupId}',${itemIdx},"]`);
-  inputs.forEach((inp) => {
-    const cls = _clVEClass(inp.value, item.lic, item.lsc);
-    inp.classList.remove('ve-ok','ve-nok','ve-neutral');
-    if (cls === 'ok')      inp.classList.add('ve-ok');
-    else if (cls === 'nok')     inp.classList.add('ve-nok');
-    else if (cls === 'neutral') inp.classList.add('ve-neutral');
-  });
-  _clRefreshApprovalCell(groupId, itemIdx);
-}
-
-function _clPayload(isFinalized) {
-  const score = parseInt(document.getElementById('clScoreValue')?.textContent) || 0;
-  return {
-    numItem:       document.getElementById('clNumItem')?.value.trim()       || '',
-    reportNumber:  document.getElementById('clReportNum')?.value.trim()     || '',
-    date:          document.getElementById('clDate')?.value                 || '',
-    auditor:       document.getElementById('clAuditor')?.value.trim()       || '',
-    lot:           document.getElementById('clLot')?.value.trim()           || '',
-    family:        document.getElementById('clFamily')?.value               || '',
-    plant:         document.getElementById('clPlant')?.value                || '',
-    comments:      document.getElementById('clComments')?.value.trim()      || '',
-    closingDate:   new Date().toISOString().slice(0,10),
-    auditorName:   document.getElementById('clAuditorName')?.value.trim()   || '',
-    auditorSig:    document.getElementById('clAuditorSig')?.value.trim()    || '',
-    auditorDate:   document.getElementById('clAuditorDate')?.value          || '',
-    coAuditorName: document.getElementById('clCoAuditorName')?.value.trim() || '',
-    coAuditorSig:  document.getElementById('clCoAuditorSig')?.value.trim()  || '',
-    coAuditorDate: document.getElementById('clCoAuditorDate')?.value        || '',
-    coordName:     document.getElementById('clCoordName')?.value.trim()     || '',
-    coordSig:      document.getElementById('clCoordSig')?.value.trim()      || '',
-    coordDate:     document.getElementById('clCoordDate')?.value            || '',
-    groups:        clGroups,
-    decision:      clDecision,
-    score,
-    completedAt:   isFinalized ? new Date().toISOString() : null,
-    status:        isFinalized ? 'completed' : 'draft',
-    _rowSeq:       _clRowSeq,
-  };
-}
-
-function renderChecklistTable() {
-  const tbody = document.getElementById('clTableBody');
-  const tfoot = document.getElementById('clTableFoot');
-  if (!tbody) return;
-
-  let rowNum = 0;
-  let html = '';
-
-  clGroups.forEach(group => {
-    html += `<tr class="cl-group-header">
-      <td colspan="${10 + NUM_SAMPLES + 2 + NUM_SAMPLES + 2}">
-        ${escapeHtml(group.label)}
-        ${clReadonly ? '' : `<button class="cl-auto-all-btn" onclick="clAutoFillGroup('${group.id}')" title="Auto-preencher todas as linhas do grupo que tenham LIC e LSC definidos">⚡ Auto-preencher grupo</button>`}
-      </td>
-      ${clReadonly ? '' : `<td class="cl-no-print" style="text-align:center;padding:4px;">
-        <button class="cl-add-btn" onclick="clAddRow('${group.id}')" title="Adicionar linha">＋</button>
-      </td>`}
-    </tr>`;
-
-    group.items.forEach((item, itemIdx) => {
-      item.valoresEncontrados = _clNormalizeVE(item.valoresEncontrados);
-      rowNum++;
-      const filled = item.samples.filter(s => s !== null);
-      const total  = filled.length;
-      const failed = item.samples.filter(s => s === 1).length;
-      const _rowApproval = _clGetRowApproval(item);
-      const approvedHtml = _rowApproval === 'ok'
-        ? '<span style="color:var(--success);font-weight:700;font-size:13px;">✅ OK</span>'
-        : _rowApproval === 'nok'
-          ? '<span style="color:var(--danger);font-weight:700;font-size:13px;">❌ NOK</span>'
-          : _rowApproval === 'neutral'
-            ? '<span style="color:var(--warning);font-weight:700;">⚠️ —</span>'
-            : '<span style="color:var(--border);">—</span>';
-
-      const catOpts = [
-        `<option value=""${!item.categoria ? ' selected' : ''}>—</option>`,
-        ...['A','B','C'].map(c =>
-          `<option value="${c}"${item.categoria === c ? ' selected' : ''}>${c}</option>`
-        )
-      ].join('');
-
-      const sampleCells = item.samples.map((s, si) => {
-        if (clReadonly) {
-          const disp = s === null ? '·' : String(s);
-          const col  = s === 0 ? 'var(--success)' : s === 1 ? 'var(--danger)' : 'var(--border)';
-          return `<td class="sample-cell" style="text-align:center;color:${col};font-weight:700;">${disp}</td>`;
-        }
-        const col = s === 0 ? '#003a1f' : s === 1 ? '#3a0008' : 'transparent';
-        const tc  = s === 0 ? 'var(--success)' : s === 1 ? 'var(--danger)' : 'var(--text-secondary)';
-        const val = s === null ? '' : String(s);
-        return `<td class="sample-cell" style="padding:2px 1px;text-align:center;">
-          <input class="cl-sample-input cl-nav" value="${val}"
-            style="background:${col};color:${tc};"
-            maxlength="1"
-            oninput="clSampleInput(this,'${group.id}',${itemIdx},${si})"
-            title="Amostra ${si+1}: 0=Aprovado 1=Reprovado"
-            ${clReadonly ? 'readonly' : ''}>
-        </td>`;
-      }).join('');
-
-      const pVal = clReadonly
-        ? `<span style="font-size:12px;">${escapeHtml(item.pontoInspecao||'—')}</span>`
-        : `<input class="cl-cell-input cl-nav" value="${escapeHtml(item.pontoInspecao||'')}" placeholder="Ponto de inspeção..." oninput="clUpdateCell('${group.id}',${itemIdx},'pontoInspecao',this.value)">`;
-      const licVal = clReadonly
-        ? `<span>${escapeHtml(item.lic||'—')}</span>`
-        : `<input class="cl-cell-input-sm cl-nav" value="${escapeHtml(item.lic||'')}" placeholder="—"
-            oninput="clUpdateCell('${group.id}',${itemIdx},'lic',this.value)"
-            onblur="clAutoFill('${group.id}',${itemIdx})">`;
-      const lscVal = clReadonly
-        ? `<span>${escapeHtml(item.lsc||'—')}</span>`
-        : `<input class="cl-cell-input-sm cl-nav" value="${escapeHtml(item.lsc||'')}" placeholder="—"
-            oninput="clUpdateCell('${group.id}',${itemIdx},'lsc',this.value)"
-            onblur="clAutoFill('${group.id}',${itemIdx})">`;
-      const metVal = clReadonly
-        ? `<span style="font-size:11px;">${escapeHtml(item.metodo||'—')}</span>`
-        : `<input class="cl-cell-input cl-nav" value="${escapeHtml(item.metodo||'')}" placeholder="Método..." oninput="clUpdateCell('${group.id}',${itemIdx},'metodo',this.value)">`;
-      const veCells = item.valoresEncontrados.map((vv, vi) => {
-        const cls = _clVEClass(vv, item.lic, item.lsc);
-        const klass = cls === 'ok' ? 've-ok' : cls === 'nok' ? 've-nok' : cls === 'neutral' ? 've-neutral' : '';
-        if (clReadonly){
-          const disp = (vv==null||vv==='') ? '—' : vv;
-          return `<td class="cl-ve-cell" style="text-align:center;"><span class="cl-ve-input ${klass}" style="display:inline-block;line-height:24px;">${escapeHtml(String(disp))}</span></td>`;
-        }
-        return `<td class="cl-ve-cell" style="text-align:center;">
-          <input class="cl-ve-input cl-nav ${klass}" value="${escapeHtml(String(vv||''))}"
-            placeholder="V${vi+1}" maxlength="10"
-            oninput="clUpdateVE('${group.id}',${itemIdx},${vi},this.value)"
-            title="V${vi+1}: Digite OK (verde) ou NOK (vermelho), ou valor numérico vs LIC=${escapeHtml(item.lic||'—')} / LSC=${escapeHtml(item.lsc||'—')}">
-        </td>`;
-      }).join('');
-      const catSel = clReadonly
-        ? `<div style="text-align:center;">
-            <span class="cl-cat-badge cl-cat-${item.categoria}">${item.categoria||'—'}</span>
-           </div>`
-        : `<div style="text-align:center;">
-            <select class="cl-cell-select cl-nav" style="width:54px;text-align:center;" onchange="clUpdateCell('${group.id}',${itemIdx},'categoria',this.value)">${catOpts}</select>
-            <div data-penalty-label style="display:none;"></div>
-           </div>`;
-
-      const catWeight  = CL_CAT_WEIGHT[item.categoria] || 5;
-      const valTotal   = total > 0 ? total * catWeight : (total === 0 ? 0 : '—');
-      const valRepr    = failed * catWeight;
-      const valTotalDisp = total === 0 ? '<span style="color:var(--border);">—</span>'
-                         : `<strong style="color:var(--accent);">${valTotal}</strong>`;
-      const valReprDisp  = total === 0 ? '<span style="color:var(--border);">—</span>'
-                         : failed > 0
-                           ? `<strong style="color:var(--danger);">${valRepr}</strong>`
-                           : `<span style="color:var(--success);">0</span>`;
-
-      const _rowApprovalFinal = _clGetRowApproval(item);
-      const approvalSimNao = _rowApprovalFinal === 'ok'
-        ? '<span style="color:var(--success);font-weight:800;font-size:13px;">✅ SIM</span>'
-        : _rowApprovalFinal === 'nok'
-          ? '<span style="color:var(--danger);font-weight:800;font-size:13px;">❌ NÃO</span>'
-          : '<span style="color:var(--border);">—</span>';
-
-      const delBtn = clReadonly ? '' : `<td class="cl-no-print" style="text-align:center;padding:2px 4px;white-space:nowrap;">
-        <button class="cl-auto-btn" onclick="clAutoFill('${group.id}',${itemIdx})" title="Auto-preencher: gera amostras e valores aprovados com base no LIC/LSC">⚡</button>
-        <button class="cl-del-btn" onclick="clDeleteRow('${group.id}',${itemIdx})" title="Remover linha">✕</button>
-      </td>`;
-
-      html += `<tr class="cl-data-row" data-group="${group.id}" data-idx="${itemIdx}">
-        <td style="text-align:center;font-size:11px;color:var(--text-secondary);">${rowNum}</td>
-        <td>${pVal}</td>
-        <td class="limit-cell">${licVal}</td>
-        <td class="limit-cell">${lscVal}</td>
-        <td class="cat-cell" data-cat-cell>${catSel}</td>
-        <td>${metVal}</td>
-        ${sampleCells}
-        <td class="cl-result-cell" data-val-total style="text-align:center;">${valTotalDisp}</td>
-        <td class="cl-result-cell" data-val-repr style="text-align:center;">${valReprDisp}</td>
-        ${veCells}
-        <td class="cl-result-cell" data-cl-approval>${approvalSimNao}</td>
-        ${delBtn}
-      </tr>`;
-    });
-  });
-
-  tbody.innerHTML = html;
-  recalcChecklist();
-}
-
-function recalcChecklist() {
-  let totalDeductions = 0;
-  let totalItems      = 0;
-  let evaluatedItems  = 0;
-  let failedItems     = 0;
-  let totalSamples    = 0;
-  const catStats = { A:{reproved:0,deduction:0}, B:{reproved:0,deduction:0}, C:{reproved:0,deduction:0} };
-
-  clGroups.forEach(group => {
-    group.items.forEach(item => {
-      totalItems++;
-      const approval = _clGetRowApproval(item);
-      const filled   = item.samples.filter(s => s !== null);
-      const veVals   = (item.valoresEncontrados||[]).filter(v => String(v||'').trim() !== '');
-      const hasData  = filled.length > 0 || veVals.length > 0;
-
-      if (hasData) {
-        evaluatedItems++;
-        totalSamples += filled.length;
-        if (approval === 'nok') {
-          failedItems++;
-          const cat    = item.categoria || 'C';
-          const weight = CL_CAT_WEIGHT[cat] || 5;
-          totalDeductions += weight;
-          if (catStats[cat]) {
-            catStats[cat].reproved++;
-            catStats[cat].deduction += weight;
-          }
-        }
-      }
-    });
-  });
-
-  const scoreEl = document.getElementById('clScoreValue');
-  const labelEl = document.getElementById('clScoreLabel');
-  if (!scoreEl) return;
-
-  const el = id => document.getElementById(id);
-  el('clCountEval').textContent    = evaluatedItems + '/' + totalItems;
-  el('clCountFail').textContent    = failedItems;
-  el('clCountSamples').textContent = totalSamples;
-  const valReprEl = el('clValReprova');
-  if (valReprEl) valReprEl.textContent = totalDeductions > 0 ? totalDeductions + ' pts' : '—';
-
-  const bkEl   = el('clCatBreakdown');
-  const bkFoot = el('clCatBreakdownFoot');
-  if (bkEl) {
-    const catColors = { A:'var(--danger)', B:'#e67e22', C:'var(--warning)' };
-    let bkHtml = '';
-    ['A','B','C'].forEach(cat => {
-      const st    = catStats[cat];
-      const hasRep = st.reproved > 0;
-      bkHtml += `<tr style="${hasRep ? 'background:rgba(255,61,87,.07);' : ''}">
-        <td style="padding:5px 8px;">
-          <span class="cl-cat-badge cl-cat-${cat}">${cat}</span>
-        </td>
-        <td style="padding:5px 8px;color:var(--text-secondary);font-size:10px;">${CL_CAT_WEIGHT[cat]} pts</td>
-        <td style="padding:5px 8px;text-align:center;font-weight:700;color:${hasRep ? catColors[cat] : 'var(--text-secondary)'};">
-          ${hasRep ? st.reproved : '—'}
-        </td>
-        <td style="padding:5px 8px;text-align:right;font-weight:700;color:${hasRep ? 'var(--danger)' : 'var(--text-secondary)'};">
-          ${hasRep ? st.deduction + ' pts' : '—'}
-        </td>
-      </tr>`;
-    });
-    bkEl.innerHTML = bkHtml || '<tr><td colspan="4" style="padding:8px;color:var(--border);text-align:center;font-size:10px;">—</td></tr>';
-  }
-  if (bkFoot) {
-    bkFoot.innerHTML = totalDeductions > 0
-      ? `<tr>
-          <td colspan="2" style="padding:6px 8px;font-weight:700;font-size:11px;color:var(--text);">TOTAL DEDUZIDO</td>
-          <td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--danger);">${failedItems}</td>
-          <td style="padding:6px 8px;text-align:right;font-weight:800;font-size:13px;color:var(--danger);">−${totalDeductions} pts</td>
-        </tr>`
-      : '';
-  }
-
-  if (evaluatedItems === 0) {
-    scoreEl.textContent  = '—';
-    scoreEl.className    = 'cl-score-value';
-    labelEl.textContent  = 'Preencha as amostras ou valores para calcular';
-    ['clTierExcellent','clTierAcceptable','clTierRisk','clTierFail'].forEach(id => {
-      const r = el(id); if (r) r.style.outline = '';
-    });
-    return;
-  }
-
-  const score = Math.max(0, 100 - totalDeductions);
-  scoreEl.textContent = score;
-
-  let tierClass = '', tierLabel = '', activeTier = '';
-  if (score === 100) {
-    tierClass = 'cl-score-excellent'; tierLabel = '🏆 Qualidade Excepcional'; activeTier = 'clTierExcellent';
-  } else if (score >= 90) {
-    tierClass = 'cl-score-acceptable'; tierLabel = '✅ Qualidade Aceitável'; activeTier = 'clTierAcceptable';
-  } else if (score >= 70) {
-    tierClass = 'cl-score-risk'; tierLabel = '⚠️ Permissível sob Derroga'; activeTier = 'clTierRisk';
-  } else {
-    tierClass = 'cl-score-fail'; tierLabel = '❌ Qualidade não aceitável'; activeTier = 'clTierFail';
-  }
-  scoreEl.className = 'cl-score-value ' + tierClass;
-  labelEl.textContent = tierLabel;
-
-  ['clTierExcellent','clTierAcceptable','clTierRisk','clTierFail'].forEach(id => {
-    const r = el(id);
-    if (!r) return;
-    r.style.outline     = id === activeTier ? '2px solid var(--accent)' : '';
-    r.style.fontWeight  = id === activeTier ? '700' : '';
-  });
-
-  if (!clDecision) {
-    clDecision = score === 100 ? 'Aprovado' : score >= 70 ? 'Aprovado Condicionalmente' : 'Reprovado';
-    updateDecisionUI();
-  } else {
-    const autoDecision = score === 100 ? 'Aprovado' : score >= 70 ? 'Aprovado Condicionalmente' : 'Reprovado';
-    if (autoDecision !== clDecision) {
-      clDecision = autoDecision;
-      updateDecisionUI();
-    }
-  }
-
-  const commReq = el('clCommentsRequired');
-  if (commReq) commReq.style.display =
-    (clDecision === 'Reprovado' || clDecision === 'Aprovado Condicionalmente') ? '' : 'none';
-
-  const tfoot = el('clTableFoot');
-  if (tfoot) {
-    let sumValTotal = 0, sumValRepr = 0;
-    clGroups.forEach(g => g.items.forEach(item => {
-      const w      = CL_CAT_WEIGHT[item.categoria] || 5;
-      const filled = item.samples.filter(s => s !== null).length;
-      const fail   = item.samples.filter(s => s === 1).length;
-      sumValTotal += filled * w;
-      sumValRepr  += fail   * w;
-    }));
-    const approvalSummary = failedItems > 0
-      ? `<span style="color:var(--danger);font-weight:800;">❌ NÃO (${failedItems} itens)</span>`
-      : evaluatedItems > 0
-        ? `<span style="color:var(--success);font-weight:800;">✅ SIM</span>`
-        : '<span style="color:var(--border);">—</span>';
-    tfoot.innerHTML = `<tr class="cl-foot-sum">
-      <td colspan="6" style="text-align:right;padding:8px 12px;font-weight:700;color:var(--text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Totais:</td>
-      <td colspan="${NUM_SAMPLES}"></td>
-      <td style="text-align:center;font-weight:800;color:var(--accent);">${sumValTotal || '—'}</td>
-      <td style="text-align:center;font-weight:800;color:${sumValRepr>0?'var(--danger)':'var(--success)'};">${sumValTotal ? sumValRepr : '—'}</td>
-      <td colspan="${NUM_SAMPLES}"></td>
-      <td style="text-align:center;font-size:12px;">${approvalSummary}</td>
-      <td class="cl-no-print"></td>
-    </tr>`;
-  }
-}
-
-function updateDecisionUI() {
-  const map = {
-    decAprovado:    {key:'Aprovado',                 cls:'sel-approved'},
-    decCondicional: {key:'Aprovado Condicionalmente', cls:'sel-conditional'},
-    decReprovado:   {key:'Reprovado',                cls:'sel-rejected'},
-  };
-  Object.entries(map).forEach(([id, {key, cls}]) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.className = 'cl-decision-btn' + (clDecision === key ? ' ' + cls : '');
-    el.disabled  = clReadonly;
-    el.style.cursor = clReadonly ? 'default' : '';
-  });
-  const commReq = document.getElementById('clCommentsRequired');
-  if (commReq) commReq.style.display =
-    (clDecision === 'Reprovado' || clDecision === 'Aprovado Condicionalmente') ? '' : 'none';
-
-  const banner = document.getElementById('clResultBanner');
-  if (banner && clDecision) {
-    const bannerMap = {
-      'Aprovado':                 { bg:'rgba(0,200,83,.18)',  border:'#00c853', color:'#00c853',  icon:'✅', text:'APROVADO — Qualidade Conforme' },
-      'Aprovado Condicionalmente':{ bg:'rgba(255,179,0,.18)', border:'#ffb300', color:'#c98000',  icon:'⚠️', text:'APROVADO CONDICIONALMENTE — Requer Ação Corretiva' },
-      'Reprovado':                { bg:'rgba(255,61,87,.18)', border:'#ff3d57', color:'#ff3d57',  icon:'❌', text:'REPROVADO — Produto Não Conforme' },
-    };
-    const cfg = bannerMap[clDecision];
-    if (cfg) {
-      banner.style.display     = '';
-      banner.style.background  = cfg.bg;
-      banner.style.border      = '2px solid ' + cfg.border;
-      banner.style.color       = cfg.color;
-      banner.innerHTML = `${cfg.icon} &nbsp; ${cfg.text}`;
-    }
-  } else if (banner) {
-    banner.style.display = 'none';
-  }
-}
-
-function setDecision(val) {
-  if (clReadonly) return;
-  clDecision = val;
-  updateDecisionUI();
-}
-
-function clSampleInput(el, groupId, itemIdx, si) {
-  const raw = el.value.trim();
-  const val = raw === '0' ? 0 : raw === '1' ? 1 : null;
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g) return;
-  g.items[itemIdx].samples[si] = val;
-  el.style.background = val === 0 ? '#003a1f' : val === 1 ? '#3a0008' : 'transparent';
-  el.style.color       = val === 0 ? 'var(--success)' : val === 1 ? 'var(--danger)' : 'var(--text-secondary)';
-  _clRefreshApprovalCell(groupId, itemIdx);
-  recalcChecklist();
-}
-
-function clUpdateCell(groupId, itemIdx, field, value) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g || !g.items[itemIdx]) return;
-  g.items[itemIdx][field] = value;
-  if (field === 'categoria') {
-    _clRefreshApprovalCell(groupId, itemIdx);
-    recalcChecklist();
-  }
-  if (field === 'lic' || field === 'lsc') {
-    _clRefreshVERow(groupId, itemIdx);
-  }
-}
-
-function clUpdateVE(groupId, itemIdx, vi, value) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g || !g.items[itemIdx]) return;
-  const item = g.items[itemIdx];
-  item.valoresEncontrados = _clNormalizeVE(item.valoresEncontrados);
-  item.valoresEncontrados[vi] = value;
-  _clRefreshVERow(groupId, itemIdx);
-  recalcChecklist();
-}
-
-function clAutoFill(groupId, itemIdx) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g || !g.items[itemIdx]) return;
-  const item = g.items[itemIdx];
-
-  const lic = String(item.lic || '').trim();
-  const lsc = String(item.lsc || '').trim();
-  if (!lic || !lsc) return;
-
-  const nLic = parseFloat(lic.replace(',', '.'));
-  const nLsc = parseFloat(lsc.replace(',', '.'));
-  const isNumeric = !isNaN(nLic) && !isNaN(nLsc);
-  const isAtributive = _isOKWord(lic) && _isOKWord(lsc);
-
-  if (!isNumeric && !isAtributive) return;
-
-  const hasSamples = item.samples.some(s => s !== null);
-  const hasVE      = (item.valoresEncontrados || []).some(v => String(v||'').trim() !== '');
-  if (hasSamples || hasVE) {
-    if (!confirm('A linha ' + (itemIdx + 1) + ' já possui dados. Deseja sobrescrever?')) return;
-  }
-
-  if (isAtributive) {
-    item.samples = Array(NUM_SAMPLES).fill(0);
-    item.valoresEncontrados = Array(NUM_SAMPLES).fill('OK');
-  }
-
-  if (isNumeric) {
-    if (nLic > nLsc) {
-      alert('LIC (' + lic + ') não pode ser maior que LSC (' + lsc + ').');
-      return;
-    }
-    item.samples = Array(NUM_SAMPLES).fill(0);
-    const decLic = (lic.includes('.') || lic.includes(',')) ? (lic.replace(',','.').split('.')[1]||'').length : 0;
-    const decLsc = (lsc.includes('.') || lsc.includes(',')) ? (lsc.replace(',','.').split('.')[1]||'').length : 0;
-    const decimals = Math.max(decLic, decLsc);
-    item.valoresEncontrados = Array.from({length: NUM_SAMPLES}, () => {
-      const raw = nLic + Math.random() * (nLsc - nLic);
-      return decimals > 0 ? raw.toFixed(decimals) : String(Math.round(raw));
-    });
-  }
-
-  _clRefreshVERow(groupId, itemIdx);
-  _clRefreshApprovalCell(groupId, itemIdx);
-  recalcChecklist();
-
-  const tbody = document.getElementById('clTableBody');
-  if (!tbody) return;
-  const targetRow = tbody.querySelector(`tr.cl-data-row[data-group="${groupId}"][data-idx="${itemIdx}"]`);
-  if (!targetRow) return;
-
-  const sampleInputs = targetRow.querySelectorAll('.cl-sample-input');
-  sampleInputs.forEach((inp, si) => {
-    const val = item.samples[si];
-    inp.value = val === null ? '' : String(val);
-    inp.style.background = val === 0 ? '#003a1f' : val === 1 ? '#3a0008' : 'transparent';
-    inp.style.color      = val === 0 ? 'var(--success)' : val === 1 ? 'var(--danger)' : 'var(--text-secondary)';
-  });
-
-  const veInputs = targetRow.querySelectorAll('.cl-ve-input');
-  veInputs.forEach((inp, vi) => {
-    const vv  = item.valoresEncontrados[vi] || '';
-    inp.value = vv;
-    const cls = _clVEClass(vv, item.lic, item.lsc);
-    inp.classList.remove('ve-ok','ve-nok','ve-neutral');
-    if (cls === 'ok')      inp.classList.add('ve-ok');
-    else if (cls === 'nok')     inp.classList.add('ve-nok');
-    else if (cls === 'neutral') inp.classList.add('ve-neutral');
-  });
-
-  targetRow.style.transition = 'background .4s';
-  targetRow.style.background = 'rgba(0,230,118,.10)';
-  setTimeout(() => { targetRow.style.background = ''; }, 800);
-}
-
-function clAutoFillGroup(groupId) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g) return;
-  const eligible = g.items.reduce((acc, item, idx) => {
-    const lic = String(item.lic||'').trim();
-    const lsc = String(item.lsc||'').trim();
-    if (lic && lsc) acc.push(idx);
-    return acc;
-  }, []);
-
-  if (eligible.length === 0) {
-    alert('Nenhuma linha deste grupo tem LIC e LSC preenchidos.');
-    return;
-  }
-
-  const hasData = eligible.some(idx => {
-    const item = g.items[idx];
-    return item.samples.some(s => s !== null) ||
-           (item.valoresEncontrados||[]).some(v => String(v||'').trim() !== '');
-  });
-
-  if (hasData) {
-    if (!confirm(`Auto-preencher ${eligible.length} linha(s) do grupo "${g.label}"?\nLinhas com dados existentes serão sobrescritas.`)) return;
-  }
-
-  eligible.forEach(idx => {
-    const item = g.items[idx];
-    item.samples = Array(NUM_SAMPLES).fill(null);
-    item.valoresEncontrados = Array(NUM_SAMPLES).fill('');
-    clAutoFill(groupId, idx);
-  });
-}
-
-function clAddRow(groupId) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g) return;
-  g.items.push(_clNewRow());
-  renderChecklistTable();
-  notify('Linha adicionada ao grupo ' + groupId);
-}
-
-function clDeleteRow(groupId, itemIdx) {
-  const g = clGroups.find(g => g.id === groupId);
-  if (!g || g.items.length <= 1) { notify('Mantenha ao menos 1 linha por grupo', 'warn'); return; }
-  g.items.splice(itemIdx, 1);
-  renderChecklistTable();
-}
-
-function openChecklist(auditId, monthIndex) {
-  const a = state.audits.find(x => x.id === auditId);
-  if (!a) return;
-  _clMigrateLegacy(a);
-  a.checklistsByMonth = a.checklistsByMonth || {};
-
-  if (monthIndex == null) monthIndex = _clDefaultMonthFor(a);
-  clCurrentAuditId   = auditId;
-  clCurrentMonthIndex = monthIndex;
-  const saved = a.checklistsByMonth[monthIndex];
-  clReadonly = !!(saved && saved.completedAt);
-
-  document.getElementById('clTitle').textContent =
-    'Checklist — ' + a.sap + ' · ' + (MONTHS[monthIndex] || '') + (a.desc ? ' · ' + a.desc.slice(0,40) : '');
-  document.getElementById('clDesc').value   = a.desc   || '';
-  document.getElementById('clFamily').value = a.family || 'Engine/Radiator/AGS';
-  document.getElementById('clReadonlyBadge').style.display = clReadonly ? '' : 'none';
-  ['clSaveBtn','clFinalizeBtn','clSaveBtnFooter','clFinalizeBtnFooter'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = clReadonly ? 'none' : '';
-  });
-  ['clEditBtn','clDelBtn'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = (clReadonly && saved) ? '' : 'none';
-  });
-
-  if (saved) {
-    _setVal('clNumItem',       saved.numItem      || '');
-    _setVal('clReportNum',     saved.reportNumber || '');
-    _setVal('clDate',          saved.date         || '');
-    _setVal('clAuditor',       saved.auditor      || '');
-    _setVal('clLot',           saved.lot          || '');
-    _setVal('clPlant',         saved.plant        || CL_PLANTS[0]);
-    _setVal('clComments',      saved.comments     || '');
-    _setVal('clAuditorName',   saved.auditorName  || '');
-    _setVal('clAuditorSig',    saved.auditorSig   || '');
-    _setVal('clAuditorDate',   saved.auditorDate  || '');
-    _setVal('clCoAuditorName', saved.coAuditorName|| '');
-    _setVal('clCoAuditorSig',  saved.coAuditorSig || '');
-    _setVal('clCoAuditorDate', saved.coAuditorDate|| '');
-    _setVal('clCoordName',     saved.coordName    || '');
-    _setVal('clCoordSig',      saved.coordSig     || '');
-    _setVal('clCoordDate',     saved.coordDate    || '');
-    if (saved.family) _setVal('clFamily', saved.family);
-    clDecision = saved.decision || '';
-    _clRowSeq  = saved._rowSeq  || 0;
-    clGroups = saved.groups
-      ? saved.groups.map(sg => ({
-          id:    sg.id,
-          label: CL_GROUPS_META.find(m => m.id === sg.id)?.label || sg.label,
-          items: sg.items.map(it => ({
-            ...it,
-            samples: (it.samples || []).concat(Array(NUM_SAMPLES)).slice(0, NUM_SAMPLES).map(s => (s === undefined ? null : s)),
-          })),
-        }))
-      : _clDefaultGroups();
-  } else {
-    _setVal('clNumItem',       '');
-    _setVal('clReportNum',     '');
-    _setVal('clDate',          new Date().toISOString().slice(0,10));
-    _setVal('clAuditor',       a.resp || '');
-    _setVal('clLot',           '');
-    _setVal('clPlant',         CL_PLANTS[0]);
-    _setVal('clComments',      '');
-    _setVal('clAuditorName',   a.resp || '');
-    _setVal('clAuditorSig',    '');
-    _setVal('clAuditorDate',   new Date().toISOString().slice(0,10));
-    _setVal('clCoAuditorName', '');
-    _setVal('clCoAuditorSig',  '');
-    _setVal('clCoAuditorDate', '');
-    _setVal('clCoordName',     '');
-    _setVal('clCoordSig',      '');
-    _setVal('clCoordDate',     '');
-    clDecision = '';
-    _clRowSeq  = 0;
-    clGroups   = _clDefaultGroups();
-  }
-
-  document.querySelectorAll('#checklistOverlay input, #checklistOverlay textarea, #checklistOverlay select').forEach(el => {
-    el.readOnly = clReadonly && el.tagName !== 'SELECT';
-    if (el.tagName === 'SELECT') el.disabled = clReadonly;
-    el.style.opacity = clReadonly ? '0.75' : '';
-    el.style.cursor  = clReadonly ? 'default' : '';
-  });
-
-  updateDecisionUI();
-  renderChecklistTable();
-  recalcChecklist();
-
-  const saved_d = a.checklistsByMonth[monthIndex];
-  document.getElementById('clFooterInfo').textContent = clReadonly
-    ? ''
-    : 'Preencha o checklist e clique em Finalizar.';
-
-  const _ov = document.getElementById('checklistOverlay');
-  _ov.classList.add('active');
-  _ov.classList.toggle('is-readonly', clReadonly);
-  document.body.classList.add('cl-open');
-  requestAnimationFrame(() => {
-    window.scrollTo(0,0);
-    const _b = document.getElementById('clBody');
-    if (_b) _b.scrollTop = 0;
-    _ov.scrollTop = 0;
-  });
-  const _et = document.getElementById('clEditingTag');
-  if (_et) _et.style.display = clReadonly ? 'none' : '';
-  closeModal('viewModal');
-
-  const _navCl = document.getElementById('navChecklist');
-  if (_navCl) {
-    _navCl.style.display = '';
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    _navCl.classList.add('active');
-    const _dot = document.getElementById('navChecklistDot');
-    if (_dot) _dot.style.display = clReadonly ? 'none' : '';
-  }
-}
-
-function closeChecklist() {
-  document.getElementById('checklistOverlay').classList.remove('active');
-  document.body.classList.remove('cl-open');
-  window.scrollTo(0,0);
-  clCurrentAuditId = null;
-  clCurrentMonthIndex = null;
-
-  const _navCl = document.getElementById('navChecklist');
-  if (_navCl) {
-    _navCl.style.display = 'none';
-    _navCl.classList.remove('active');
-    const _dot = document.getElementById('navChecklistDot');
-    if (_dot) _dot.style.display = 'none';
-  }
-  const _navDb = document.getElementById('navDashboard');
-  if (_navDb) {
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    _navDb.classList.add('active');
-  }
-}
-
-function saveChecklist() {
-  if (clReadonly) return;
-  const a = state.audits.find(x => x.id === clCurrentAuditId);
-  if (!a) return;
-  a.checklistsByMonth = a.checklistsByMonth || {};
-  a.checklistsByMonth[clCurrentMonthIndex] = _clPayload(false);
-  saveAudits(a.id);
-  notify('💾 Rascunho salvo!');
-  document.getElementById('clFooterInfo').textContent = 'Rascunho salvo às ' + new Date().toLocaleTimeString('pt-BR');
-}
-
-function finalizeChecklist() {
-  if (clReadonly) return;
-  const a = state.audits.find(x => x.id === clCurrentAuditId);
-  if (!a) return;
-
-  const auditorName = document.getElementById('clAuditorName')?.value.trim();
-  const auditorSig  = document.getElementById('clAuditorSig')?.value.trim();
-  const comments    = document.getElementById('clComments')?.value.trim();
-
-  if (!auditorName) { notify('Preencha o nome do Auditor de Qualidade', 'error'); return; }
-  if (!auditorSig)  { notify('Preencha a Assinatura Digital do Auditor', 'error'); return; }
-  if (!clDecision)  { notify('Selecione a Decisão da Auditoria', 'error'); return; }
-  if ((clDecision === 'Reprovado' || clDecision === 'Aprovado Condicionalmente') && !comments) {
-    notify('Comentários / Ações QRQC são obrigatórios para Reprovado ou Aprovação Condicional', 'error');
-    return;
-  }
-
-  const data = _clPayload(true);
-  a.checklistsByMonth = a.checklistsByMonth || {};
-  a.checklistsByMonth[clCurrentMonthIndex] = data;
-  a.status    = data.decision === 'Reprovado' ? 'Reprovado' : 'Aprovado';
-  if (a.months && a.months[clCurrentMonthIndex] > 0) a.months[clCurrentMonthIndex] = 2;
-
-  saveAudits(a.id);
-  state.filtered = auditOnly();
-  filterGantt();
-  renderMetrics();
-  renderCharts();
-  closeChecklist();
-  notify('✅ Auditoria finalizada! Decisão: ' + data.decision + ' · Score: ' + data.score);
-}
-
-function printChecklist() {
-  const a = state.audits.find(x => x.id === clCurrentAuditId);
-  if (!a) return;
-  const scoreText  = document.getElementById('clScoreValue')?.textContent || '—';
-  const scoreLabel = document.getElementById('clScoreLabel')?.textContent || '';
-  const evalCount  = document.getElementById('clCountEval')?.textContent  || '—';
-  const failCount  = document.getElementById('clCountFail')?.textContent  || '—';
-  const totalSamp  = document.getElementById('clCountSamples')?.textContent || '—';
-  const valReprova = document.getElementById('clValReprova')?.textContent  || '—';
-
-  // ── build table rows ──────────────────────────────────────────────────────
-  let tableRows = '';
-  let rowNum = 0;
-  let totalValTotal = 0, totalValRepr = 0, totalFilled = 0, totalFailed = 0;
-  clGroups.forEach(group => {
-    tableRows += `<tr class="grp"><td colspan="${6 + NUM_SAMPLES + 2 + NUM_SAMPLES + 1}">
-      <span class="grp-icon">▶</span> ${group.label}</td></tr>`;
-    group.items.forEach(item => {
-      item.valoresEncontrados = _clNormalizeVE(item.valoresEncontrados);
-      rowNum++;
-      const filled   = item.samples.filter(s => s !== null).length;
-      const failed   = item.samples.filter(s => s === 1).length;
-      const catW     = CL_CAT_WEIGHT[item.categoria] || 0;
-      const vt       = filled > 0 ? filled * catW : '';
-      const vr       = filled > 0 ? failed * catW : '';
-      const approval = _clGetRowApproval(item);
-      if (typeof vt === 'number') totalValTotal += vt;
-      if (typeof vr === 'number') totalValRepr  += vr;
-      totalFilled += filled; totalFailed += failed;
-      const even     = rowNum % 2 === 0;
-      const sHtml = item.samples.map(s =>
-        s === null ? '<td class="s neu">·</td>'
-        : s === 0  ? '<td class="s ok">0</td>'
-        :             '<td class="s ko">1</td>'
-      ).join('');
-      const veHtml = item.valoresEncontrados.map(vv => {
-        const cls = _clVEClass(vv, item.lic, item.lsc);
-        const sty = cls==='ok'      ? 'background:#c8f0d8;color:#0a5c2a;font-weight:700;'
-                  : cls==='nok'     ? 'background:#fdd;color:#8b0000;font-weight:700;'
-                  : cls==='neutral' ? 'background:#fff8dc;color:#7a5c00;font-weight:600;' : '';
-        const txt = (vv==null||vv==='') ? '&nbsp;' : String(vv).replace(/[<>]/g,'');
-        return `<td class="c ve" style="${sty}">${txt}</td>`;
-      }).join('');
-      const aprov = approval === 'ok'  ? '<span class="chip chip-ok">✓ SIM</span>'
-                  : approval === 'nok' ? '<span class="chip chip-ko">✗ NÃO</span>'
-                  : '<span class="chip chip-neu">—</span>';
-      const rowBg = even ? 'background:#f9fbff;' : '';
-      tableRows += `<tr style="${rowBg}">
-        <td class="num">${rowNum}</td>
-        <td class="pi">${(item.pontoInspecao||'').replace(/[<>]/g,'')||'&nbsp;'}</td>
-        <td class="c">${item.lic||'&nbsp;'}</td>
-        <td class="c">${item.lsc||'&nbsp;'}</td>
-        <td class="c cat cat-${item.categoria||''}">${item.categoria||'&nbsp;'}</td>
-        <td class="met">${(item.metodo||'').replace(/[<>]/g,'')||'&nbsp;'}</td>
-        ${sHtml}
-        <td class="c vt">${vt !== '' ? `<b>${vt}</b>` : '&nbsp;'}</td>
-        <td class="c vr ${typeof vr==='number'&&vr>0?'ko':''}">${typeof vr==='number'&&vr>0?`<b>${vr}</b>`:vr!==''?vr:'&nbsp;'}</td>
-        ${veHtml}
-        <td class="c">${aprov}</td>
-      </tr>`;
-    });
-  });
-
-  // ── helpers ───────────────────────────────────────────────────────────────
-  const g = id => (document.getElementById(id)?.value || '').replace(/[<>]/g,'') || '—';
-  const scoreNum = parseInt(scoreText) || 0;
-  const decColor  = clDecision === 'Aprovado'               ? '#0a6b2a'
-                  : clDecision === 'Reprovado'              ? '#c0392b'
-                  : clDecision === 'Aprovado Condicionalmente' ? '#b45309' : '#555';
-  const decBg     = clDecision === 'Aprovado'               ? '#e8f8ee'
-                  : clDecision === 'Reprovado'              ? '#fdf0f0'
-                  : clDecision === 'Aprovado Condicionalmente' ? '#fefce8' : '#f5f5f5';
-  const decIcon   = clDecision === 'Aprovado' ? '✅' : clDecision === 'Reprovado' ? '❌' : clDecision ? '⚠️' : '–';
-  const scoreColor = scoreNum >= 100 ? '#0a6b2a' : scoreNum >= 90 ? '#1a5bbf' : scoreNum >= 70 ? '#b45309' : '#c0392b';
-  const scoreBg    = scoreNum >= 100 ? '#e8f8ee' : scoreNum >= 90 ? '#edf4ff' : scoreNum >= 70 ? '#fefce8' : '#fdf0f0';
-  const docId = `PA-${a.sap}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
-
-  const win = window.open('','_blank');
-  win.document.write(`<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<title>Auditoria de Produto — ${a.sap}</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-  @page { size: A3 landscape; margin: 10mm 8mm 8mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 9.5px; color: #1e2433; background: #fff; line-height: 1.4; }
-
-  /* ── HEADER ── */
-  .page-header { display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; margin-bottom: 10px; border: 1px solid #dde3f0; }
-  .ph-brand { background: linear-gradient(145deg, #0d2160, #1a3a8f); color: #fff; padding: 12px 18px; display: flex; flex-direction: column; justify-content: center; min-width: 220px; }
-  .ph-brand .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-  .ph-brand .logo-box { width: 36px; height: 36px; background: rgba(255,255,255,.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; letter-spacing: -1px; border: 1px solid rgba(255,255,255,.25); }
-  .ph-brand .co-name { font-size: 14px; font-weight: 800; letter-spacing: .2px; }
-  .ph-brand .doc-type { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; opacity: .7; margin-top: 2px; }
-  .ph-brand .doc-ref { font-size: 8px; opacity: .55; margin-top: 6px; }
-  .ph-center { flex: 1; background: linear-gradient(145deg, #f4f7fe, #eef2fc); padding: 10px 18px; display: flex; flex-direction: column; justify-content: center; border-left: 1px solid #dde3f0; border-right: 1px solid #dde3f0; }
-  .ph-center .doc-title { font-size: 15px; font-weight: 800; color: #0d2160; letter-spacing: .2px; }
-  .ph-center .doc-sub { font-size: 9px; color: #6b7a9f; margin-top: 3px; }
-  .ph-right { background: #fff; padding: 10px 16px; display: flex; flex-direction: column; justify-content: space-between; min-width: 200px; }
-  .ph-right .meta-row { font-size: 8.5px; color: #4a5470; margin-bottom: 3px; }
-  .ph-right .meta-row strong { color: #0d2160; }
-  .ph-right .status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; background: ${decBg}; color: ${decColor}; border: 1px solid ${decColor}33; margin-top: 4px; }
-
-  /* ── INFO GRID ── */
-  .info-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 0; border: 1.5px solid #c4cbde; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
-  .ig-cell { padding: 5px 8px; border-right: 1px solid #dde3f0; border-bottom: 1px solid #dde3f0; background: #fff; }
-  .ig-cell:last-child, .ig-cell:nth-child(9n) { border-right: none; }
-  .ig-cell.header { background: linear-gradient(180deg, #f0f4fd, #e8eeff); }
-  .ig-lbl { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #1a3a8f; margin-bottom: 2px; }
-  .ig-val { font-size: 10px; font-weight: 600; color: #1e2433; min-height: 14px; }
-  .span2 { grid-column: span 2; }
-  .span3 { grid-column: span 3; }
-  .span4 { grid-column: span 4; }
-
-  /* ── MAIN TABLE ── */
-  .section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #1a3a8f; margin: 8px 0 4px; display: flex; align-items: center; gap: 6px; }
-  .section-title::after { content: ''; flex: 1; height: 1.5px; background: linear-gradient(90deg, #1a3a8f44, transparent); }
-  table.main { width: 100%; border-collapse: collapse; font-size: 8px; }
-  table.main thead tr.th1 th { background: linear-gradient(180deg, #1a3a8f, #0d2160); color: #fff; padding: 5px 3px; border: 1px solid #0a1840; font-weight: 700; text-transform: uppercase; font-size: 7px; letter-spacing: .4px; text-align: center; white-space: nowrap; }
-  table.main thead tr.th2 th { background: #1e3d96; color: #ccd6f6; padding: 3px; border: 1px solid #0a1840; font-size: 7px; text-align: center; font-weight: 600; }
-  table.main td { border: 1px solid #d0d8ed; padding: 3px 4px; vertical-align: middle; }
-  table.main td.num { text-align: center; color: #8a94b0; font-size: 7.5px; width: 20px; background: #f5f7fd; }
-  table.main td.c { text-align: center; }
-  table.main td.s { text-align: center; width: 19px; font-weight: 800; font-size: 9px; }
-  table.main td.s.ok { color: #0a6b2a; background: #d4f0de; }
-  table.main td.s.ko { color: #8b0000; background: #fdd; }
-  table.main td.s.neu { color: #bbb; }
-  table.main td.cat { text-align: center; font-weight: 800; font-size: 9px; }
-  table.main td.cat-A { background: #fff8dc; color: #7a5c00; }
-  table.main td.cat-B { background: #dbeafe; color: #1e3a8a; }
-  table.main td.cat-C { background: #dcfce7; color: #14532d; }
-  table.main td.vt { text-align: center; background: #f0f4fd; }
-  table.main td.vr.ko { background: #feeaea; color: #8b0000; }
-  table.main td.pi { font-weight: 600; color: #1e2433; font-size: 8.5px; }
-  table.main td.met { font-size: 7.5px; color: #556; }
-  table.main td.ve { text-align: center; font-size: 8px; }
-  tr.grp td { background: linear-gradient(90deg, #1a3a8f, #2552c4); color: #fff; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; font-size: 8px; padding: 5px 10px !important; border: 1px solid #0a1840 !important; }
-  .grp-icon { opacity: .6; margin-right: 4px; }
-  .chip { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 7.5px; font-weight: 700; white-space: nowrap; }
-  .chip-ok { background: #d4f0de; color: #0a5c2a; }
-  .chip-ko { background: #fdd; color: #8b0000; }
-  .chip-neu { background: #eee; color: #666; }
-
-  /* ── TOTALS ROW ── */
-  tr.totals td { background: #eef2fc; font-weight: 700; border-top: 2px solid #1a3a8f; font-size: 8.5px; }
-
-  /* ── SUMMARY SECTION ── */
-  .summary { display: grid; grid-template-columns: 160px 1fr 1.6fr; gap: 10px; margin-top: 10px; }
-  .score-card { background: ${scoreBg}; border: 2px solid ${scoreColor}55; border-radius: 12px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .score-num { font-size: 58px; font-weight: 900; color: ${scoreColor}; line-height: 1; letter-spacing: -2px; }
-  .score-unit { font-size: 13px; color: ${scoreColor}99; font-weight: 700; margin-top: -4px; }
-  .score-label-text { font-size: 8.5px; color: #556; text-transform: uppercase; letter-spacing: .8px; margin-top: 6px; font-weight: 600; }
-  .score-meta { margin-top: 8px; font-size: 8px; color: #668; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; text-align: left; border-top: 1px solid ${scoreColor}22; padding-top: 6px; }
-  .score-meta span { white-space: nowrap; }
-  .class-card { border: 1.5px solid #d0d8ed; border-radius: 10px; overflow: hidden; }
-  .class-card table { width: 100%; border-collapse: collapse; font-size: 8px; }
-  .class-card th { background: linear-gradient(180deg, #f0f4fd, #e8eeff); color: #1a3a8f; font-size: 7px; text-transform: uppercase; letter-spacing: .5px; padding: 5px 8px; text-align: left; border-bottom: 1.5px solid #c4cbde; }
-  .class-card td { padding: 5px 8px; border-bottom: 1px solid #eef0f8; font-size: 8px; vertical-align: middle; }
-  .cc-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-weight: 700; font-size: 7px; }
-  .cc-ex  { background: #d4f0de; color: #0a5c2a; }
-  .cc-ac  { background: #dbeafe; color: #1e3a8a; }
-  .cc-ri  { background: #fef9c3; color: #854d0e; }
-  .cc-fa  { background: #fdd; color: #8b0000; }
-  .decision-card { background: ${decBg}; border: 2px solid ${decColor}44; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
-  .dec-header { display: flex; align-items: center; gap: 8px; }
-  .dec-icon { font-size: 22px; }
-  .dec-title { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: ${decColor}99; }
-  .dec-val { font-size: 18px; font-weight: 900; color: ${decColor}; line-height: 1.1; }
-  .dec-score-note { font-size: 8px; color: ${decColor}88; margin-top: 2px; }
-  .dec-comments-label { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #4a5470; }
-  .dec-comments { font-size: 8.5px; color: #2a3050; line-height: 1.5; background: rgba(255,255,255,.6); border-radius: 6px; padding: 6px 8px; border: 1px solid ${decColor}22; margin-top: 2px; min-height: 36px; }
-
-  /* ── PARTICIPANTS ── */
-  .participants { margin-top: 10px; }
-  .participants table { width: 100%; border-collapse: collapse; font-size: 8.5px; }
-  .participants th { background: linear-gradient(180deg, #f0f4fd, #e8eeff); color: #1a3a8f; font-size: 7.5px; text-transform: uppercase; letter-spacing: .5px; padding: 5px 10px; text-align: left; border: 1px solid #c4cbde; }
-  .participants td { padding: 4px 10px 16px; border: 1px solid #d0d8ed; vertical-align: bottom; }
-  .sig-line { border-bottom: 1px dashed #999; display: block; width: 80%; margin-top: 8px; height: 1px; }
-  .sig-val { font-size: 9px; color: #1a3a8f; font-weight: 600; font-style: italic; }
-
-  /* ── FOOTER ── */
-  .page-footer { margin-top: 10px; padding-top: 6px; border-top: 1.5px solid #d0d8ed; display: flex; align-items: center; justify-content: space-between; font-size: 7.5px; color: #8a94b0; }
-  .pf-left { display: flex; flex-direction: column; gap: 1px; }
-  .pf-confidential { font-weight: 700; color: #c0392b; text-transform: uppercase; letter-spacing: .5px; font-size: 7px; }
-
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-
-<!-- ════════════════ PAGE HEADER ════════════════ -->
-<div class="page-header">
-  <div class="ph-brand">
-    <div class="logo-row">
-      <div class="logo-box">R</div>
-      <div>
-        <div class="co-name">Röchling Automotive</div>
-        <div class="doc-type">Check List de Auditoria de Produto</div>
-      </div>
-    </div>
-    <div class="doc-ref">Ref.: P10 02F 20C &nbsp;|&nbsp; Doc.: ${docId}</div>
-  </div>
-  <div class="ph-center">
-    <div class="doc-title">Relatório de Auditoria de Produto</div>
-    <div class="doc-sub">SAP: <b>${a.sap||'—'}</b> &nbsp;·&nbsp; PN: <b>${a.pn||'—'}</b> &nbsp;·&nbsp; Cliente: <b>${a.client||'—'}</b> &nbsp;·&nbsp; Família: <b>${g('clFamily')}</b></div>
-  </div>
-  <div class="ph-right">
-    <div>
-      <div class="meta-row"><strong>Nº Relatório:</strong> ${g('clReportNum')}</div>
-      <div class="meta-row"><strong>Data:</strong> ${g('clDate')}</div>
-      <div class="meta-row"><strong>Emitido:</strong> ${new Date().toLocaleString('pt-BR')}</div>
-    </div>
-    <div class="status-chip">${decIcon} ${clDecision || 'Pendente'}</div>
-  </div>
-</div>
-
-<!-- ════════════════ INFO GRID ════════════════ -->
-<div class="info-grid">
-  <div class="ig-cell header"><div class="ig-lbl">Nº do Item</div><div class="ig-val">${g('clNumItem')}</div></div>
-  <div class="ig-cell header span3"><div class="ig-lbl">Descrição do Produto</div><div class="ig-val">${(a.desc||'—')}</div></div>
-  <div class="ig-cell header span2"><div class="ig-lbl">Família do Produto</div><div class="ig-val">${g('clFamily')}</div></div>
-  <div class="ig-cell header"><div class="ig-lbl">Auditor Responsável</div><div class="ig-val">${g('clAuditor')}</div></div>
-  <div class="ig-cell header"><div class="ig-lbl">Data de Auditoria</div><div class="ig-val">${g('clDate')}</div></div>
-  <div class="ig-cell header"><div class="ig-lbl">Risco</div><div class="ig-val">${a.risk||'—'}</div></div>
-  <div class="ig-cell header span2"><div class="ig-lbl">Lote / Nº Embalagem</div><div class="ig-val">${g('clLot')}</div></div>
-  <div class="ig-cell header span3"><div class="ig-lbl">Planta Auditada</div><div class="ig-val">${g('clPlant')}</div></div>
-  <div class="ig-cell header span2"><div class="ig-lbl">Produto / SAP</div><div class="ig-val">${a.sap||'—'}</div></div>
-  <div class="ig-cell header"><div class="ig-lbl">Status</div><div class="ig-val">${a.status||'—'}</div></div>
-</div>
-
-<!-- ════════════════ INSPECTION TABLE ════════════════ -->
-<div class="section-title">Itens de Inspeção</div>
-<table class="main">
-  <thead>
-    <tr class="th1">
-      <th rowspan="2" style="width:20px;">#</th>
-      <th rowspan="2" style="min-width:160px;text-align:left;padding-left:8px;">Ponto de Inspeção</th>
-      <th rowspan="2" style="width:44px;">LIC</th>
-      <th rowspan="2" style="width:44px;">LSC</th>
-      <th rowspan="2" style="width:34px;">Cat.</th>
-      <th rowspan="2" style="min-width:110px;text-align:left;padding-left:6px;">Método de Inspeção</th>
-      <th colspan="${NUM_SAMPLES}" style="background:#1a5bbf;letter-spacing:.3px;">Resultado Amostras &nbsp; 0=OK · 1=NOK</th>
-      <th rowspan="2" style="width:36px;">Total</th>
-      <th rowspan="2" style="width:36px;">Repr.</th>
-      <th colspan="${NUM_SAMPLES}" style="background:#0a6b2a;letter-spacing:.3px;">Valores Encontrados</th>
-      <th rowspan="2" style="width:56px;">Aprovado?</th>
-    </tr>
-    <tr class="th2">
-      ${Array.from({length:NUM_SAMPLES}, (_,i) => `<th style="width:18px;">${i+1}</th>`).join('')}
-      ${Array.from({length:NUM_SAMPLES}, (_,i) => `<th style="background:#0a5c2a;width:40px;">V${i+1}</th>`).join('')}
-    </tr>
-  </thead>
-  <tbody>
-    ${tableRows}
-    <tr class="totals">
-      <td colspan="6" style="text-align:right;font-size:8px;color:#1a3a8f;letter-spacing:.3px;">TOTAIS GERAIS →</td>
-      ${Array.from({length:NUM_SAMPLES}, () => '<td></td>').join('')}
-      <td class="c vt"><b>${totalValTotal}</b></td>
-      <td class="c ${totalValRepr>0?'ko':''}">${totalValRepr>0?`<b>${totalValRepr}</b>`:totalValRepr||'0'}</td>
-      ${Array.from({length:NUM_SAMPLES}, () => '<td></td>').join('')}
-      <td class="c" style="font-size:8px;color:#4a5470;">${totalFailed > 0 ? `<span class="chip chip-ko">${totalFailed} NOK</span>` : `<span class="chip chip-ok">0 NOK</span>`}</td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- ════════════════ SUMMARY ════════════════ -->
-<div class="summary">
-
-  <!-- Score Card -->
-  <div class="score-card">
-    <div class="score-num">${scoreText}</div>
-    <div class="score-unit">pts</div>
-    <div class="score-label-text">${scoreLabel||'Pontuação Total'}</div>
-    <div class="score-meta">
-      <span>Avaliados: <b>${evalCount}</b></span>
-      <span>Reprovados: <b style="color:${totalFailed>0?'#8b0000':'#0a6b2a'}">${failCount}</b></span>
-      <span>Amostras: <b>${totalSamp}</b></span>
-      <span>Val. Repr.: <b style="color:${totalValRepr>0?'#8b0000':'#0a6b2a'}">${valReprova}</b></span>
-    </div>
-  </div>
-
-  <!-- Classification -->
-  <div class="class-card">
-    <table>
-      <thead><tr><th>Pontuação</th><th>Classificação</th><th>Cat.</th><th>Penalidade/item</th></tr></thead>
-      <tbody>
-        <tr style="${scoreNum>=100?'font-weight:800;':''};background:${scoreNum>=100?'#d4f0de':''}">
-          <td><b>100</b></td>
-          <td>🏆 Qualidade Excepcional</td>
-          <td><span class="cc-badge cc-ex">A</span></td>
-          <td style="text-align:center;"><b>20 pts</b></td>
-        </tr>
-        <tr style="${scoreNum>=90&&scoreNum<100?'font-weight:800;':''};background:${scoreNum>=90&&scoreNum<100?'#dbeafe':''}">
-          <td><b>90–99</b></td>
-          <td>✅ Qualidade Aceitável</td>
-          <td><span class="cc-badge cc-ac">B</span></td>
-          <td style="text-align:center;"><b>10 pts</b></td>
-        </tr>
-        <tr style="${scoreNum>=70&&scoreNum<90?'font-weight:800;':''};background:${scoreNum>=70&&scoreNum<90?'#fef9c3':''}">
-          <td><b>70–89</b></td>
-          <td>⚠️ Permissível sob Derroga</td>
-          <td><span class="cc-badge cc-ri">C</span></td>
-          <td style="text-align:center;"><b>5 pts</b></td>
-        </tr>
-        <tr style="${scoreNum<70?'font-weight:800;':''};background:${scoreNum<70?'#fdd':''}">
-          <td><b>&lt; 70</b></td>
-          <td>❌ Qualidade não aceitável</td>
-          <td>—</td>
-          <td style="text-align:center;color:#8b0000;"><b>Reprovado</b></td>
-        </tr>
-      </tbody>
-    </table>
-    <div style="margin-top:7px;padding:5px 7px;background:#f5f7fd;border-radius:5px;font-size:7.5px;color:#556;line-height:1.5;">
-      <b>Cat. A</b> — Reg. legais / segurança (100% detectável pelo cliente) &nbsp;·&nbsp;
-      <b>Cat. B</b> — Função restrita, perceptível aleatoriamente &nbsp;·&nbsp;
-      <b>Cat. C</b> — Defeitos estéticos passíveis de retrabalho
-    </div>
-  </div>
-
-  <!-- Decision -->
-  <div class="decision-card">
-    <div class="dec-header">
-      <div class="dec-icon">${decIcon}</div>
-      <div>
-        <div class="dec-title">Decisão da Auditoria</div>
-        <div class="dec-val">${clDecision || '— Pendente —'}</div>
-        <div class="dec-score-note">Score: ${scoreText} pts &nbsp;·&nbsp; SAP: ${a.sap}</div>
-      </div>
-    </div>
-    <div>
-      <div class="dec-comments-label">Comentários / Ações QRQC</div>
-      <div class="dec-comments">${g('clComments').replace(/\n/g,'<br>') || '<i style="color:#aaa;font-size:8px;">— Sem observações registradas —</i>'}</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ════════════════ PARTICIPANTS ════════════════ -->
-<div class="section-title" style="margin-top:10px;">Participantes da Auditoria</div>
-<div class="participants">
-  <table>
-    <thead>
-      <tr>
-        <th style="width:160px;">Função</th>
-        <th style="width:180px;">Nome Completo</th>
-        <th>Assinatura Digital</th>
-        <th style="width:120px;">Data</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><b>Auditor de Qualidade</b></td>
-        <td>${g('clAuditorName')}</td>
-        <td><span class="sig-val">${g('clAuditorSig') !== '—' ? g('clAuditorSig') : ''}</span><span class="sig-line"></span></td>
-        <td>${g('clAuditorDate')}</td>
-      </tr>
-      <tr>
-        <td><b>Co-Auditor</b></td>
-        <td>${g('clCoAuditorName') !== '—' ? g('clCoAuditorName') : ''}</td>
-        <td><span class="sig-val">${g('clCoAuditorSig') !== '—' ? g('clCoAuditorSig') : ''}</span><span class="sig-line"></span></td>
-        <td>${g('clCoAuditorDate') !== '—' ? g('clCoAuditorDate') : ''}</td>
-      </tr>
-      <tr>
-        <td><b>Coordenador de Qualidade</b></td>
-        <td>${g('clCoordName') !== '—' ? g('clCoordName') : ''}</td>
-        <td><span class="sig-val">${g('clCoordSig') !== '—' ? g('clCoordSig') : ''}</span><span class="sig-line"></span></td>
-        <td>${g('clCoordDate') !== '—' ? g('clCoordDate') : ''}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- ════════════════ PAGE FOOTER ════════════════ -->
-<div class="page-footer">
-  <div class="pf-left">
-    <span><b>Röchling Automotive do Brasil Ltda</b> · Av. Emílio Chechinato, 4195 · Itupeva-SP 13295-000 · +55 11 4496-8420</span>
-    <span class="pf-confidential">⚠ Documento Confidencial — Uso Interno</span>
-  </div>
-  <div style="text-align:right;">
-    <div><b>Doc. ID:</b> ${docId}</div>
-    <div>SAP: ${a.sap||'—'} · Gerado: ${new Date().toLocaleString('pt-BR')}</div>
-  </div>
-</div>
-
-<scr` + `ipt>
-  window.onload = () => {
-    setTimeout(() => { window.print(); }, 800);
-  };
-<\/script>
-</body>
-</html>`);
-  win.document.close();
-}
-
-function showExcelStructureHelp(){
-  const help = `
-📋 ESTRUTURA CORRETA DO EXCEL
-
-═══════════════════════════════════════════════════════════
-
-HEADERS (Linhas 4-7):
-├─ C4:  Número do Item              (ex: Ex-001)
-├─ M4:  Número do Relatório          (ex: 032018)
-├─ C5:  Descrição do Produto
-├─ M5:  Nome do Auditor
-├─ E6:  Família do Produto           (ex: Engine/Radiator)
-├─ M6:  Data                         (dd/mm/aaaa)
-├─ C7:  Lote / # Embalagem          (ex: Ex-LOT-2026-001)
-└─ M7:  Planta                      (ex: Röchling)
-
-═══════════════════════════════════════════════════════════
-
-DADOS DOS ITENS (Estrutura por GRUPO):
-
-🟦 GRUPO A - Características Gerais — Atributivas
-   Linhas: 14 até 35 (EXATAMENTE 22 linhas)
-   └─ Preencha quantos itens precisar, deixe resto vazio
-
-🟦 GRUPO B - Características Gerais — Variável
-   Linhas: 36 até 49 (EXATAMENTE 14 linhas)
-   └─ Preencha quantos itens precisar, deixe resto vazio
-
-🟦 GRUPO C - Critérios específicos do Cliente
-   Linhas: 50 até 56 (EXATAMENTE 7 linhas)
-   └─ Preencha quantos itens precisar, deixe resto vazio
-
-🟦 GRUPO D - Requisitos de Segurança / Regulamentação
-   Linhas: 57 até 62 (EXATAMENTE 6 linhas)
-   └─ Preencha quantos itens precisar, deixe resto vazio
-
-═══════════════════════════════════════════════════════════
-
-COLUNAS DE CADA ITEM:
-├─ C:  Ponto de Inspeção
-├─ D:  LIC (Limite Inferior)
-├─ E:  LSC (Limite Superior)
-├─ F:  Categoria (A, B ou C)
-├─ G:  Método de Inspeção
-├─ I-M: Amostras 1-5 (valores: 0 ou 1, ou OK/NOK)
-└─ W-AA: Valores Encontrados V1-V5
-
-═══════════════════════════════════════════════════════════
-
-✅ EXEMPLO CORRETO:
-Linha 14 (Grupo A): [Verificar Solda A][...dados...]
-Linha 15 (Grupo A): [Passo 9][...dados...]
-Linha 16 (Grupo A): [Verificar Solda B][...dados...]
-...
-Linha 35 (Grupo A): [Último item do Grupo A ou VAZIO]
-
-Linha 36 (Grupo B): [Primeiro item do Grupo B]
-...
-Linha 49 (Grupo B): [Último item ou VAZIO]
-
-Linha 50 (Grupo C): [Primeiro item do Grupo C]
-...
-
-❌ ERROS COMUNS:
-• Deslocar grupos (ex: Grupo A em 15-35 ao invés de 14-35)
-• Exceder número de linhas (ex: 25 linhas no Grupo A quando máx é 22)
-• Valores inválidos em Categoria (use A, B ou C)
-• Amostras com texto (use 0, 1, OK ou NOK)
-
-📥 DICA: Exporte um checklist já preenchido como Excel,
-   use como TEMPLATE para novas auditorias.
-`;
-  
-  alert(help);
-}
-
-function clEnableEdit(){
-  if (!clCurrentAuditId) return;
-  if (!confirm('Reabrir esta auditoria finalizada para edição?\n\nA pontuação e a decisão poderão ser alteradas.')) return;
-  const a = state.audits.find(x => x.id === clCurrentAuditId);
-  const savedMonth = a?.checklistsByMonth?.[clCurrentMonthIndex];
-  if (!a || !savedMonth) return;
-  savedMonth.completedAt = null;
-  saveAudits(a.id);
-  notify('✎ Checklist reaberto para edição');
-  openChecklist(clCurrentAuditId, clCurrentMonthIndex);
-}
-
-function clClearForm(){
-  if (clReadonly) return;
-  if (!confirm('⚠️ LIMPAR FORMULÁRIO\n\nTodos os dados preenchidos serão apagados.\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')) return;
-  
-  // Limpar campos de header
-  document.getElementById('clReportNum').value = '';
-  document.getElementById('clAuditor').value = '';
-  document.getElementById('clDate').value = '';
-  document.getElementById('clPlant').value = '';
-  
-  // Limpar tabela de itens
-  clGroups.forEach(group => {
-    group.items.forEach(item => {
-      item.pontoInspecao = '';
-      item.lic = '';
-      item.lsc = '';
-      item.categoria = 'C';
-      item.metodo = '';
-      item.samples = [null, null, null, null, null];
-      item.valoresEncontrados = ['', '', '', '', ''];
-    });
-  });
-  
-  // Limpar campos de decisão
-  document.getElementById('clComments').value = '';
-  document.getElementById('clAuditorName').value = '';
-  document.getElementById('clAuditorSig').value = '';
-  document.getElementById('clAuditorDate').value = '';
-  document.getElementById('clCoAuditorName').value = '';
-  document.getElementById('clCoAuditorSig').value = '';
-  document.getElementById('clCoAuditorDate').value = '';
-  document.getElementById('clCoordName').value = '';
-  document.getElementById('clCoordSig').value = '';
-  document.getElementById('clCoordDate').value = '';
-  
-  clDecision = null;
-  
-  // Re-renderizar e salvar
-  renderChecklistTable();
-  recalcChecklist();
-  saveChecklist();
-  notify('🔄 Formulário limpo com sucesso!');
-}
-
-function clDeleteChecklist(){
-  if (!clCurrentAuditId) return;
-  const a = state.audits.find(x => x.id === clCurrentAuditId);
-  if (!a) return;
-  const savedMonth = a.checklistsByMonth?.[clCurrentMonthIndex];
-  if (!confirm('Excluir DEFINITIVAMENTE o checklist de ' + (MONTHS[clCurrentMonthIndex]||'') + ' desta auditoria?\n\nTodos os dados preenchidos (' + (savedMonth?.score||'—') + ' pts) serão perdidos. Esta ação não pode ser desfeita.')) return;
-  if (a.checklistsByMonth) delete a.checklistsByMonth[clCurrentMonthIndex];
-  saveAudits(a.id);
-  state.filtered = auditOnly();
-  filterGantt && filterGantt();
-  renderMetrics && renderMetrics();
-  renderCharts && renderCharts();
-  notify('🗑 Checklist excluído');
-  closeChecklist();
-}
-
-function clImportExcel(input){
-  const file = input.files && input.files[0];
-  input.value = '';
-  if (!file) return;
-  if (clReadonly){ notify('Habilite a edição antes de importar', 'warn'); return; }
-  
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const get = (addr) => { const c = ws[addr]; return c ? String(c.v ?? '').trim() : ''; };
-      
-      // ===== 1. IMPORTA HEADERS =====
-      const map = {
-        clNumItem:   'C4',
-        clReportNum: 'M4',
-        clDesc:      'C5',
-        clAuditor:   'M5',
-        clFamily:    'E6',
-        clDate:      'M6',
-        clLot:       'C7',
-        clPlant:     'M7',
-      };
-      Object.entries(map).forEach(([id, addr]) => {
-        const el = document.getElementById(id);
-        const v = get(addr);
-        if (el && v) el.value = v;
-      });
-      
-      // ===== 2. DETECTA DADOS DO EXCEL DINAMICAMENTE =====
-      // Procura por onde os dados começam (procura por "Ponto de Inspeção" ou coluna C com conteúdo)
-      
-      // Estratégia: varrer linhas até encontrar dados
-      // Assumindo que linhas 14+ têm dados
-      const excelData = [];
-      
-      // Lê todas as linhas possíveis (14 até 100)
-      for (let r = 14; r <= 100; r++) {
-        const ponto = get('C' + r);
-        if (ponto && ponto.length > 0) {
-          // Encontrou item
-          excelData.push({
-            linha: r,
-            pontoInspecao: ponto,
-            lic: get('D' + r),
-            lsc: get('E' + r),
-            categoria: get('F' + r),
-            metodo: get('G' + r),
-            amostras: [get('I' + r), get('J' + r), get('K' + r), get('L' + r), get('M' + r)],
-            valores: [get('W' + r), get('X' + r), get('Y' + r), get('Z' + r), get('AA' + r)]
-          });
-        }
-      }
-      
-      console.log(`📊 Excel: encontrado total de ${excelData.length} itens`);
-      
-      if (excelData.length === 0) {
-        notify('❌ Nenhum dado encontrado no Excel. Verifique se há itens a partir da linha 14', 'error');
-        return;
-      }
-      
-      // ===== 3. TENTA DIVIDIR EM GRUPOS AUTOMATICAMENTE =====
-      // Procura por palavras-chave nos pontos de inspeção para separar grupos
-      // OU usa quantidade de itens para adivinhar divisão
-      
-      // Opção: Perguntar ao usuário como dividir
-      const totalItens = excelData.length;
-      const gruposAtivos = clGroups.filter(g => g.items && g.items.length > 0);
-      
-      if (gruposAtivos.length === 0) {
-        notify('⚠️ Nenhum grupo tem linhas. Adicione linhas primeiro com o botão +', 'warn');
-        return;
-      }
-      
-      // Conta quantas linhas cada grupo tem
-      const linhasPorGrupo = {};
-      let totalLinhas = 0;
-      gruposAtivos.forEach(g => {
-        linhasPorGrupo[g.id] = g.items.length;
-        totalLinhas += g.items.length;
-      });
-      
-      console.log('📋 Linhas por grupo no checklist:', linhasPorGrupo);
-      
-      // ===== 4. IMPORTA DADOS NESSAS LINHAS =====
-      let indiceExcel = 0;
-      let resumoImportacao = {};
-      
-      gruposAtivos.forEach(grupo => {
-        resumoImportacao[grupo.label] = 0;
-        
-        const quantidadeLinhas = linhasPorGrupo[grupo.id];
-        
-        for (let idx = 0; idx < quantidadeLinhas && indiceExcel < excelData.length; idx++, indiceExcel++) {
-          const item = grupo.items[idx];
-          const dados = excelData[indiceExcel];
-          
-          // Copia dados do Excel
-          item.pontoInspecao = dados.pontoInspecao;
-          item.lic = dados.lic;
-          item.lsc = dados.lsc;
-          
-          // Valida categoria
-          const catRaw = (dados.categoria || 'C').toUpperCase().charAt(0);
-          item.categoria = ['A','B','C'].includes(catRaw) ? catRaw : 'C';
-          
-          item.metodo = dados.metodo;
-          
-          // Inicializa arrays
-          item.samples = [null, null, null, null, null];
-          item.valoresEncontrados = ['', '', '', '', ''];
-          
-          // Importa valores encontrados
-          dados.valores.forEach((v, vi) => {
-            if (v && v !== '') item.valoresEncontrados[vi] = String(v);
-          });
-          
-          // Importa amostras
-          dados.amostras.forEach((v, si) => {
-            const vLower = String(v).toLowerCase().trim();
-            if (v === '0' || v === 0 || vLower === 'ok' || vLower === 'aprovado') {
-              item.samples[si] = 0;
-            } else if (v === '1' || v === 1 || vLower === 'nok' || vLower === 'reprovado') {
-              item.samples[si] = 1;
-            }
-          });
-          
-          resumoImportacao[grupo.label]++;
-        }
-      });
-      
-      // ===== 5. SE SOBROU DADOS NO EXCEL, AVISA =====
-      if (indiceExcel < excelData.length) {
-        const restante = excelData.length - indiceExcel;
-        notify(`⚠️ Excel tem ${restante} itens a mais do que linhas criadas.\nAdicione mais linhas aos grupos se quiser importar tudo.`, 'warn');
-      }
-      
-      // ===== 6. RE-RENDERIZA E SALVA =====
-      renderChecklistTable();
-      recalcChecklist();
-      saveChecklist();
-      
-      // Monta mensagem de feedback
-      let mensagem = '✅ IMPORTAÇÃO SUCESSO!\n\n';
-      Object.entries(resumoImportacao).forEach(([grupo, qtd]) => {
-        mensagem += `${grupo}: ${qtd} itens\n`;
-      });
-      
-      notify(mensagem);
-      console.log('📋 Importação dinâmica concluída!', resumoImportacao);
-      
-    } catch(err){
-      console.error('❌ Erro ao importar:', err);
-      notify('❌ ERRO:\n' + (err.message || err), 'error');
-    }
-  };
-  reader.readAsArrayBuffer(file);
 }
 
 // ===== INICIALIZAÇÃO =====
@@ -4896,10 +2395,9 @@ async function init() {
 
   buildMonthsGrid('n');
   buildMonthsGrid('e');
-  updateFilterOptions();
-  renderMetrics();
-  renderCharts();
-  renderGantt();
+  updateLayoutFilterOptions();
+  if (typeof renderLayoutDash === 'function') renderLayoutDash();
+  if (typeof filterLayout === 'function') filterLayout();
   migrateLegacyLayoutItems();
   updateLayoutFilterOptions();
   filterLayout();
@@ -4911,12 +2409,12 @@ async function init() {
   // Além de rodar a cada render, reavalia periodicamente e quando o usuário
   // volta pra aba, para pegar a virada de mês/dia mesmo com o app aberto.
   setInterval(() => {
-    if (atualizarAtrasos()) { filterGantt(); renderCharts(); }
+    if (atualizarAtrasos()) { if (typeof filterLayout === 'function') filterLayout(); }
   }, 30 * 60 * 1000); // a cada 30 min
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && atualizarAtrasos()) {
-      filterGantt();
-      renderCharts();
+      if (typeof filterLayout === 'function') filterLayout();
+      if (typeof renderLayoutDash === 'function') renderLayoutDash();
     }
   });
 
@@ -5496,23 +2994,29 @@ function printLayoutChecklist(){
   const docId = `LI-${(a && a.pn) || liCurrent || '—'}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
   const chk = (on, label) => `<span class="chk-item">${on ? '☑' : '☐'} ${liEsc(label)}</span>`;
 
+  const sheetsToPrint = (r.sheets && r.sheets.length) ? r.sheets : [{name:'', rows:r.rows||[]}];
   let rowsHtml = '';
-  r.rows.forEach(row => {
-    const rowCls = row.nok ? 'row-nok' : row.ok ? 'row-ok' : '';
-    const mCells = row.m.map(m => `<td class="c">${v(m)}</td>`).join('');
-    const okB  = row.ok  ? `<span class="chip chip-ok">✓ ${liEsc(row.ok)}</span>`   : '&nbsp;';
-    const nokB = row.nok ? `<span class="chip chip-ko">✗ ${liEsc(row.nok)}</span>` : '&nbsp;';
-    rowsHtml += `<tr class="${rowCls}">
-      <td class="num">${v(row.item)}</td>
-      <td class="pi">${v(row.char)}</td>
-      <td class="c">${v(row.nominal)}</td>
-      <td class="c">${v(row.spec)}</td>
-      <td class="c">${v(row.low)}</td>
-      <td class="c">${v(row.upper)}</td>
-      ${mCells}
-      <td class="c ok-cell">${okB}</td>
-      <td class="c nok-cell">${nokB}</td>
-    </tr>`;
+  sheetsToPrint.forEach((sh, si) => {
+    if (sheetsToPrint.length > 1) {
+      rowsHtml += `<tr class="li-section-row"><td colspan="13">${liEsc(sh.name || ('Componente ' + (si + 1)))}</td></tr>`;
+    }
+    (sh.rows || []).forEach(row => {
+      const rowCls = row.nok ? 'row-nok' : row.ok ? 'row-ok' : '';
+      const mCells = row.m.map(m => `<td class="c">${v(m)}</td>`).join('');
+      const okB  = row.ok  ? `<span class="chip chip-ok">✓ ${liEsc(row.ok)}</span>`   : '&nbsp;';
+      const nokB = row.nok ? `<span class="chip chip-ko">✗ ${liEsc(row.nok)}</span>` : '&nbsp;';
+      rowsHtml += `<tr class="${rowCls}">
+        <td class="num">${v(row.item)}</td>
+        <td class="pi">${v(row.char)}</td>
+        <td class="c">${v(row.nominal)}</td>
+        <td class="c">${v(row.spec)}</td>
+        <td class="c">${v(row.low)}</td>
+        <td class="c">${v(row.upper)}</td>
+        ${mCells}
+        <td class="c ok-cell">${okB}</td>
+        <td class="c nok-cell">${nokB}</td>
+      </tr>`;
+    });
   });
 
   const win = window.open('', '_blank');
@@ -5566,6 +3070,7 @@ function printLayoutChecklist(){
   table.main td.pi { text-align: left; font-weight: 600; color: #1e2433; }
   table.main tr.row-ok td { background: #f2fbf5; }
   table.main tr.row-nok td { background: #fdf3f3; }
+  table.main tr.li-section-row td { background: linear-gradient(180deg, #eef2fc, #e4e9fa); color: #0d2160; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; font-size: 9px; text-align: left; padding: 6px 8px; border: 1px solid #c4cbde; }
   .chip { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 8px; font-weight: 700; white-space: nowrap; }
   .chip-ok { background: #d4f0de; color: #0a5c2a; }
   .chip-ko { background: #fdd; color: #8b0000; }
@@ -5751,7 +3256,6 @@ Object.assign(window, {
   openNewModal, closeModal, saveNew,
   openEditModal, saveEdit, deleteAudit,
   viewAudit, openEditFromView,
-  filterGantt, clearFilters,
   toggleMonth,
   filterLayout, clearFiltersL, renderLayoutGantt, renderLayoutDash,
   updateLayoutFilterOptions, updateTopbarForView,
@@ -5761,17 +3265,10 @@ Object.assign(window, {
   exportToExcel, exportToCSV, exportToPrint,
   exportBackupJSON, toggleExportMenu, closeExportMenu,
   notify,
-  applyChartFilter,
-  openChecklist, closeChecklist, openChecklistAuto,
+  openChecklistAuto,
   openLayoutChecklist, closeLayoutChecklist, saveLayoutChecklist,
   finalizeLayoutChecklist, printLayoutChecklist, lcEnableEdit, lcDeleteChecklist,
   hasLayoutReport,
-  clAddRow, clDeleteRow, clUpdateCell, clSampleInput,
-  clUpdateVE, clAutoFill, clAutoFillGroup,
-  setDecision, recalcChecklist,
-  _isOKWord, _isNOKWord, _clVEClass, _clGetRowApproval, _clRefreshVERow, _clRefreshApprovalCell,
-  saveChecklist, finalizeChecklist, printChecklist,
-  clEnableEdit, clDeleteChecklist, clClearForm, clImportExcel, clImportJSON, showExcelStructureHelp,
 });
 
 // ===== ATALHOS DE TECLADO =====
@@ -5971,6 +3468,8 @@ if (document.readyState === 'loading') {
       <div class="cell"><div class="lbl">Customer</div><input data-lk="customer"></div>
     </div>
 
+    <div class="li-tabs" id="liTabsBar"></div>
+
     <div class="li-table-wrap" id="liDimTblWrap">
     <table class="li-dim" id="liDimTbl">
       <colgroup>
@@ -6135,10 +3634,38 @@ function liBlankReport(it){
     supplier:'Röchling Automotive do Brasil',supplierNumber:'',partNumber:it?it.pn:'',revision:'',
     inspDept:'METROLOGY',partName:it?it.part:'',reportN:'',customer:it?it.client:'',
     headers:Object.assign({},DEFAULT_HEADERS),
-    rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1))),
+    sheets:[{id:liUid(),name:'Componente 1',rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1)))}],
+    activeSheet:0,
+    rows:null, // ponteiro para sheets[activeSheet].rows — mantido por liEnsureSheets p/ compatibilidade com o resto da planilha
     obs:'',signName:it?it.resp:'',signTitle:'METROLOGIST',signDate:new Date().toISOString().slice(0,10),
     updatedAt:null
   };
+}
+/* Um relatório pode ter várias "abas" (componentes) medidos separadamente.
+   r.rows sempre aponta para o array de linhas da aba ativa — todo o resto do
+   motor da planilha (fill handle, colar, undo, import etc.) continua lendo/
+   escrevendo em r.rows sem precisar saber de abas. */
+function liEnsureSheets(r){
+  if(!Array.isArray(r.sheets)||!r.sheets.length){
+    r.sheets=[{id:liUid(),name:'Componente 1',rows:(r.rows&&r.rows.length)?r.rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1)))}];
+    r.activeSheet=0;
+  }
+  if(r.activeSheet==null||r.activeSheet<0||r.activeSheet>=r.sheets.length)r.activeSheet=0;
+  r.sheets.forEach((sh,i)=>{
+    if(!sh.id)sh.id=liUid();
+    if(!sh.name)sh.name='Componente '+(i+1);
+    sh.rows=(sh.rows||[]).map(row=>{
+      row.m=Array.isArray(row.m)?row.m.slice(0,5):['','','','',''];
+      while(row.m.length<5)row.m.push('');
+      return row;
+    });
+  });
+  r.rows=r.sheets[r.activeSheet].rows;
+  return r;
+}
+function liSyncActiveSheet(){
+  const r=liState.reports[liCurrent];
+  if(r&&Array.isArray(r.sheets)&&r.sheets[r.activeSheet])r.sheets[r.activeSheet].rows=r.rows;
 }
 function liGetReport(id){
   if(!liState.reports[id]){
@@ -6146,11 +3673,7 @@ function liGetReport(id){
   }
   const r=liState.reports[id];
   if(!r.headers)r.headers=Object.assign({},DEFAULT_HEADERS);
-  r.rows=(r.rows||[]).map(row=>{
-    row.m=Array.isArray(row.m)?row.m.slice(0,5):['','','','',''];
-    while(row.m.length<5)row.m.push('');
-    return row;
-  });
+  liEnsureSheets(r);
   return r;
 }
 window.liGetReport=liGetReport; // exposto p/ printLayoutChecklist(), definida fora desta IIFE
@@ -6165,13 +3688,22 @@ function liNormalizeReport(saved, itemInfo){
   const base=liBlankReport(itemInfo||null);
   const r=Object.assign({},base,saved||{});
   r.headers=Object.assign({},DEFAULT_HEADERS,(saved&&saved.headers)||{});
-  const srcRows=(saved&&saved.rows&&saved.rows.length)?saved.rows:base.rows;
-  r.rows=srcRows.map(row=>{
+  const cloneRows=rows=>(rows||[]).map(row=>{
     const nr=Object.assign({},liBlankRow(''),row);
     nr.m=Array.isArray(row.m)?row.m.slice(0,5):['','','','',''];
     while(nr.m.length<5)nr.m.push('');
     return nr;
   });
+  if(saved&&Array.isArray(saved.sheets)&&saved.sheets.length){
+    r.sheets=saved.sheets.map((sh,i)=>({id:sh.id||liUid(),name:sh.name||('Componente '+(i+1)),rows:cloneRows(sh.rows)}));
+    r.activeSheet=(saved.activeSheet!=null)?saved.activeSheet:0;
+  } else {
+    // relatório salvo no formato antigo (sem abas) — migra para uma única aba
+    const srcRows=(saved&&saved.rows&&saved.rows.length)?saved.rows:base.sheets[0].rows;
+    r.sheets=[{id:liUid(),name:'Componente 1',rows:cloneRows(srcRows)}];
+    r.activeSheet=0;
+  }
+  liEnsureSheets(r);
   return r;
 }
 window.liLoadRecord=function(key, saved, itemInfo){
@@ -6185,17 +3717,20 @@ window.liForgetRecord=function(key){ delete liState.reports[key]; };
 window.liCollectSilent=function(){ if(liCurrent) liCollect(); };
 window.liStats=function(){
   const r=liGetReport(liCurrent);
-  let ok=0,nok=0,measured=0;
-  r.rows.forEach(row=>{
+  liSyncActiveSheet();
+  let ok=0,nok=0,measured=0,count=0;
+  r.sheets.forEach(sh=>sh.rows.forEach(row=>{
+    count++;
     if((row.ok||'').toUpperCase().includes('OK'))ok++;
     if((row.nok||'').toUpperCase().includes('NOT'))nok++;
     if(row.m.some(v=>String(v||'').trim()!==''))measured++;
-  });
-  const total=r.rows.length||1;
-  return{ok,nok,measured:measured>0,total:r.rows.length,pct:Math.round(ok/total*100)};
+  }));
+  const total=count||1;
+  return{ok,nok,measured:measured>0,total:count,pct:Math.round(ok/total*100)};
 };
 window.liExportRecord=function(finalize){
   liCollect();
+  liSyncActiveSheet();
   const r=liGetReport(liCurrent);
   const st=window.liStats();
   const decision = st.nok>0 ? 'Reprovado' : (st.ok>0 ? 'Aprovado' : 'Em aberto');
@@ -6296,8 +3831,9 @@ function liRenderSchedule(){
     const rep=liState.reports[it.id];
     let st='—',color='var(--text-secondary)';
     if(rep){
-      const nok=rep.rows.filter(r=>(r.nok||'').toUpperCase().includes('NOT')).length;
-      const ok=rep.rows.filter(r=>(r.ok||'').toUpperCase().includes('OK')).length;
+      const repAllRows=(rep.sheets&&rep.sheets.length?rep.sheets:[{rows:rep.rows||[]}]).flatMap(sh=>sh.rows||[]);
+      const nok=repAllRows.filter(r=>(r.nok||'').toUpperCase().includes('NOT')).length;
+      const ok=repAllRows.filter(r=>(r.ok||'').toUpperCase().includes('OK')).length;
       if(nok>0){st='Reprovado';color='var(--danger)'}
       else if(ok>0){st='Aprovado';color='var(--success)'}
       else{st='Em aberto';color='var(--warning)'}
@@ -6406,9 +3942,62 @@ function liRenderSheet(){
     else if(el.isContentEditable)el.textContent=val||'';
     else el.value=val||'';
   });
-  liRenderHeaders();liRenderRows();liUpdateSummary();
+  liRenderTabs();liRenderHeaders();liRenderRows();liUpdateSummary();
   liInitColResize();
 }
+function liRenderTabs(){
+  const r=liGetReport(liCurrent);
+  const bar=document.getElementById('liTabsBar');
+  if(!bar)return;
+  bar.innerHTML=r.sheets.map((sh,i)=>`
+    <div class="li-tab${i===r.activeSheet?' active':''}" onclick="liSwitchTab(${i})">
+      <span class="li-tab-name" title="Clique duas vezes para renomear" ondblclick="event.stopPropagation();liRenameTab(${i})">${liEsc(sh.name||('Componente '+(i+1)))}</span>
+      ${r.sheets.length>1?`<span class="li-tab-close" onclick="event.stopPropagation();liDeleteTab(${i})" title="Remover componente">✕</span>`:''}
+    </div>`).join('') + `<button type="button" class="li-tab-add" onclick="liAddTab()" title="Adicionar componente para medir separadamente">＋ Componente</button>`;
+}
+window.liSwitchTab=function(idx){
+  const r=liGetReport(liCurrent);
+  if(idx===r.activeSheet||idx<0||idx>=r.sheets.length)return;
+  liCollect();
+  liSyncActiveSheet();
+  r.activeSheet=idx;
+  r.rows=r.sheets[idx].rows;
+  liUndoStack.length=0;liPending=null;liUpdateUndoBtn();
+  liPersist();
+  liRenderSheet();
+};
+window.liAddTab=function(){
+  const r=liGetReport(liCurrent);
+  liCollect();liSyncActiveSheet();
+  const n=r.sheets.length+1;
+  r.sheets.push({id:liUid(),name:'Componente '+n,rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1)))});
+  r.activeSheet=r.sheets.length-1;
+  r.rows=r.sheets[r.activeSheet].rows;
+  liUndoStack.length=0;liPending=null;liUpdateUndoBtn();
+  liPersist();liSetDirty(true);
+  liRenderSheet();
+  liToast('Componente adicionado — meça-o separadamente nesta aba','success');
+};
+window.liRenameTab=function(idx){
+  const r=liGetReport(liCurrent);
+  const sh=r.sheets[idx];if(!sh)return;
+  const name=prompt('Nome do componente:',sh.name||('Componente '+(idx+1)));
+  if(name==null)return;
+  sh.name=name.trim()||sh.name;
+  liPersist();liSetDirty(true);
+  liRenderTabs();
+};
+window.liDeleteTab=function(idx){
+  const r=liGetReport(liCurrent);
+  if(r.sheets.length<=1){liToast('É preciso manter pelo menos um componente','error');return}
+  if(!confirm('Remover este componente e todas as suas medições?'))return;
+  r.sheets.splice(idx,1);
+  if(r.activeSheet>=r.sheets.length)r.activeSheet=r.sheets.length-1;
+  r.rows=r.sheets[r.activeSheet].rows;
+  liUndoStack.length=0;liPending=null;liUpdateUndoBtn();
+  liPersist();liSetDirty(true);
+  liRenderSheet();
+};
 
 /* ================= COLUNAS REDIMENSION\u00c1VEIS (checklist de Inspe\u00e7\u00e3o de Layout) =================
    Permite ao usu\u00e1rio arrastar a borda de cada coluna da tabela de medi\u00e7\u00f5es para
@@ -6681,20 +4270,27 @@ window.liSaveSheet=function(){
 };
 window.liExportSheetExcel=function(){
   if(typeof XLSX==='undefined'){liToast('Biblioteca de Excel indisponível','error');return}
-  liCollect();
+  liCollect();liSyncActiveSheet();
   const r=liGetReport(liCurrent);
-  const aoa=[
-    ['Supplier',r.supplier,'Supplier Number',r.supplierNumber],
-    ['Part Number',r.partNumber,'Revision',r.revision],
-    ['Part Name',r.partName,'Customer',r.customer],
-    ['Report N°',r.reportN,'Inspection Dept',r.inspDept],
-    [],
-    [r.headers.item,r.headers.char,r.headers.nominal,r.headers.spec,r.headers.low,r.headers.upper,'1','2','3','4','5',r.headers.ok,r.headers.nok]
-  ];
-  r.rows.forEach(row=>aoa.push([row.item,row.char,row.nominal,row.spec,row.low,row.upper,...row.m,row.ok,row.nok]));
-  aoa.push([],['Observações',r.obs],['Name',r.signName,'Title',r.signTitle,'Date',r.signDate]);
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),'Layout');
+  const usedNames={};
+  (r.sheets&&r.sheets.length?r.sheets:[{name:'Layout',rows:r.rows||[]}]).forEach((sh,i)=>{
+    const aoa=[
+      ['Supplier',r.supplier,'Supplier Number',r.supplierNumber],
+      ['Part Number',r.partNumber,'Revision',r.revision],
+      ['Part Name',r.partName,'Customer',r.customer],
+      ['Report N°',r.reportN,'Inspection Dept',r.inspDept],
+      ['Componente',sh.name||('Componente '+(i+1))],
+      [],
+      [r.headers.item,r.headers.char,r.headers.nominal,r.headers.spec,r.headers.low,r.headers.upper,'1','2','3','4','5',r.headers.ok,r.headers.nok]
+    ];
+    (sh.rows||[]).forEach(row=>aoa.push([row.item,row.char,row.nominal,row.spec,row.low,row.upper,...row.m,row.ok,row.nok]));
+    aoa.push([],['Observações',r.obs],['Name',r.signName,'Title',r.signTitle,'Date',r.signDate]);
+    let sheetName=(sh.name||('Componente '+(i+1))).replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31)||('Comp'+(i+1));
+    if(usedNames[sheetName]){usedNames[sheetName]++;sheetName=(sheetName.slice(0,28)+' '+usedNames[sheetName]);}
+    else usedNames[sheetName]=1;
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),sheetName);
+  });
   XLSX.writeFile(wb,'checklist_layout_'+(r.partNumber||'relatorio')+'.xlsx');
 };
 
@@ -7007,6 +4603,7 @@ window.liCommitImport=function(){
   liSnapshot();
   const r=liGetReport(liCurrent);
   r.rows=newRows;
+  r.sheets[r.activeSheet].rows=newRows;
   newRows.forEach(row=>liAutoStatus(row));
   const meta=liImportCtx.meta||{};
   ['supplier','supplierNumber','partNumber','revision','partName','reportN','customer','inspDept'].forEach(k=>{
@@ -7385,39 +4982,6 @@ function liInit(){liLoad();liRenderGdt();liRenderSchedule()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',liInit);
 else liInit();
 window.liRefreshLayoutView=liRenderSchedule;
-})();
-</script>
-
-
-<script>
-/* ===== AJUSTES DO SISTEMA (split) ===== */
-(function(){
-  // Chart.js seguro: ignora canvases inexistentes (abas removidas)
-  var _C = window.Chart;
-  if (_C) {
-    var Safe = function(ctx, cfg){
-      var el = (typeof ctx === 'string') ? document.getElementById(ctx) : ctx;
-      if (!el) return { destroy:function(){}, update:function(){}, data:{} };
-      return new _C(el, cfg);
-    };
-    Safe.prototype = _C.prototype;
-    for (var k in _C) { try { Safe[k] = _C[k]; } catch(e){} }
-    window.Chart = Safe;
-  }
-  var noop = function(){};
-  
-  ['renderMetrics','renderCharts','renderGantt','filterGantt','clearFilters','updateFilterOptions',
-   'updateFilterBadge','renderAnalytics','renderRisk','applyChartFilter','importAuditsToLayout',
-   'openChecklist','openChecklistAuto'].forEach(function(f){ window[f] = noop; });
-  window.expList = function(){ return window.layoutOnly ? window.layoutOnly() : []; };
-  window.openNewModal = (function(o){ return function(){ return o('layout'); }; })(window.openNewModal || noop);
-  window.addEventListener('load', function(){
-    setTimeout(function(){
-      try { window.updateLayoutFilterOptions(); window.filterLayout(); window.renderLayoutDash(); } catch(e){}
-      try { window.updateTopbarForView('layoutdash'); } catch(e){}
-    }, 400);
-  });
-
 })();
 </script>
 
