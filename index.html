@@ -538,6 +538,8 @@ body.li-open .sidebar,body.li-open .topbar{filter:none}
 .li-tab-name{white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .li-tab-close{opacity:.55;font-size:11px;padding:1px 3px;border-radius:4px}
 .li-tab-close:hover{opacity:1;background:rgba(255,71,87,.15);color:var(--danger)}
+.li-tab-print{opacity:.55;font-size:11px;padding:1px 3px;border-radius:4px}
+.li-tab-print:hover{opacity:1;background:rgba(0,198,255,.15);color:var(--accent)}
 .li-tab-add{background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--text-secondary);padding:6px 10px;cursor:pointer;font-size:13px;line-height:1}
 .li-tab-add:hover{color:var(--accent);border-color:var(--accent)}
 table.li-dim{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed}
@@ -3109,27 +3111,50 @@ function finalizeLayoutChecklist(){
   notify('✅ Inspeção de layout finalizada! Conclusão: ' + data.decision + ' · Conformidade: ' + data.score + '%');
 }
 
-function printLayoutChecklist(){
+// Estatísticas OK/NOT OK calculadas para um conjunto de linhas específico
+// (usado pra que cada componente tenha seu próprio resumo/decisão na impressão,
+// já que agora cada aba é independente).
+function liStatsForRows(rows){
+  let ok=0,nok=0,measured=0,count=0;
+  (rows||[]).forEach(row=>{
+    count++;
+    if((row.ok||'').toUpperCase().includes('OK'))ok++;
+    if((row.nok||'').toUpperCase().includes('NOT'))nok++;
+    if(row.m&&row.m.some(v=>String(v||'').trim()!==''))measured++;
+  });
+  const total=count||1;
+  return{ok,nok,measured:measured>0,total:count,pct:Math.round(ok/total*100)};
+}
+window.liStatsForRows=liStatsForRows; // exposto p/ printLayoutChecklist(), definida fora desta IIFE
+
+// onlyActive=true → imprime SOMENTE a aba/componente atualmente ativo.
+// onlyActive=false/undefined → imprime TODOS os componentes, cada um em sua
+// PRÓPRIA página, com cabeçalho, resumo e assinatura totalmente independentes
+// (nada é compartilhado entre componentes na impressão).
+function printLayoutChecklist(onlyActive){
   if (typeof window.liCollectSilent === 'function') window.liCollectSilent();
   const r = liGetReport(liCurrent);
-  const st = window.liStats();
-  const decision = st.nok > 0 ? 'Reprovado' : (st.ok > 0 ? 'Aprovado' : 'Em aberto');
-  const decColor = decision === 'Aprovado' ? '#0a6b2a' : decision === 'Reprovado' ? '#c0392b' : '#8a6d00';
-  const decBg    = decision === 'Aprovado' ? '#e8f8ee' : decision === 'Reprovado' ? '#fdf0f0' : '#fefce8';
-  const decIcon  = decision === 'Aprovado' ? '✅' : decision === 'Reprovado' ? '❌' : '⏳';
+  if (typeof liSyncActiveSheet === 'function') liSyncActiveSheet();
+  const allSheets = (r.sheets && r.sheets.length) ? r.sheets : [{name:'', rows:r.rows||[], header:liBlankHeader(null)}];
+  const sheetsToPrint = onlyActive ? [allSheets[r.activeSheet] || allSheets[0]] : allSheets;
+
   const h = k => liEsc(r.headers && r.headers[k] != null ? r.headers[k] : DEFAULT_HEADERS[k]);
   const v = s => liEsc(s) || '&nbsp;';
-
   const a = state.audits.find(x => x.id === lcAuditId);
-  const docId = `LI-${(a && a.pn) || liCurrent || '—'}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
   const chk = (on, label) => `<span class="chk-item">${on ? '☑' : '☐'} ${liEsc(label)}</span>`;
 
-  const sheetsToPrint = (r.sheets && r.sheets.length) ? r.sheets : [{name:'', rows:r.rows||[]}];
-  let rowsHtml = '';
+  let pagesHtml = '';
   sheetsToPrint.forEach((sh, si) => {
-    if (sheetsToPrint.length > 1) {
-      rowsHtml += `<tr class="li-section-row"><td colspan="13">${liEsc(sh.name || ('Componente ' + (si + 1)))}</td></tr>`;
-    }
+    const hdr = sh.header || liBlankHeader(null);
+    const st = liStatsForRows(sh.rows);
+    const decision = st.nok > 0 ? 'Reprovado' : (st.ok > 0 ? 'Aprovado' : 'Em aberto');
+    const decColor = decision === 'Aprovado' ? '#0a6b2a' : decision === 'Reprovado' ? '#c0392b' : '#8a6d00';
+    const decBg    = decision === 'Aprovado' ? '#e8f8ee' : decision === 'Reprovado' ? '#fdf0f0' : '#fefce8';
+    const decIcon  = decision === 'Aprovado' ? '✅' : decision === 'Reprovado' ? '❌' : '⏳';
+    const compName = sh.name || ('Componente ' + (si + 1));
+    const docId = `LI-${liEsc((a && a.pn) || hdr.partNumber || liCurrent || '—')}-${compName.replace(/\s+/g,'')}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
+
+    let rowsHtml = '';
     (sh.rows || []).forEach(row => {
       const rowCls = row.nok ? 'row-nok' : row.ok ? 'row-ok' : '';
       const mCells = row.m.map(m => `<td class="c">${v(m)}</td>`).join('');
@@ -3147,96 +3172,11 @@ function printLayoutChecklist(){
         <td class="c nok-cell">${nokB}</td>
       </tr>`;
     });
-  });
 
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<title>Layout Inspection — ${liEsc(r.partNumber || '')}</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-  @page { size: A4 landscape; margin: 10mm 9mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 10px; color: #1e2433; background: #fff; line-height: 1.4; }
+    pagesHtml += `
+<!-- ════════════════ PÁGINA INDEPENDENTE DO COMPONENTE: ${liEsc(compName)} ════════════════ -->
+<section class="li-print-page${si > 0 ? ' li-page-break' : ''}">
 
-  /* ── HEADER ── */
-  .page-header { display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; margin-bottom: 10px; border: 1px solid #dde3f0; }
-  .ph-brand { background: linear-gradient(145deg, #0d2160, #1a3a8f); color: #fff; padding: 12px 18px; display: flex; flex-direction: column; justify-content: center; min-width: 210px; }
-  .ph-brand .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-  .ph-brand .logo-box { width: 34px; height: 34px; background: rgba(255,255,255,.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 900; letter-spacing: -1px; border: 1px solid rgba(255,255,255,.25); }
-  .ph-brand .co-name { font-size: 13px; font-weight: 800; letter-spacing: .2px; }
-  .ph-brand .doc-type { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; opacity: .7; margin-top: 2px; }
-  .ph-brand .doc-ref { font-size: 8px; opacity: .55; margin-top: 6px; }
-  .ph-center { flex: 1; background: linear-gradient(145deg, #f4f7fe, #eef2fc); padding: 10px 18px; display: flex; flex-direction: column; justify-content: center; border-left: 1px solid #dde3f0; border-right: 1px solid #dde3f0; }
-  .ph-center .doc-title { font-size: 15px; font-weight: 800; color: #0d2160; letter-spacing: .2px; }
-  .ph-center .doc-checks { display: flex; gap: 14px; margin-top: 6px; font-size: 10px; color: #3a4568; }
-  .ph-center .chk-item { font-weight: 600; }
-  .ph-right { background: #fff; padding: 10px 16px; display: flex; flex-direction: column; justify-content: space-between; min-width: 190px; }
-  .ph-right .meta-row { font-size: 8.5px; color: #4a5470; margin-bottom: 3px; }
-  .ph-right .meta-row strong { color: #0d2160; }
-  .ph-right .status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; background: ${decBg}; color: ${decColor}; border: 1px solid ${decColor}33; margin-top: 4px; }
-
-  /* ── INFO GRID ── */
-  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1.5px solid #c4cbde; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
-  .ig-cell { padding: 6px 10px; border-right: 1px solid #dde3f0; border-bottom: 1px solid #dde3f0; background: #fff; }
-  .ig-cell:nth-child(4n) { border-right: none; }
-  .ig-cell:nth-last-child(-n+4) { border-bottom: none; }
-  .ig-lbl { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #1a3a8f; margin-bottom: 2px; }
-  .ig-val { font-size: 11px; font-weight: 600; color: #1e2433; min-height: 14px; }
-
-  /* ── MAIN TABLE ── */
-  .section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #1a3a8f; margin: 10px 0 5px; display: flex; align-items: center; gap: 6px; }
-  .section-title::after { content: ''; flex: 1; height: 1.5px; background: linear-gradient(90deg, #1a3a8f44, transparent); }
-  table.main { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
-  table.main col.c-item{width:3.5%} table.main col.c-char{width:19%} table.main col.c-nom{width:11%}
-  table.main col.c-spec{width:7%} table.main col.c-tol{width:6%} table.main col.c-m{width:6.6%}
-  table.main col.c-ok{width:8%} table.main col.c-nok{width:8%}
-  table.main thead th { background: linear-gradient(180deg, #1a3a8f, #0d2160); color: #fff; padding: 6px 4px; border: 1px solid #0a1840; font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: .4px; text-align: center; }
-  table.main thead tr.th2 th { background: #1e3d96; color: #ccd6f6; padding: 4px; font-size: 8px; }
-  table.main td { border: 1px solid #d0d8ed; padding: 5px 4px; vertical-align: middle; text-align: center; word-wrap: break-word; }
-  table.main td.num { text-align: center; color: #8a94b0; font-weight: 700; background: #f5f7fd; }
-  table.main td.pi { text-align: left; font-weight: 600; color: #1e2433; }
-  table.main tr.row-ok td { background: #f2fbf5; }
-  table.main tr.row-nok td { background: #fdf3f3; }
-  table.main tr.li-section-row td { background: linear-gradient(180deg, #eef2fc, #e4e9fa); color: #0d2160; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; font-size: 9px; text-align: left; padding: 6px 8px; border: 1px solid #c4cbde; }
-  .chip { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 8px; font-weight: 700; white-space: nowrap; }
-  .chip-ok { background: #d4f0de; color: #0a5c2a; }
-  .chip-ko { background: #fdd; color: #8b0000; }
-
-  /* ── SUMMARY ── */
-  .summary-row { display: flex; gap: 10px; margin-top: 10px; }
-  .sum-card { flex: 1; border: 1.5px solid #d0d8ed; border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fbff; }
-  .sum-card .sc-val { font-size: 20px; font-weight: 900; color: #0d2160; line-height: 1; }
-  .sum-card .sc-lbl { font-size: 7.5px; text-transform: uppercase; letter-spacing: .6px; color: #6b7a9f; margin-top: 4px; font-weight: 600; }
-  .sum-card.ok .sc-val { color: #0a6b2a; }
-  .sum-card.nok .sc-val { color: #c0392b; }
-
-  /* ── OBSERVATIONS ── */
-  .obs-box { border: 1.5px solid #d0d8ed; border-radius: 8px; padding: 8px 10px; margin-top: 10px; min-height: 44px; font-size: 10px; color: #2a3050; background: #fbfcff; white-space: pre-wrap; }
-
-  /* ── SIGNATURES ── */
-  .sign-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1.5px solid #c4cbde; border-radius: 8px; overflow: hidden; margin-top: 10px; }
-  .sg-cell { padding: 8px 12px 14px; border-right: 1px solid #dde3f0; }
-  .sg-cell:last-child { border-right: none; }
-  .sg-lbl { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #1a3a8f; margin-bottom: 4px; }
-  .sg-val { font-size: 11px; font-weight: 600; color: #1e2433; min-height: 16px; border-bottom: 1px dashed #b8c0d8; padding-bottom: 6px; }
-
-  /* ── FOOTER ── */
-  .page-footer { margin-top: 10px; padding-top: 6px; border-top: 1.5px solid #d0d8ed; display: flex; align-items: center; justify-content: space-between; font-size: 7.5px; color: #8a94b0; }
-  .pf-left { display: flex; flex-direction: column; gap: 1px; }
-  .pf-confidential { font-weight: 700; color: #c0392b; text-transform: uppercase; letter-spacing: .5px; font-size: 7px; }
-
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    table.main tr { page-break-inside: avoid; }
-  }
-</style>
-</head>
-<body>
-
-<!-- ════════════════ PAGE HEADER ════════════════ -->
 <div class="page-header">
   <div class="ph-brand">
     <div class="logo-row">
@@ -3249,35 +3189,34 @@ function printLayoutChecklist(){
     <div class="doc-ref">Doc.: ${docId}</div>
   </div>
   <div class="ph-center">
-    <div class="doc-title">${liEsc(r.title || 'Evaluation Results — Layout Inspection')}</div>
+    <div class="doc-title">${liEsc(hdr.title || 'Evaluation Results — Layout Inspection')}</div>
+    ${sheetsToPrint.length > 1 || allSheets.length > 1 ? `<div class="doc-component">Componente: ${liEsc(compName)}</div>` : ''}
     <div class="doc-checks">
-      ${chk(!!r.chkDim, 'Dimensional')}
-      ${chk(!!r.chkMat, 'Material')}
-      ${chk(!!r.chkOut, r.outrosTxt ? 'Outros: ' + r.outrosTxt : 'Outros')}
+      ${chk(!!hdr.chkDim, 'Dimensional')}
+      ${chk(!!hdr.chkMat, 'Material')}
+      ${chk(!!hdr.chkOut, hdr.outrosTxt ? 'Outros: ' + hdr.outrosTxt : 'Outros')}
     </div>
   </div>
   <div class="ph-right">
     <div>
-      <div class="meta-row"><strong>Report N°:</strong> ${liEsc(r.reportN) || '—'}</div>
+      <div class="meta-row"><strong>Report N°:</strong> ${liEsc(hdr.reportN) || '—'}</div>
       <div class="meta-row"><strong>Emitido:</strong> ${new Date().toLocaleString('pt-BR')}</div>
     </div>
-    <div class="status-chip">${decIcon} ${decision}</div>
+    <div class="status-chip" style="background:${decBg};color:${decColor};border:1px solid ${decColor}33;">${decIcon} ${decision}</div>
   </div>
 </div>
 
-<!-- ════════════════ INFO GRID ════════════════ -->
 <div class="info-grid">
-  <div class="ig-cell"><div class="ig-lbl">Supplier</div><div class="ig-val">${liEsc(r.supplier) || '—'}</div></div>
-  <div class="ig-cell"><div class="ig-lbl">Supplier Number</div><div class="ig-val">${liEsc(r.supplierNumber) || '—'}</div></div>
-  <div class="ig-cell"><div class="ig-lbl">Part Number</div><div class="ig-val">${liEsc(r.partNumber) || '—'}</div></div>
-  <div class="ig-cell"><div class="ig-lbl">Revision Level</div><div class="ig-val">${liEsc(r.revision) || '—'}</div></div>
-  <div class="ig-cell"><div class="ig-lbl">Inspection Department</div><div class="ig-val">${liEsc(r.inspDept) || '—'}</div></div>
-  <div class="ig-cell"><div class="ig-lbl">Part Name</div><div class="ig-val">${liEsc(r.partName) || '—'}</div></div>
-  <div class="ig-cell"><div class="ig-lbl">Customer</div><div class="ig-val">${liEsc(r.customer) || '—'}</div></div>
-  <div class="ig-cell"><div class="ig-lbl">Date</div><div class="ig-val">${liEsc(r.signDate) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Supplier</div><div class="ig-val">${liEsc(hdr.supplier) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Supplier Number</div><div class="ig-val">${liEsc(hdr.supplierNumber) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Part Number</div><div class="ig-val">${liEsc(hdr.partNumber) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Revision Level</div><div class="ig-val">${liEsc(hdr.revision) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Inspection Department</div><div class="ig-val">${liEsc(hdr.inspDept) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Part Name</div><div class="ig-val">${liEsc(hdr.partName) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Customer</div><div class="ig-val">${liEsc(hdr.customer) || '—'}</div></div>
+  <div class="ig-cell"><div class="ig-lbl">Date</div><div class="ig-val">${liEsc(hdr.signDate) || '—'}</div></div>
 </div>
 
-<!-- ════════════════ MAIN TABLE ════════════════ -->
 <div class="section-title">Dimensional Results</div>
 <table class="main">
   <colgroup>
@@ -3312,7 +3251,6 @@ function printLayoutChecklist(){
   </tbody>
 </table>
 
-<!-- ════════════════ SUMMARY ════════════════ -->
 <div class="summary-row">
   <div class="sum-card"><div class="sc-val">${st.total}</div><div class="sc-lbl">Itens avaliados</div></div>
   <div class="sum-card ok"><div class="sc-val">${st.ok}</div><div class="sc-lbl">OK</div></div>
@@ -3320,18 +3258,15 @@ function printLayoutChecklist(){
   <div class="sum-card"><div class="sc-val">${st.pct}%</div><div class="sc-lbl">Conformidade</div></div>
 </div>
 
-<!-- ════════════════ OBSERVATIONS ════════════════ -->
 <div class="section-title">Observações</div>
-<div class="obs-box">${liEsc(r.obs) || '—'}</div>
+<div class="obs-box">${liEsc(hdr.obs) || '—'}</div>
 
-<!-- ════════════════ SIGNATURES ════════════════ -->
 <div class="sign-grid">
-  <div class="sg-cell"><div class="sg-lbl">Name</div><div class="sg-val">${liEsc(r.signName) || '&nbsp;'}</div></div>
-  <div class="sg-cell"><div class="sg-lbl">Title</div><div class="sg-val">${liEsc(r.signTitle) || '&nbsp;'}</div></div>
-  <div class="sg-cell"><div class="sg-lbl">Date</div><div class="sg-val">${liEsc(r.signDate) || '&nbsp;'}</div></div>
+  <div class="sg-cell"><div class="sg-lbl">Name</div><div class="sg-val">${liEsc(hdr.signName) || '&nbsp;'}</div></div>
+  <div class="sg-cell"><div class="sg-lbl">Title</div><div class="sg-val">${liEsc(hdr.signTitle) || '&nbsp;'}</div></div>
+  <div class="sg-cell"><div class="sg-lbl">Date</div><div class="sg-val">${liEsc(hdr.signDate) || '&nbsp;'}</div></div>
 </div>
 
-<!-- ════════════════ PAGE FOOTER ════════════════ -->
 <div class="page-footer">
   <div class="pf-left">
     <span><b>Röchling Automotive do Brasil Ltda</b> · Av. Emílio Chechinato, 4195 · Itupeva-SP 13295-000 · +55 11 4496-8420</span>
@@ -3343,6 +3278,98 @@ function printLayoutChecklist(){
   </div>
 </div>
 
+</section>`;
+  });
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Layout Inspection — ${liEsc((sheetsToPrint[0] && sheetsToPrint[0].header && sheetsToPrint[0].header.partNumber) || '')}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  @page { size: A4 landscape; margin: 10mm 9mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 10px; color: #1e2433; background: #fff; line-height: 1.4; }
+  .li-print-page { display: block; }
+  .li-page-break { page-break-before: always; break-before: page; }
+
+  /* ── HEADER ── */
+  .page-header { display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; margin-bottom: 10px; border: 1px solid #dde3f0; }
+  .ph-brand { background: linear-gradient(145deg, #0d2160, #1a3a8f); color: #fff; padding: 12px 18px; display: flex; flex-direction: column; justify-content: center; min-width: 210px; }
+  .ph-brand .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .ph-brand .logo-box { width: 34px; height: 34px; background: rgba(255,255,255,.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 900; letter-spacing: -1px; border: 1px solid rgba(255,255,255,.25); }
+  .ph-brand .co-name { font-size: 13px; font-weight: 800; letter-spacing: .2px; }
+  .ph-brand .doc-type { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; opacity: .7; margin-top: 2px; }
+  .ph-brand .doc-ref { font-size: 8px; opacity: .55; margin-top: 6px; }
+  .ph-center { flex: 1; background: linear-gradient(145deg, #f4f7fe, #eef2fc); padding: 10px 18px; display: flex; flex-direction: column; justify-content: center; border-left: 1px solid #dde3f0; border-right: 1px solid #dde3f0; }
+  .ph-center .doc-title { font-size: 15px; font-weight: 800; color: #0d2160; letter-spacing: .2px; }
+  .ph-center .doc-component { font-size: 9px; font-weight: 700; color: #0072ff; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  .ph-center .doc-checks { display: flex; gap: 14px; margin-top: 6px; font-size: 10px; color: #3a4568; }
+  .ph-center .chk-item { font-weight: 600; }
+  .ph-right { background: #fff; padding: 10px 16px; display: flex; flex-direction: column; justify-content: space-between; min-width: 190px; }
+  .ph-right .meta-row { font-size: 8.5px; color: #4a5470; margin-bottom: 3px; }
+  .ph-right .meta-row strong { color: #0d2160; }
+  .ph-right .status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+
+  /* ── INFO GRID ── */
+  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1.5px solid #c4cbde; border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+  .ig-cell { padding: 6px 10px; border-right: 1px solid #dde3f0; border-bottom: 1px solid #dde3f0; background: #fff; }
+  .ig-cell:nth-child(4n) { border-right: none; }
+  .ig-cell:nth-last-child(-n+4) { border-bottom: none; }
+  .ig-lbl { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #1a3a8f; margin-bottom: 2px; }
+  .ig-val { font-size: 11px; font-weight: 600; color: #1e2433; min-height: 14px; }
+
+  /* ── MAIN TABLE ── */
+  .section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #1a3a8f; margin: 10px 0 5px; display: flex; align-items: center; gap: 6px; }
+  .section-title::after { content: ''; flex: 1; height: 1.5px; background: linear-gradient(90deg, #1a3a8f44, transparent); }
+  table.main { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
+  table.main col.c-item{width:3.5%} table.main col.c-char{width:19%} table.main col.c-nom{width:11%}
+  table.main col.c-spec{width:7%} table.main col.c-tol{width:6%} table.main col.c-m{width:6.6%}
+  table.main col.c-ok{width:8%} table.main col.c-nok{width:8%}
+  table.main thead th { background: linear-gradient(180deg, #1a3a8f, #0d2160); color: #fff; padding: 6px 4px; border: 1px solid #0a1840; font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: .4px; text-align: center; }
+  table.main thead tr.th2 th { background: #1e3d96; color: #ccd6f6; padding: 4px; font-size: 8px; }
+  table.main td { border: 1px solid #d0d8ed; padding: 5px 4px; vertical-align: middle; text-align: center; word-wrap: break-word; }
+  table.main td.num { text-align: center; color: #8a94b0; font-weight: 700; background: #f5f7fd; }
+  table.main td.pi { text-align: left; font-weight: 600; color: #1e2433; }
+  table.main tr.row-ok td { background: #f2fbf5; }
+  table.main tr.row-nok td { background: #fdf3f3; }
+  .chip { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 8px; font-weight: 700; white-space: nowrap; }
+  .chip-ok { background: #d4f0de; color: #0a5c2a; }
+  .chip-ko { background: #fdd; color: #8b0000; }
+
+  /* ── SUMMARY ── */
+  .summary-row { display: flex; gap: 10px; margin-top: 10px; }
+  .sum-card { flex: 1; border: 1.5px solid #d0d8ed; border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fbff; }
+  .sum-card .sc-val { font-size: 20px; font-weight: 900; color: #0d2160; line-height: 1; }
+  .sum-card .sc-lbl { font-size: 7.5px; text-transform: uppercase; letter-spacing: .6px; color: #6b7a9f; margin-top: 4px; font-weight: 600; }
+  .sum-card.ok .sc-val { color: #0a6b2a; }
+  .sum-card.nok .sc-val { color: #c0392b; }
+
+  /* ── OBSERVATIONS ── */
+  .obs-box { border: 1.5px solid #d0d8ed; border-radius: 8px; padding: 8px 10px; margin-top: 10px; min-height: 44px; font-size: 10px; color: #2a3050; background: #fbfcff; white-space: pre-wrap; }
+
+  /* ── SIGNATURES ── */
+  .sign-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1.5px solid #c4cbde; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+  .sg-cell { padding: 8px 12px 14px; border-right: 1px solid #dde3f0; }
+  .sg-cell:last-child { border-right: none; }
+  .sg-lbl { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #1a3a8f; margin-bottom: 4px; }
+  .sg-val { font-size: 11px; font-weight: 600; color: #1e2433; min-height: 16px; border-bottom: 1px dashed #b8c0d8; padding-bottom: 6px; }
+
+  /* ── FOOTER ── */
+  .page-footer { margin-top: 10px; padding-top: 6px; border-top: 1.5px solid #d0d8ed; display: flex; align-items: center; justify-content: space-between; font-size: 7.5px; color: #8a94b0; }
+  .pf-left { display: flex; flex-direction: column; gap: 1px; }
+  .pf-confidential { font-weight: 700; color: #c0392b; text-transform: uppercase; letter-spacing: .5px; font-size: 7px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table.main tr { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+${pagesHtml}
 <scr` + `ipt>
   window.onload = () => {
     setTimeout(() => { window.print(); }, 800);
@@ -3570,7 +3597,8 @@ if (document.readyState === 'loading') {
     <span class="li-tag nok">NOT OK: <b id="liNok">0</b></span>
     <button class="btn" onclick="window.liOpenImport()" style="background:rgba(0,198,255,.12);border-color:rgba(0,198,255,.4);color:var(--accent);" title="Importar planilha Excel/CSV para dentro deste relatório">📥 Importar Excel</button>
     <button class="btn" onclick="liExportSheetExcel()">⬇ Excel</button>
-    <button class="btn" onclick="printLayoutChecklist()">🖨 Imprimir / PDF</button>
+    <button class="btn" onclick="printLayoutChecklist()" title="Imprime todos os componentes, cada um em sua própria página com cabeçalho independente">🖨 Imprimir / PDF (todos)</button>
+    <button class="btn" onclick="printLayoutChecklist(true)" title="Imprime apenas o componente atualmente aberto">🖨 Imprimir só esta aba</button>
     <span class="li-tag nok" id="liDirty" style="display:none;">● Não salvo</span>
   </div>
 
@@ -3758,30 +3786,52 @@ function liSeed(){
   ];
 }
 function liBlankRow(item=''){return{item,char:'',nominal:'',spec:'',low:'',upper:'',m:['','','','',''],ok:'',nok:''}}
-function liBlankReport(it){
+/* Campos do cabeçalho de CADA aba/componente — agora vivem dentro de
+   sh.header, não mais no relatório inteiro, para que cada componente seja
+   totalmente independente (seu próprio Supplier/Part Number/Report N°/
+   Observações/Assinatura), inclusive na impressão individual. */
+function liBlankHeader(it){
   return{
     title:'Evaluation Results — Layout Inspection',
     chkDim:true,chkMat:false,chkOut:false,outrosTxt:'',
     supplier:'Röchling Automotive do Brasil',supplierNumber:'',partNumber:it?it.pn:'',revision:'',
     inspDept:'METROLOGY',partName:it?it.part:'',reportN:'',customer:it?it.client:'',
+    obs:'',signName:it?it.resp:'',signTitle:'METROLOGIST',signDate:new Date().toISOString().slice(0,10)
+  };
+}
+window.liBlankHeader=liBlankHeader; // exposto p/ printLayoutChecklist(), definida fora desta IIFE
+function liBlankReport(it){
+  return{
     headers:Object.assign({},DEFAULT_HEADERS),
-    sheets:[{id:liUid(),name:'Componente 1',rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1)))}],
+    sheets:[{id:liUid(),name:'Componente 1',rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1))),header:liBlankHeader(it)}],
     activeSheet:0,
     rows:null, // ponteiro para sheets[activeSheet].rows — mantido por liEnsureSheets p/ compatibilidade com o resto da planilha
-    obs:'',signName:it?it.resp:'',signTitle:'METROLOGIST',signDate:new Date().toISOString().slice(0,10),
     updatedAt:null
   };
 }
 /* Um relatório pode ter várias "abas" (componentes) medidos separadamente.
-   r.rows sempre aponta para o array de linhas da aba ativa — todo o resto do
-   motor da planilha (fill handle, colar, undo, import etc.) continua lendo/
-   escrevendo em r.rows sem precisar saber de abas. */
+   Cada aba é INDEPENDENTE: tem suas próprias linhas (r.rows sempre aponta
+   pro array de linhas da aba ativa) E seu próprio cabeçalho (sh.header —
+   Supplier, Part Number, Report N°, Observações, Assinatura etc.), podendo
+   ser impressa isoladamente com seus próprios dados. O resto do motor da
+   planilha (fill handle, colar, undo, import etc.) continua lendo/escrevendo
+   em r.rows sem precisar saber de abas. */
 function liEnsureSheets(r){
   if(!Array.isArray(r.sheets)||!r.sheets.length){
     r.sheets=[{id:liUid(),name:'Componente 1',rows:(r.rows&&r.rows.length)?r.rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1)))}];
     r.activeSheet=0;
   }
   if(r.activeSheet==null||r.activeSheet<0||r.activeSheet>=r.sheets.length)r.activeSheet=0;
+  // Campos de cabeçalho que existiam no NÍVEL DO RELATÓRIO no formato antigo
+  // (compartilhados entre todas as abas) — usados só como base de migração
+  // pra quem já tinha checklists salvos antes desta mudança.
+  const legacyHeader={
+    title:r.title,chkDim:r.chkDim,chkMat:r.chkMat,chkOut:r.chkOut,outrosTxt:r.outrosTxt,
+    supplier:r.supplier,supplierNumber:r.supplierNumber,partNumber:r.partNumber,revision:r.revision,
+    inspDept:r.inspDept,partName:r.partName,reportN:r.reportN,customer:r.customer,
+    obs:r.obs,signName:r.signName,signTitle:r.signTitle,signDate:r.signDate
+  };
+  const hasLegacy=Object.keys(legacyHeader).some(k=>legacyHeader[k]!=null&&legacyHeader[k]!=='');
   r.sheets.forEach((sh,i)=>{
     if(!sh.id)sh.id=liUid();
     if(!sh.name)sh.name='Componente '+(i+1);
@@ -3790,6 +3840,9 @@ function liEnsureSheets(r){
       while(row.m.length<5)row.m.push('');
       return row;
     });
+    if(!sh.header){
+      sh.header=hasLegacy?Object.assign({},liBlankHeader(null),legacyHeader):liBlankHeader(null);
+    }
   });
   r.rows=r.sheets[r.activeSheet].rows;
   return r;
@@ -3826,7 +3879,12 @@ function liNormalizeReport(saved, itemInfo){
     return nr;
   });
   if(saved&&Array.isArray(saved.sheets)&&saved.sheets.length){
-    r.sheets=saved.sheets.map((sh,i)=>({id:sh.id||liUid(),name:sh.name||('Componente '+(i+1)),rows:cloneRows(sh.rows)}));
+    r.sheets=saved.sheets.map((sh,i)=>({
+      id:sh.id||liUid(),
+      name:sh.name||('Componente '+(i+1)),
+      rows:cloneRows(sh.rows),
+      header:sh.header?Object.assign({},liBlankHeader(itemInfo),sh.header):null // null = migra no liEnsureSheets
+    }));
     r.activeSheet=(saved.activeSheet!=null)?saved.activeSheet:0;
   } else {
     // relatório salvo no formato antigo (sem abas) — migra para uma única aba
@@ -4047,9 +4105,12 @@ window.liOpenSheet=function(id){
   liCurrent=id;
   const it=liState.items.find(x=>x.id===id);
   const r=liGetReport(id);
-  if(!r.partNumber&&it)r.partNumber=it.pn;
-  if(!r.partName&&it)r.partName=it.part;
-  if(!r.customer&&it)r.customer=it.client;
+  const sh0=r.sheets[r.activeSheet];
+  if(sh0&&sh0.header){
+    if(!sh0.header.partNumber&&it)sh0.header.partNumber=it.pn;
+    if(!sh0.header.partName&&it)sh0.header.partName=it.part;
+    if(!sh0.header.customer&&it)sh0.header.customer=it.client;
+  }
   document.getElementById('liSheetTag').textContent=(it&&(it.pn||it.part))?((it.pn||'')+' · '+(it.part||'')):'Checklist de layout';
   document.getElementById('liSheetOverlay').classList.add('active');
   document.body.classList.add('li-open');
@@ -4067,8 +4128,10 @@ window.liCloseSheet=function(){
 };
 function liRenderSheet(){
   const r=liGetReport(liCurrent);
+  const sh=r.sheets[r.activeSheet];
+  const hdr=sh.header||(sh.header=liBlankHeader(null));
   document.querySelectorAll('#liSheetOverlay [data-lk]').forEach(el=>{
-    const k=el.dataset.lk;const val=(k in r)?r[k]:'';
+    const k=el.dataset.lk;const val=(k in hdr)?hdr[k]:'';
     if(el.type==='checkbox')el.checked=!!val;
     else if(el.isContentEditable)el.textContent=val||'';
     else el.value=val||'';
@@ -4083,9 +4146,21 @@ function liRenderTabs(){
   bar.innerHTML=r.sheets.map((sh,i)=>`
     <div class="li-tab${i===r.activeSheet?' active':''}" onclick="liSwitchTab(${i})">
       <span class="li-tab-name" title="Clique duas vezes para renomear" ondblclick="event.stopPropagation();liRenameTab(${i})">${liEsc(sh.name||('Componente '+(i+1)))}</span>
+      <span class="li-tab-print" onclick="event.stopPropagation();liPrintTab(${i})" title="Imprimir apenas este componente (com seu próprio cabeçalho)">🖨</span>
       ${r.sheets.length>1?`<span class="li-tab-close" onclick="event.stopPropagation();liDeleteTab(${i})" title="Remover componente">✕</span>`:''}
     </div>`).join('') + `<button type="button" class="li-tab-add" onclick="liAddTab()" title="Adicionar componente para medir separadamente">＋ Componente</button>`;
 }
+// Imprime SOMENTE o componente indicado, com seu próprio cabeçalho, sem
+// precisar trocar de aba na tela (a aba ativa é restaurada logo em seguida).
+window.liPrintTab=function(idx){
+  const r=liGetReport(liCurrent);
+  if(idx<0||idx>=r.sheets.length)return;
+  liCollect();liSyncActiveSheet();
+  const prevActive=r.activeSheet;
+  r.activeSheet=idx;r.rows=r.sheets[idx].rows;
+  if(typeof printLayoutChecklist==='function')printLayoutChecklist(true);
+  r.activeSheet=prevActive;r.rows=r.sheets[prevActive].rows;
+};
 window.liSwitchTab=function(idx){
   const r=liGetReport(liCurrent);
   if(idx===r.activeSheet||idx<0||idx>=r.sheets.length)return;
@@ -4100,14 +4175,19 @@ window.liSwitchTab=function(idx){
 window.liAddTab=function(){
   const r=liGetReport(liCurrent);
   liCollect();liSyncActiveSheet();
+  const prevHeader=(r.sheets[r.activeSheet]&&r.sheets[r.activeSheet].header)
+    ? JSON.parse(JSON.stringify(r.sheets[r.activeSheet].header))
+    : liBlankHeader(null);
   const n=r.sheets.length+1;
-  r.sheets.push({id:liUid(),name:'Componente '+n,rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1)))});
+  // header é uma CÓPIA (não referência) — a partir daqui cada aba é 100%
+  // independente: editar o cabeçalho de um componente não afeta os outros.
+  r.sheets.push({id:liUid(),name:'Componente '+n,rows:Array.from({length:10},(_,i)=>liBlankRow(String(i+1))),header:prevHeader});
   r.activeSheet=r.sheets.length-1;
   r.rows=r.sheets[r.activeSheet].rows;
   liUndoStack.length=0;liPending=null;liUpdateUndoBtn();
   liPersist();liSetDirty(true);
   liRenderSheet();
-  liToast('Componente adicionado — meça-o separadamente nesta aba','success');
+  liToast('Componente adicionado — cabeçalho copiado do anterior, edite livremente (aba independente)','success');
 };
 window.liRenameTab=function(idx){
   const r=liGetReport(liCurrent);
@@ -4384,11 +4464,14 @@ window.liSimulate=function(){
 function liCollect(){
   if(!liCurrent)return;
   const r=liGetReport(liCurrent);
+  const sh=r.sheets[r.activeSheet];
+  if(!sh)return;
+  if(!sh.header)sh.header=liBlankHeader(null);
   document.querySelectorAll('#liSheetOverlay [data-lk]').forEach(el=>{
     const k=el.dataset.lk;
-    if(el.type==='checkbox')r[k]=el.checked;
-    else if(el.isContentEditable)r[k]=el.textContent;
-    else r[k]=el.value;
+    if(el.type==='checkbox')sh.header[k]=el.checked;
+    else if(el.isContentEditable)sh.header[k]=el.textContent;
+    else sh.header[k]=el.value;
   });
   document.querySelectorAll('#liSheetOverlay [data-lhk]').forEach(th=>{r.headers[th.dataset.lhk]=th.textContent.trim()});
 }
@@ -4405,24 +4488,26 @@ window.liExportSheetExcel=function(){
   const r=liGetReport(liCurrent);
   const wb=XLSX.utils.book_new();
   const usedNames={};
-  (r.sheets&&r.sheets.length?r.sheets:[{name:'Layout',rows:r.rows||[]}]).forEach((sh,i)=>{
+  (r.sheets&&r.sheets.length?r.sheets:[{name:'Layout',rows:r.rows||[],header:liBlankHeader(null)}]).forEach((sh,i)=>{
+    const hh=sh.header||liBlankHeader(null);
     const aoa=[
-      ['Supplier',r.supplier,'Supplier Number',r.supplierNumber],
-      ['Part Number',r.partNumber,'Revision',r.revision],
-      ['Part Name',r.partName,'Customer',r.customer],
-      ['Report N°',r.reportN,'Inspection Dept',r.inspDept],
+      ['Supplier',hh.supplier,'Supplier Number',hh.supplierNumber],
+      ['Part Number',hh.partNumber,'Revision',hh.revision],
+      ['Part Name',hh.partName,'Customer',hh.customer],
+      ['Report N°',hh.reportN,'Inspection Dept',hh.inspDept],
       ['Componente',sh.name||('Componente '+(i+1))],
       [],
       [r.headers.item,r.headers.char,r.headers.nominal,r.headers.spec,r.headers.low,r.headers.upper,'1','2','3','4','5',r.headers.ok,r.headers.nok]
     ];
     (sh.rows||[]).forEach(row=>aoa.push([row.item,row.char,row.nominal,row.spec,row.low,row.upper,...row.m,row.ok,row.nok]));
-    aoa.push([],['Observações',r.obs],['Name',r.signName,'Title',r.signTitle,'Date',r.signDate]);
+    aoa.push([],['Observações',hh.obs],['Name',hh.signName,'Title',hh.signTitle,'Date',hh.signDate]);
     let sheetName=(sh.name||('Componente '+(i+1))).replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31)||('Comp'+(i+1));
     if(usedNames[sheetName]){usedNames[sheetName]++;sheetName=(sheetName.slice(0,28)+' '+usedNames[sheetName]);}
     else usedNames[sheetName]=1;
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),sheetName);
   });
-  XLSX.writeFile(wb,'checklist_layout_'+(r.partNumber||'relatorio')+'.xlsx');
+  const firstPn=(r.sheets[0]&&r.sheets[0].header&&r.sheets[0].header.partNumber)||'relatorio';
+  XLSX.writeFile(wb,'checklist_layout_'+firstPn+'.xlsx');
 };
 
 /* ---------- GD&T ---------- */
