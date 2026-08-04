@@ -325,6 +325,20 @@ select.form-input option{background:var(--card);}
 .view-value{font-size:14px;font-weight:500;}
 .months-preview{display:flex;gap:3px;margin-top:10px;flex-wrap:wrap;}
 .mp-bar{flex:1;min-width:20px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);}
+.drw-section{margin-top:4px;}
+.drw-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}
+.drw-head .btn-sm{flex:none;padding:6px 12px;font-size:11px;}
+.drw-hint{font-size:10.5px;color:var(--text-secondary);margin-bottom:10px;}
+.drw-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
+.drw-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--text);display:flex;flex-direction:column;transition:.15s;}
+.drw-card:hover{border-color:var(--accent);}
+.drw-thumb{width:100%;height:80px;object-fit:cover;background:var(--card2);display:block;}
+.drw-icon{width:100%;height:80px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--card2);}
+.drw-name{font-size:10px;padding:6px 8px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.drw-remove{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;border:none;cursor:pointer;}
+.drw-remove:hover{background:var(--danger);}
+.drw-empty{font-size:12px;color:var(--text-secondary);padding:10px 0;}
+.drw-uploading{font-size:11px;color:var(--accent);padding:6px 0;}
 
 .cl-xl-banner{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;text-align:center;padding:18px;background:linear-gradient(135deg,var(--accent),rgba(0,198,255,.4));color:#fff;border-radius:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:.5px;}
 .cl-xl-header-grid{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;}
@@ -1006,6 +1020,15 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
     </div>
     <div class="modal-body">
       <div class="view-grid" id="viewGrid"></div>
+      <div class="drw-section">
+        <div class="drw-head">
+          <div class="view-label">📎 Desenhos do Produto</div>
+          <button type="button" class="btn btn-sm" onclick="document.getElementById('drwFileInput').click()">+ Anexar</button>
+          <input type="file" id="drwFileInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="handleDrawingUpload(this)">
+        </div>
+        <div class="drw-hint">Imagens ou PDF · até 8 MB por arquivo · até 5 anexos por item (armazenados no Firebase Storage, não sobrecarregam o banco de dados)</div>
+        <div class="drw-list" id="drwList"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('viewModal')">Fechar</button>
@@ -1021,6 +1044,7 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, onSnapshot, serverTimestamp, enableIndexedDbPersistence, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDIFrnVgmspIN3g9BMUh07Pn3rfqP3F0HA",
@@ -1034,6 +1058,7 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
   const fbApp = initializeApp(firebaseConfig);
   const auth  = getAuth(fbApp);
   const db    = getFirestore(fbApp);
+  const storage = getStorage(fbApp);
   // LEGACY: documento monolítico antigo (auditoria_data/main). Mantido apenas
   // para leitura única na migração automática (fallback) — nunca mais escrito.
   const LEGACY_DOC_REF = doc(db, 'auditoria_data', 'main');
@@ -1087,6 +1112,28 @@ table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important
 
   window.CloudSync.logout = function() {
     return signOut(auth).catch(e => console.warn('Erro ao sair:', e));
+  };
+
+  // ===== ANEXOS (DESENHOS DO PRODUTO) =====
+  // Guarda só a URL (string curta) no Firestore; o arquivo em si fica no
+  // Firebase Storage — assim o documento do item nunca fica pesado, não
+  // importa quantos desenhos/PDFs sejam anexados.
+  window.CloudSync.uploadDrawing = async function(itemId, file) {
+    try {
+      const safeName = String(file.name || 'arquivo').replace(/[^\w.\-]+/g, '_').slice(-80);
+      const path = `layout_drawings/${itemId}/${Date.now()}_${safeName}`;
+      const r = storageRef(storage, path);
+      await uploadBytes(r, file, { contentType: file.type || 'application/octet-stream' });
+      const url = await getDownloadURL(r);
+      return { ok: true, url, path, name: file.name, size: file.size, type: file.type };
+    } catch (e) {
+      console.warn('Erro ao enviar desenho:', e);
+      return { ok: false, error: _friendlyError(e) };
+    }
+  };
+  window.CloudSync.deleteDrawing = async function(path) {
+    try { await deleteObject(storageRef(storage, path)); return true; }
+    catch (e) { console.warn('Erro ao excluir desenho (arquivo pode já ter sido removido):', e); return false; }
   };
 
   function _wireCloudSync() {
@@ -1751,8 +1798,91 @@ function viewAudit(id) {
     <div class="view-item full"><div class="view-label">Observações</div><div class="view-value" style="color:var(--text-secondary);font-size:13px;">${a.obs||'—'}</div></div>
     <div class="view-item full"><div class="view-label">Cronograma 2026</div>${monthsHtml}</div>
   `;
+  renderDrawingsList(a);
 
   document.getElementById('viewModal').classList.add('active');
+}
+
+// ===== ANEXOS (DESENHOS DO PRODUTO) =====
+// Guarda no item apenas {name,url,path,type,size} — o arquivo fica no Firebase
+// Storage, então o documento do item no Firestore continua leve mesmo com
+// vários anexos (nada de base64 no banco).
+const DRW_MAX_SIZE  = 8 * 1024 * 1024; // 8 MB por arquivo
+const DRW_MAX_COUNT = 5;               // anexos por item
+
+function renderDrawingsList(a) {
+  const box = document.getElementById('drwList');
+  if (!box) return;
+  const list = Array.isArray(a.drawings) ? a.drawings : [];
+  if (!list.length) { box.innerHTML = '<div class="drw-empty">Nenhum desenho anexado ainda.</div>'; return; }
+  box.innerHTML = list.map((d, i) => {
+    const isImg = (d.type || '').startsWith('image/');
+    const safeName = (d.name || 'arquivo').replace(/"/g, '&quot;');
+    const thumb = isImg
+      ? `<img class="drw-thumb" src="${d.url}" alt="${safeName}" loading="lazy">`
+      : `<div class="drw-icon">📄</div>`;
+    return `<a class="drw-card" href="${d.url}" target="_blank" rel="noopener">
+      <button type="button" class="drw-remove" onclick="event.preventDefault();event.stopPropagation();removeDrawing(${i})" title="Remover">✕</button>
+      ${thumb}
+      <div class="drw-name" title="${safeName}">${safeName}</div>
+    </a>`;
+  }).join('');
+}
+
+async function handleDrawingUpload(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+  const id = state.currentViewId;
+  const a = state.audits.find(x => x.id === id);
+  if (!a) return;
+  if (!Array.isArray(a.drawings)) a.drawings = [];
+
+  const remaining = DRW_MAX_COUNT - a.drawings.length;
+  if (remaining <= 0) { notify('Limite de ' + DRW_MAX_COUNT + ' anexos por item atingido', 'error'); return; }
+  const toUpload = files.slice(0, remaining);
+  if (files.length > toUpload.length) notify('Só ' + toUpload.length + ' arquivo(s) serão enviados (limite de ' + DRW_MAX_COUNT + ' por item)', 'warn');
+
+  if (!(window.CloudSync && window.CloudSync.ready && window.CloudSync.uploadDrawing)) {
+    notify('Sem conexão com a nuvem — não é possível anexar agora', 'error');
+    return;
+  }
+
+  let sent = 0;
+  for (const file of toUpload) {
+    if (!/^image\/|^application\/pdf$/.test(file.type)) {
+      notify('Tipo não suportado: ' + file.name + ' (use imagem ou PDF)', 'error');
+      continue;
+    }
+    if (file.size > DRW_MAX_SIZE) {
+      notify('Arquivo muito grande: ' + file.name + ' (máx. 8 MB)', 'error');
+      continue;
+    }
+    notify('Enviando ' + file.name + '...');
+    const res = await window.CloudSync.uploadDrawing(id, file);
+    if (res.ok) {
+      a.drawings.push({ name: res.name, url: res.url, path: res.path, type: res.type, size: res.size, uploadedAt: new Date().toISOString() });
+      renderDrawingsList(a);
+      sent++;
+    } else {
+      notify('Falha ao enviar ' + file.name + ': ' + (res.error || ''), 'error');
+    }
+  }
+  if (sent > 0) { saveAudits(id); notify('✅ ' + sent + ' anexo(s) salvos'); }
+}
+
+function removeDrawing(idx) {
+  const id = state.currentViewId;
+  const a = state.audits.find(x => x.id === id);
+  if (!a || !Array.isArray(a.drawings) || !a.drawings[idx]) return;
+  if (!confirm('Remover este desenho?')) return;
+  const d = a.drawings[idx];
+  a.drawings.splice(idx, 1);
+  renderDrawingsList(a);
+  saveAudits(id);
+  if (d.path && window.CloudSync && window.CloudSync.deleteDrawing) {
+    window.CloudSync.deleteDrawing(d.path);
+  }
 }
 
 
@@ -3256,6 +3386,7 @@ Object.assign(window, {
   openNewModal, closeModal, saveNew,
   openEditModal, saveEdit, deleteAudit,
   viewAudit, openEditFromView,
+  renderDrawingsList, handleDrawingUpload, removeDrawing,
   toggleMonth,
   filterLayout, clearFiltersL, renderLayoutGantt, renderLayoutDash,
   updateLayoutFilterOptions, updateTopbarForView,
