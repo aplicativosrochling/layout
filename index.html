@@ -518,6 +518,25 @@ body.cl-open{overflow:hidden;}
 
 /* --- Folha do checklist (idêntica ao módulo Editor) --- */
 .li-sheet-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;overflow:auto;display:none}
+/* ===== BARRA DE RELATÓRIOS ABERTOS (multi-checklist) ===== */
+.lc-openbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:9;}
+.lc-openbar-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-secondary);margin-right:4px;}
+.lc-tab{display:inline-flex;align-items:center;gap:6px;padding:5px 8px 5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--card2);color:var(--text-secondary);font-size:11.5px;font-weight:600;cursor:pointer;transition:.15s;max-width:260px;}
+.lc-tab:hover{border-color:var(--border-hover);color:var(--text);}
+.lc-tab.active{background:var(--grad);border-color:transparent;color:#fff;box-shadow:var(--glow);}
+.lc-tab .lc-tab-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lc-tab .lc-tab-ro{font-size:10px;opacity:.85;}
+.lc-tab-x{border:none;background:rgba(0,0,0,.18);color:inherit;border-radius:5px;width:16px;height:16px;line-height:1;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lc-tab-x:hover{background:rgba(255,61,87,.75);color:#fff;}
+.lc-openbar .btn{padding:5px 9px;font-size:11px;}
+.lc-pick-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card2);margin-bottom:6px;font-size:12px;}
+.lc-pick-row:hover{border-color:var(--border-hover);}
+.lc-pick-row .lc-pick-main{flex:1;min-width:0;}
+.lc-pick-row .lc-pick-sub{font-size:10.5px;color:var(--text-secondary);}
+.lc-pick-badge{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(168,85,247,.18);color:#c084fc;font-weight:700;}
+.lc-pick-badge.draft{background:rgba(255,179,0,.18);color:#ffb300;}
+.lc-pick-badge.empty{background:rgba(122,132,153,.18);color:var(--text-secondary);}
+@media print{.lc-openbar{display:none!important;}}
 .li-sheet-overlay.active{display:block}
 body.li-open .sidebar,body.li-open .topbar{filter:none}
 .li-sheet-top{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 18px;background:var(--surface);border-bottom:1px solid var(--border)}
@@ -3029,6 +3048,9 @@ function openLayoutChecklist(itemId, monthIndex){
   if (typeof window.liLoadRecord !== 'function') { notify('Formulário de layout ainda carregando, tente novamente em instantes.', 'warn'); return; }
   a.layoutChecklists = a.layoutChecklists || {};
   if (monthIndex == null) monthIndex = _clDefaultMonthFor(a);
+  // multi-checklist: salva o rascunho do relatório que estava aberto antes de trocar
+  if (lcAuditId != null && !(lcAuditId === itemId && lcMonth === monthIndex)) lcPersistCurrent();
+  if (lcFindOpen(itemId, monthIndex) < 0) lcOpen.push({ auditId: itemId, month: monthIndex });
   lcAuditId = itemId; lcMonth = monthIndex;
   const key = _lcKey(itemId, monthIndex);
   const saved = a.layoutChecklists[monthIndex];
@@ -3043,6 +3065,7 @@ function openLayoutChecklist(itemId, monthIndex){
   const ov = document.getElementById('liSheetOverlay');
   ov.classList.add('active');
   document.body.classList.add('li-open');
+  lcRenderOpenBar();
   closeModal('viewModal');
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
@@ -3052,7 +3075,9 @@ function closeLayoutChecklist(){
   const ov = document.getElementById('liSheetOverlay');
   if (ov) ov.classList.remove('active');
   document.body.classList.remove('li-open');
+  lcPersistCurrent();
   lcAuditId = null; lcMonth = null;
+  lcRenderOpenBar();
   window.scrollTo(0, 0);
 }
 
@@ -3075,6 +3100,8 @@ function lcDeleteChecklist(){
   if (a.layoutChecklists) delete a.layoutChecklists[lcMonth];
   if (typeof window.liForgetRecord === 'function') window.liForgetRecord(key);
   saveAudits(a.id);
+  const _ti = lcFindOpen(lcAuditId, lcMonth);
+  if (_ti >= 0) lcOpen.splice(_ti, 1);
   closeLayoutChecklist();
   filterLayout();
   renderLayoutDash();
@@ -3405,6 +3432,195 @@ function hasLayoutReport(a, i){
   });
 })();
 
+/* =========================================================================
+   MULTI-CHECKLIST — vários relatórios de inspeção de layout abertos ao mesmo
+   tempo (visualizar / editar / copiar entre eles).
+   -------------------------------------------------------------------------
+   lcOpen guarda a sessão de relatórios abertos ({auditId, month}). A folha
+   continua renderizando UM relatório por vez (motor "li"), mas a troca entre
+   abas é instantânea e sempre grava o rascunho do relatório que sai
+   (lcPersistCurrent → a.layoutChecklists[mês] + Firebase), então nada é
+   perdido ao alternar. Copiar conteúdo entre relatórios usa
+   window.liCopySheetsFrom(), exposta pelo motor "li".
+   ========================================================================= */
+let lcOpen = [];
+
+function lcFindOpen(id, m){ return lcOpen.findIndex(t => t.auditId === id && t.month === m); }
+
+function lcTabInfo(t){
+  const a = state.audits.find(x => x.id === t.auditId);
+  const rec = a && a.layoutChecklists ? a.layoutChecklists[t.month] : null;
+  const label = (a ? (a.sap || a.pn || ('#' + a.id)) : ('#' + t.auditId)) + ' · ' + (MONTHS[t.month] || '');
+  return { a, rec, label, done: !!(rec && rec.completedAt) };
+}
+
+function lcPersistCurrent(){
+  if (lcRO || lcAuditId == null) return;
+  if (typeof window.liExportRecord !== 'function') return;
+  try {
+    const a = state.audits.find(x => x.id === lcAuditId);
+    if (!a) return;
+    const data = window.liExportRecord(false);
+    a.layoutChecklists = a.layoutChecklists || {};
+    a.layoutChecklists[lcMonth] = data;
+    saveAudits(a.id);
+  } catch (err) { console.warn('multi-checklist persist', err); }
+}
+
+function lcRenderOpenBar(){
+  const bar = document.getElementById('lcOpenBar');
+  if (!bar) return;
+  if (!lcOpen.length || lcAuditId == null) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = 'flex';
+  let html = '<span class="lc-openbar-lbl">Relatórios abertos (' + lcOpen.length + ')</span>';
+  lcOpen.forEach((t, i) => {
+    const info = lcTabInfo(t);
+    const active = (t.auditId === lcAuditId && t.month === lcMonth);
+    html += '<span class="lc-tab' + (active ? ' active' : '') + '" onclick="lcActivateTab(' + i + ')" title="' + liEsc(info.label + (info.a && info.a.desc ? ' — ' + info.a.desc : '')) + '">' +
+            '<span class="lc-tab-txt">' + liEsc(info.label) + '</span>' +
+            (info.done ? '<span class="lc-tab-ro">👁</span>' : '') +
+            '<button class="lc-tab-x" onclick="event.stopPropagation();lcCloseTab(' + i + ')" title="Fechar esta aba">✕</button>' +
+            '</span>';
+  });
+  html += '<div style="flex:1;"></div>' +
+          '<button class="btn" onclick="lcOpenPicker()">➕ Abrir outro</button>' +
+          '<button class="btn" onclick="lcCopyPicker()">⧉ Copiar de outro</button>' +
+          '<button class="btn" onclick="lcSaveAllOpen()" title="Salvar o rascunho de todos os relatórios abertos">💾 Salvar todos</button>' +
+          '<button class="btn" onclick="lcCloseAllTabs()" title="Fechar todas as abas de relatórios">✕ Fechar todos</button>';
+  bar.innerHTML = html;
+}
+
+function lcActivateTab(i){
+  const t = lcOpen[i];
+  if (!t) return;
+  if (t.auditId === lcAuditId && t.month === lcMonth) return;
+  openLayoutChecklist(t.auditId, t.month);
+}
+
+function lcCloseTab(i){
+  const t = lcOpen[i];
+  if (!t) return;
+  const wasActive = (t.auditId === lcAuditId && t.month === lcMonth);
+  if (wasActive) lcPersistCurrent();
+  lcOpen.splice(i, 1);
+  if (!wasActive) { lcRenderOpenBar(); return; }
+  const next = lcOpen[i] || lcOpen[i - 1];
+  if (next) { lcAuditId = null; lcMonth = null; openLayoutChecklist(next.auditId, next.month); }
+  else closeLayoutChecklist();
+}
+
+function lcCloseAllTabs(){
+  lcPersistCurrent();
+  lcOpen = [];
+  closeLayoutChecklist();
+  notify('Todas as abas de relatórios foram fechadas');
+}
+
+function lcSaveAllOpen(){
+  lcPersistCurrent();
+  notify('💾 Rascunhos de todos os relatórios abertos salvos (' + lcOpen.length + ')');
+}
+
+/* ---------- catálogo de relatórios disponíveis (para abrir / copiar) ---------- */
+function lcCatalog(){
+  const out = [];
+  (state.audits || []).forEach(a => {
+    if (!isLayoutItem(a)) return;
+    const recs = a.layoutChecklists || {};
+    const months = new Set();
+    Object.keys(recs).forEach(k => { const i = Number(k); if (!isNaN(i)) months.add(i); });
+    (a.months || []).forEach((v, i) => { if (v > 0) months.add(i); });
+    if (!months.size) months.add(_clDefaultMonthFor(a));
+    Array.from(months).sort((x, y) => x - y).forEach(m => {
+      const rec = recs[m];
+      out.push({
+        auditId: a.id, month: m, audit: a, rec: rec || null,
+        state: rec ? (rec.completedAt ? 'done' : 'draft') : 'empty',
+        text: [a.sap, a.pn, a.desc, a.client, MONTHS[m]].filter(Boolean).join(' ').toLowerCase()
+      });
+    });
+  });
+  return out;
+}
+
+function lcRowHtml(c, kind){
+  const badge = c.state === 'done'
+    ? '<span class="lc-pick-badge">✓ Finalizado</span>'
+    : c.state === 'draft' ? '<span class="lc-pick-badge draft">✎ Rascunho</span>'
+    : '<span class="lc-pick-badge empty">— Vazio</span>';
+  const sheets = c.rec && Array.isArray(c.rec.sheets) ? c.rec.sheets.length : 0;
+  const input = kind === 'copy'
+    ? '<input type="radio" name="lcCopySrc" value="' + c.auditId + '_' + c.month + '"' + (c.state === 'empty' ? ' disabled' : '') + '>'
+    : '<input type="checkbox" class="lc-pick-chk" data-id="' + c.auditId + '" data-m="' + c.month + '"' + (lcFindOpen(c.auditId, c.month) >= 0 ? ' checked disabled' : '') + '>';
+  return '<label class="lc-pick-row">' + input +
+    '<span class="lc-pick-main"><b>' + liEsc(c.audit.sap || c.audit.pn || ('#' + c.audit.id)) + '</b> · ' + liEsc(MONTHS[c.month] || '') +
+    '<div class="lc-pick-sub">' + liEsc((c.audit.desc || '').slice(0, 70) || 'sem descrição') +
+    (sheets ? ' · ' + sheets + ' componente(s)' : '') + '</div></span>' + badge + '</label>';
+}
+
+function lcRenderPickList(){
+  const q = (document.getElementById('lcPickSearch').value || '').trim().toLowerCase();
+  const list = lcCatalog().filter(c => !q || c.text.includes(q));
+  const el = document.getElementById('lcPickList');
+  el.innerHTML = list.length ? list.map(c => lcRowHtml(c, 'open')).join('')
+    : '<div style="font-size:12px;color:var(--text-secondary);padding:14px;">Nenhum item de inspeção de layout encontrado.</div>';
+}
+
+function lcOpenPicker(){
+  const el = document.getElementById('lcPickSearch');
+  if (el) el.value = '';
+  lcRenderPickList();
+  document.getElementById('lcPickModal').classList.add('active');
+}
+
+function lcOpenSelected(){
+  const chks = Array.from(document.querySelectorAll('#lcPickList .lc-pick-chk:checked:not(:disabled)'));
+  if (!chks.length) { notify('Selecione ao menos um relatório', 'warn'); return; }
+  closeModal('lcPickModal');
+  chks.forEach(ch => {
+    const id = Number(ch.dataset.id), m = Number(ch.dataset.m);
+    if (lcFindOpen(id, m) < 0) lcOpen.push({ auditId: id, month: m });
+  });
+  const last = chks[chks.length - 1];
+  openLayoutChecklist(Number(last.dataset.id), Number(last.dataset.m));
+  notify('📂 ' + chks.length + ' relatório(s) aberto(s) em abas');
+}
+
+function lcRenderCopyList(){
+  const q = (document.getElementById('lcCopySearch').value || '').trim().toLowerCase();
+  const list = lcCatalog().filter(c => c.state !== 'empty')
+    .filter(c => !(c.auditId === lcAuditId && c.month === lcMonth))
+    .filter(c => !q || c.text.includes(q));
+  const el = document.getElementById('lcCopyList');
+  el.innerHTML = list.length ? list.map(c => lcRowHtml(c, 'copy')).join('')
+    : '<div style="font-size:12px;color:var(--text-secondary);padding:14px;">Nenhum outro relatório salvo para copiar.</div>';
+}
+
+function lcCopyPicker(){
+  if (lcAuditId == null) { notify('Abra um relatório antes de copiar para ele', 'warn'); return; }
+  if (lcRO) { notify('Este relatório está em modo leitura. Use “✎ Editar Relatório” antes de copiar.', 'warn'); return; }
+  const tag = document.getElementById('lcCopyTargetTag');
+  if (tag) tag.textContent = lcTabInfo({ auditId: lcAuditId, month: lcMonth }).label;
+  const el = document.getElementById('lcCopySearch');
+  if (el) el.value = '';
+  lcRenderCopyList();
+  document.getElementById('lcCopyModal').classList.add('active');
+}
+
+function lcDoCopy(){
+  const sel = document.querySelector('#lcCopyList input[name="lcCopySrc"]:checked');
+  if (!sel) { notify('Selecione o relatório de origem', 'warn'); return; }
+  const [sid, sm] = sel.value.split('_');
+  const src = state.audits.find(x => x.id === Number(sid));
+  const rec = src && src.layoutChecklists ? src.layoutChecklists[Number(sm)] : null;
+  if (!rec) { notify('Relatório de origem não encontrado', 'error'); return; }
+  const mode = document.getElementById('lcCopyMode').value;
+  const n = window.liCopySheetsFrom(rec, { pn: src.pn, part: src.desc, client: src.client, resp: src.resp }, mode);
+  closeModal('lcCopyModal');
+  saveLayoutChecklist();
+  notify('⧉ ' + n + ' componente(s) copiado(s) de ' + (src.sap || src.pn) + ' · ' + (MONTHS[Number(sm)] || ''));
+}
+
 // ===== EXPOSIÇÃO GLOBAL =====
 
 Object.assign(window, {
@@ -3427,6 +3643,9 @@ Object.assign(window, {
   openLayoutChecklist, closeLayoutChecklist, saveLayoutChecklist,
   finalizeLayoutChecklist, printLayoutChecklist, lcEnableEdit, lcDeleteChecklist,
   hasLayoutReport,
+  lcOpenPicker, lcRenderPickList, lcOpenSelected,
+  lcCopyPicker, lcRenderCopyList, lcDoCopy,
+  lcActivateTab, lcCloseTab, lcCloseAllTabs, lcSaveAllOpen, lcRenderOpenBar,
 });
 
 // ===== ATALHOS DE TECLADO =====
@@ -3582,6 +3801,8 @@ if (document.readyState === 'loading') {
 <div class="li-sheet-overlay" id="liSheetOverlay">
   <div class="li-sheet-top">
     <button class="btn" onclick="closeLayoutChecklist()">← Voltar para o Cronograma</button>
+    <button class="btn" onclick="lcOpenPicker()" style="background:rgba(0,198,255,.12);border-color:rgba(0,198,255,.4);color:var(--accent);" title="Abrir vários relatórios ao mesmo tempo (abas)">➕ Abrir outros relatórios</button>
+    <button class="btn" onclick="lcCopyPicker()" title="Copiar componentes/linhas de outro relatório para este">⧉ Copiar de outro relatório</button>
     <span class="li-tag" id="liSheetTag">—</span>
     <span class="li-tag nok" id="liReadonlyBadge" style="display:none;">👁 Modo Leitura</span>
     <button class="btn" id="liBtnSave" onclick="saveLayoutChecklist()">💾 Salvar Alterações</button>
@@ -3601,6 +3822,9 @@ if (document.readyState === 'loading') {
     <button class="btn" onclick="printLayoutChecklist(true)" title="Imprime apenas o componente atualmente aberto">🖨 Imprimir só esta aba</button>
     <span class="li-tag nok" id="liDirty" style="display:none;">● Não salvo</span>
   </div>
+
+  <!-- Relatórios abertos simultaneamente (multi-checklist) -->
+  <div class="lc-openbar" id="lcOpenBar" style="display:none;"></div>
 
   <div class="li-sheet" id="liSheet">
     <div class="li-hdr">
@@ -3746,6 +3970,51 @@ if (document.readyState === 'loading') {
     <div class="modal-footer" id="liImportFooter" style="display:none;">
       <button class="btn" onclick="window.liCloseImport()">Cancelar</button>
       <button class="btn btn-primary" onclick="window.liCommitImport()">✅ Importar para este relatório</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ABRIR VÁRIOS RELATÓRIOS AO MESMO TEMPO -->
+<div class="modal-overlay" id="lcPickModal" style="z-index:600;">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-head">
+      <div class="modal-head-title">➕ Abrir vários relatórios ao mesmo tempo</div>
+      <button class="modal-close-btn" onclick="closeModal('lcPickModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:0;">Selecione quantos relatórios quiser: todos ficam abertos em abas no topo da folha, podendo ser visualizados, editados e copiados sem fechar os outros. Os rascunhos são salvos automaticamente ao trocar de aba.</p>
+      <input class="form-input" id="lcPickSearch" placeholder="🔎 Filtrar por SAP, part number ou descrição..." oninput="lcRenderPickList()" style="margin-bottom:12px;">
+      <div id="lcPickList" style="max-height:380px;overflow:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('lcPickModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="lcOpenSelected()">📂 Abrir selecionados</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: COPIAR DE OUTRO RELATÓRIO -->
+<div class="modal-overlay" id="lcCopyModal" style="z-index:600;">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-head">
+      <div class="modal-head-title">⧉ Copiar de outro relatório</div>
+      <button class="modal-close-btn" onclick="closeModal('lcCopyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:0;">Escolha o relatório de origem e o que fazer com os componentes copiados. A cópia é feita para o relatório <b id="lcCopyTargetTag">atual</b>.</p>
+      <div class="form-group" style="max-width:320px;">
+        <label class="form-label">Modo</label>
+        <select class="form-input" id="lcCopyMode">
+          <option value="append">Acrescentar componentes ao relatório atual</option>
+          <option value="replace">Substituir todo o conteúdo do relatório atual</option>
+        </select>
+      </div>
+      <input class="form-input" id="lcCopySearch" placeholder="🔎 Filtrar..." oninput="lcRenderCopyList()" style="margin:8px 0 12px;">
+      <div id="lcCopyList" style="max-height:340px;overflow:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('lcCopyModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="lcDoCopy()">⧉ Copiar para este relatório</button>
     </div>
   </div>
 </div>
@@ -3903,6 +4172,35 @@ window.liLoadRecord=function(key, saved, itemInfo){
   liRenderSheet();
 };
 window.liForgetRecord=function(key){ delete liState.reports[key]; };
+/* Copia os componentes (abas) de OUTRO relatório salvo para o relatório aberto.
+   mode='append' acrescenta as abas ao final; mode='replace' troca todo o
+   conteúdo (abas + nomes de coluna). Retorna quantas abas foram copiadas. */
+window.liCopySheetsFrom=function(saved,itemInfo,mode){
+  if(!liCurrent)return 0;
+  liCollect();liSyncActiveSheet();liSnapshot();
+  const r=liGetReport(liCurrent);
+  const src=liNormalizeReport(saved,itemInfo||null);
+  const clones=JSON.parse(JSON.stringify(src.sheets)).map((sh,i)=>{
+    sh.id=liUid();
+    sh.name=(sh.name||('Componente '+(i+1)))+(mode==='replace'?'':' (copiado)');
+    return sh;
+  });
+  if(mode==='replace'){
+    r.sheets=clones;
+    r.headers=Object.assign({},DEFAULT_HEADERS,src.headers||{});
+    r.activeSheet=0;
+  }else{
+    r.sheets=r.sheets.concat(clones);
+    r.activeSheet=r.sheets.length-clones.length;
+  }
+  r.rows=r.sheets[r.activeSheet].rows;
+  liEnsureSheets(r);
+  liCommitSnapshot();
+  liRenderSheet();
+  liSetDirty(true);
+  liPersist();
+  return clones.length;
+};
 window.liCollectSilent=function(){ if(liCurrent) liCollect(); };
 window.liStats=function(){
   const r=liGetReport(liCurrent);
