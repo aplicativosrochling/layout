@@ -579,6 +579,10 @@ table.li-dim td input:focus{background:var(--bg);box-shadow:inset 0 0 0 1px var(
 table.li-dim tr.nokrow td{background:rgba(255,61,87,.07)}
 table.li-dim tr.okrow td{background:rgba(0,230,118,.05)}
 table.li-dim select.li-rowmenu{background:transparent;border:0;color:var(--text-secondary);cursor:pointer;width:100%;font-size:11px}
+table.li-dim td.li-actioncell{display:flex;align-items:center;justify-content:center;gap:2px;padding:5px 2px}
+table.li-dim td.li-actioncell select.li-rowmenu{width:auto;flex:1;min-width:0}
+table.li-dim td .li-rowchk{width:13px;height:13px;flex:none;margin:0;cursor:pointer}
+table.li-dim th input#liSelAllChk{cursor:pointer}
 .li-obs{margin-top:14px}
 .li-obs label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary)}
 .li-obs textarea{width:100%;min-height:64px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;font-family:inherit;font-size:12px;margin-top:4px;resize:vertical}
@@ -3935,7 +3939,7 @@ if (document.readyState === 'loading') {
         <col style="width:4%"><col style="width:15%"><col style="width:10%"><col style="width:5%">
         <col style="width:6%"><col style="width:6%">
         <col style="width:7.6%"><col style="width:7.6%"><col style="width:7.6%"><col style="width:7.6%"><col style="width:7.6%">
-        <col style="width:6%"><col style="width:7%"><col class="li-noprint" style="width:3%">
+        <col style="width:6%"><col style="width:7%"><col class="li-noprint" style="width:4.5%">
       </colgroup>
       <thead>
         <tr>
@@ -3947,7 +3951,7 @@ if (document.readyState === 'loading') {
           <th colspan="5" contenteditable="true" data-lhk="results">SUPPLIER MEASUREMENT RESULTS</th>
           <th rowspan="2" contenteditable="true" data-lhk="ok">OK</th>
           <th rowspan="2" contenteditable="true" data-lhk="nok">NOT OK</th>
-          <th rowspan="2" class="li-noprint"></th>
+          <th rowspan="2" class="li-noprint"><input type="checkbox" id="liSelAllChk" title="Selecionar/desmarcar todas as linhas"></th>
         </tr>
         <tr>
           <th contenteditable="true" data-lhk="low">LOW</th>
@@ -3970,15 +3974,16 @@ if (document.readyState === 'loading') {
     </details>
 
     <div class="li-noprint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-      <button class="btn" id="liBtnAddRow" onclick="liAddRow()">+ Adicionar linha (fim)</button>
-      <button class="btn" id="liBtnInsertRow0" onclick="liInsertRow(0)">+ Adicionar linha (início)</button>
+      <button class="btn" id="liBtnAddRow" onclick="liAddRowPrompt()">+ Adicionar linha(s) (fim)</button>
+      <button class="btn" id="liBtnInsertRow0" onclick="liInsertRowPrompt(0)">+ Adicionar linha(s) (início)</button>
       <button class="btn" id="liBtnReset" onclick="liResetHeaders()">↺ Restaurar nomes das colunas</button>
       <button class="btn" id="liBtnResetWidths" onclick="window.liResetColWidths()" title="Restaurar a largura padrão de todas as colunas">↔ Redefinir larguras</button>
       <button class="btn" style="padding:6px 10px;" title="Limpar seleção de linhas" onclick="window.liClearSelection()">☐ Nenhuma</button>
       <button class="btn" style="padding:6px 10px;" title="Copiar as linhas selecionadas (Ctrl+C)" onclick="window.liCopySelectedRows()">⧉ Copiar linhas</button>
       <button class="btn" style="padding:6px 10px;" title="Colar linhas copiadas a partir da seleção atual (Ctrl+V)" onclick="window.liPasteRowsButton()">📋 Colar linhas</button>
       <button class="btn" style="padding:6px 10px;" title="Apagar os valores das células/linhas selecionadas (Delete)" onclick="window.liClearSelectionValues()">🗑 Limpar seleção</button>
-      <span style="font-size:11px;color:var(--text-secondary);align-self:center;">💡 OK / NOT OK é calculado automaticamente a partir de NOMINAL + LOW/UPPER. Digitar manualmente trava a linha. Clique e arraste (ou Shift+clique) em células de uma mesma coluna para selecionar um intervalo, igual Excel — Ctrl+C copia, Ctrl+V cola (cria linhas se precisar), Delete apaga os valores selecionados. Ctrl/Shift+clique numa linha (fora das células) seleciona linhas inteiras — Ctrl+C/Ctrl+V/Delete também funcionam nelas. A alcinha 🔲 do canto da célula preenche em série.</span>
+      <button class="btn" style="padding:6px 10px;background:#fee2e2;color:#b91c1c;" title="Excluir (remover) as linhas selecionadas de uma vez (Ctrl/Shift+clique nas linhas para selecionar várias)" onclick="window.liDeleteSelectedRows()">✖ Excluir linhas selecionadas</button>
+      <span style="font-size:11px;color:var(--text-secondary);align-self:center;">💡 OK / NOT OK é calculado automaticamente a partir de NOMINAL + LOW/UPPER. Digitar manualmente trava a linha. Clique e arraste (ou Shift+clique) em células de uma mesma coluna para selecionar um intervalo, igual Excel — Ctrl+C copia, Ctrl+V cola (cria linhas se precisar), Delete apaga os valores selecionados. Ctrl/Shift+clique numa linha (fora das células) seleciona linhas inteiras — Ctrl+C/Ctrl+V/Delete também funcionam nelas, e "Excluir linhas selecionadas" remove várias linhas inteiras de uma vez. Os botões "Adicionar linha(s)" perguntam quantas linhas criar. A alcinha 🔲 do canto da célula preenche em série.</span>
     </div>
 
     <div class="li-obs">
@@ -4915,7 +4920,7 @@ function liRenderRows(){
       ${[0,1,2,3,4].map(i=>cellHtml('m'+i)).join('')}
       ${cellHtml('ok',null,'color:var(--success);font-weight:700')}
       ${cellHtml('nok',null,'color:var(--danger);font-weight:700')}
-      <td class="li-noprint"><select class="li-rowmenu" onchange="liRowAction(${idx},this.value);this.value='';">
+      <td class="li-noprint li-actioncell"><input type="checkbox" class="li-rowchk" ${liSelectedRows.has(idx)?'checked':''} title="Selecionar linha (Shift+clique seleciona um intervalo)"><select class="li-rowmenu" onchange="liRowAction(${idx},this.value);this.value='';">
         <option value="">⋮</option>
         <option value="sim">🎲 Simular linha</option>
         <option value="up">⬆ Inserir acima</option>
@@ -4975,15 +4980,48 @@ window.liRowAction=function(idx,action){
   else if(action==='auto'){r.rows[idx]._manual=false;liRenderRows();liUpdateSummary();liPersist();liSetDirty(true)}
   else if(action==='sim'){liSimulateRows([r.rows[idx]]);liRenderRows();liUpdateSummary();liPersist();liSetDirty(true)}
 };
-window.liAddRow=function(){
+window.liAddRow=function(n){
+  n=Math.max(1,parseInt(n,10)||1);
   const r=liGetReport(liCurrent);
-  r.rows.push(liBlankRow(String(r.rows.length+1)));
+  for(let i=0;i<n;i++)r.rows.push(liBlankRow(String(r.rows.length+1)));
   liRenderRows();liUpdateSummary();liPersist();liSetDirty(true);
 };
-window.liInsertRow=function(idx){
+window.liInsertRow=function(idx,n){
+  n=Math.max(1,parseInt(n,10)||1);
   const r=liGetReport(liCurrent);
-  r.rows.splice(idx,0,liBlankRow(''));
+  const blanks=[];for(let i=0;i<n;i++)blanks.push(liBlankRow(''));
+  r.rows.splice(idx,0,...blanks);
   liRenderRows();liUpdateSummary();liPersist();liSetDirty(true);
+};
+function liPromptRowCount(msg){
+  const v=prompt(msg,'1');
+  if(v===null)return 0;
+  const n=parseInt(String(v).replace(/[^0-9-]/g,''),10);
+  if(!isFinite(n)||n<1)return 0;
+  return Math.min(n,300);
+}
+window.liAddRowPrompt=function(){
+  const n=liPromptRowCount('Quantas linhas deseja adicionar ao final?');
+  if(!n)return;
+  window.liAddRow(n);
+  liToast(n+' linha(s) adicionada(s)','success');
+};
+window.liInsertRowPrompt=function(idx){
+  const n=liPromptRowCount('Quantas linhas deseja inserir?');
+  if(!n)return;
+  window.liInsertRow(idx,n);
+  liToast(n+' linha(s) inserida(s)','success');
+};
+window.liDeleteSelectedRows=function(){
+  if(!liSelectedRows.size){liToast('Selecione uma ou mais linhas primeiro (Ctrl/Shift+clique na linha)','error');return}
+  const n=liSelectedRows.size;
+  if(!confirm('Excluir '+n+' linha(s) selecionada(s)? Esta ação remove as linhas inteiras e não pode ser desfeita.'))return;
+  const r=liGetReport(liCurrent);
+  const idxs=[...liSelectedRows].sort((a,b)=>b-a);
+  idxs.forEach(i=>{if(r.rows[i]!==undefined)r.rows.splice(i,1);});
+  liClearRowSelection();
+  liRenderRows();liUpdateSummary();liPersist();liSetDirty(true);
+  liToast(n+' linha(s) excluída(s)','success');
 };
 window.liAutoTolerance=function(){
   const r=liGetReport(liCurrent);
@@ -5707,7 +5745,14 @@ window.liClearSelectionValues=function(){
 
 /* ---------- Seleção múltipla de linhas (Ctrl/Shift + clique) ---------- */
 const liSelectedRows=new Set();let liLastSelectedIdx=null;
-function liMarkRowEl(idx,on){const tb=document.getElementById('liDimBody');if(!tb)return;const tr=tb.children[idx];if(tr)tr.classList.toggle('li-row-selected',!!on);}
+function liMarkRowEl(idx,on){const tb=document.getElementById('liDimBody');if(!tb)return;const tr=tb.children[idx];if(tr){tr.classList.toggle('li-row-selected',!!on);const chk=tr.querySelector('.li-rowchk');if(chk)chk.checked=!!on;}liSyncSelectAllChk();}
+function liSyncSelectAllChk(){
+  const all=document.getElementById('liSelAllChk');if(!all)return;
+  const r=liGetReport(liCurrent);
+  const total=r.rows.length;
+  all.checked=total>0&&liSelectedRows.size===total;
+  all.indeterminate=liSelectedRows.size>0&&liSelectedRows.size<total;
+}
 function liClearRowSelection(){liSelectedRows.forEach(i=>liMarkRowEl(i,false));liSelectedRows.clear();liLastSelectedIdx=null;}
 window.liClearSelection=liClearRowSelection;
 function liToggleRowSelection(idx){if(liSelectedRows.has(idx)){liSelectedRows.delete(idx);liMarkRowEl(idx,false);}else{liSelectedRows.add(idx);liMarkRowEl(idx,true);}liLastSelectedIdx=idx;}
@@ -5723,6 +5768,22 @@ document.addEventListener('mousedown',e=>{
   liClearCellSelection();
   if(e.shiftKey)liRangeSelectTo(idx);else liToggleRowSelection(idx);
 },true);
+
+document.getElementById('liDimBody').addEventListener('click',e=>{
+  const chk=e.target.closest&&e.target.closest('.li-rowchk');
+  if(!chk)return;
+  const tr=chk.closest('tr');if(!tr)return;
+  const idx=+tr.dataset.idx;if(isNaN(idx))return;
+  liClearCellSelection();
+  if(e.shiftKey)liRangeSelectTo(idx);else liToggleRowSelection(idx);
+});
+document.addEventListener('change',e=>{
+  if(e.target&&e.target.id==='liSelAllChk'){
+    const r=liGetReport(liCurrent);
+    if(e.target.checked)r.rows.forEach((_,i)=>{if(!liSelectedRows.has(i)){liSelectedRows.add(i);liMarkRowEl(i,true);}});
+    else liClearRowSelection();
+  }
+});
 
 /* ---------- Copiar / colar linhas inteiras selecionadas (Ctrl+C / Ctrl+V) ---------- */
 let liRowClipboard='';
