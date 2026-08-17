@@ -224,6 +224,61 @@ canvas{cursor:default;}
 .badge-orange{background:rgba(255,179,0,.15);color:var(--warning);}
 .badge-critical{background:rgba(255,61,87,.2);color:var(--danger);}
 
+
+/* ===== ABA DIMENSIONAIS DE PRODUTOS ===== */
+.dm-wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start;}
+@media(max-width:1000px){.dm-wrap{grid-template-columns:1fr;}}
+.dm-wrap>.dm-panel{min-width:0;}
+.dm-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm);}
+.dm-list{display:flex;flex-direction:column;gap:7px;max-height:66vh;overflow-y:auto;margin-top:10px;}
+.dm-item{padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--card2);cursor:pointer;transition:all .15s;}
+.dm-item:hover{border-color:var(--border-hover);transform:translateX(2px);}
+.dm-item.active{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent);}
+.dm-item-t{font-weight:700;font-size:13px;}
+.dm-item-s{font-size:11px;color:var(--text-secondary);margin-top:2px;}
+.dm-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(0,198,255,.12);color:var(--accent);border:1px solid rgba(0,198,255,.3);}
+.dm-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+.dm-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);}
+table.dm-table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:2240px;table-layout:fixed;}
+table.dm-table th{background:var(--card2);color:var(--text-secondary);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:6px 4px;border:1px solid var(--border);white-space:nowrap;text-align:center;vertical-align:middle;}
+table.dm-table thead tr:first-child th{background:linear-gradient(180deg,#1a3a8f,#0d2160);color:#fff;border-color:#0a1840;}
+table.dm-table thead tr:nth-child(2) th{background:#1e3d96;color:#ccd6f6;}
+table.dm-table td{border:1px solid var(--border);padding:0;vertical-align:middle;position:relative;}
+table.dm-table tbody tr:hover td{background:rgba(0,198,255,.06);}
+table.dm-table tbody tr.dm-ok-row td{background:rgba(0,230,118,.05);}
+table.dm-table tbody tr.dm-nok-row td{background:rgba(255,61,87,.07);}
+table.dm-table input,table.dm-table select{width:100%;background:transparent;border:0;outline:none;color:var(--text);font-size:11.5px;padding:6px 4px;font-family:'DM Sans',sans-serif;text-align:center;}
+table.dm-table td.dm-char input,table.dm-table td.dm-obs input{text-align:left;}
+table.dm-table input:focus,table.dm-table select:focus{background:rgba(0,198,255,.10);box-shadow:inset 0 0 0 1px var(--accent);}
+table.dm-table select{cursor:pointer;}
+table.dm-table select option{background:var(--card);color:var(--text);}
+.dm-readonly{padding:6px 4px;text-align:center;color:var(--text-secondary);font-size:11px;min-height:28px;}
+.dm-status-select{font-weight:700;text-transform:uppercase;font-size:10px!important;}
+.dm-status-pendente{color:var(--warning)!important;}
+.dm-status-aprovado{color:var(--success)!important;}
+.dm-status-reprovado{color:var(--danger)!important;}
+.dm-group-label{font-size:9px;letter-spacing:.6px;text-transform:uppercase;opacity:.9;}
+.dm-measure-input{font-variant-numeric:tabular-nums;}
+.dm-row-del{background:transparent;border:0;color:var(--text-secondary);cursor:pointer;font-size:14px;padding:6px 8px;border-radius:6px;}
+.dm-row-del:hover{color:var(--danger);background:rgba(255,61,87,.12);}
+.dm-crit{font-weight:700;}
+.dm-crit-critica{color:var(--danger);}
+.dm-crit-significativa{color:var(--warning);}
+.dm-empty{padding:40px 20px;text-align:center;color:var(--text-secondary);font-size:13px;}
+.dm-head-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.dm-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.dm-stat{flex:1;min-width:110px;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+.dm-stat .v{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+.dm-stat .l{font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;}
+@media print{
+  body.dm-print .sidebar,body.dm-print .topbar,body.dm-print #dmSidePanel,body.dm-print .dm-toolbar,body.dm-print .dm-row-del,body.dm-print .dm-noprint{display:none!important;}
+  body.dm-print .dm-wrap{display:block;}
+  body.dm-print #dmEditor{border:0;box-shadow:none;padding:0;}
+  body.dm-print table.dm-table{min-width:0;font-size:8px;}
+  body.dm-print table.dm-table th{font-size:7px;padding:4px 2px;}
+  body.dm-print table.dm-table input,body.dm-print table.dm-table select{color:#000;-webkit-appearance:none;appearance:none;padding:4px 2px;}
+  body.dm-print table.dm-table .dm-readonly{padding:4px 2px;color:#000;}
+}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
 .modal-overlay.active{display:flex;}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;animation:modalIn .25s ease;box-shadow:var(--shadow-lg);}
@@ -665,6 +720,9 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     <div class="nav-item" id="navLayout" onclick="switchView('layout',this)">
       <span class="nav-icon">📐</span><span>Insp. de Layout</span>
     </div>
+    <div class="nav-item" id="navDim" onclick="switchView('dimensionais',this)">
+      <span class="nav-icon">📏</span><span>Dimensionais</span>
+    </div>
   </nav>
   <div class="sidebar-footer">
     <div id="loggedUserBox" style="display:none;font-size:11px;text-align:center;margin-bottom:8px;color:var(--text-secondary);">
@@ -857,6 +915,118 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
           </thead>
           <tbody id="lClientTableBody"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIMENSIONAIS — MÓDULO INDEPENDENTE DE CADASTRO DE PRODUTOS ===== -->
+  <div id="view-dimensionais" class="content" style="display:none;">
+    <div class="dm-wrap">
+      <div class="dm-panel" id="dmSidePanel">
+        <div class="chart-title" style="font-size:15px;">📏 Produtos Dimensionais</div>
+        <div class="chart-sub" style="font-size:11px;margin-top:2px;">Cadastro independente por produto — criar, editar, salvar, excluir e reabrir sem afetar a Inspeção de Layout.</div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <input id="dmSearch" class="form-input" placeholder="Buscar por SAP, PN, descrição, cliente..." oninput="dmRenderList()" style="flex:1;">
+          <button class="btn btn-sm btn-primary" onclick="dmNewProduct()" title="Novo produto dimensional" style="flex-shrink:0;">＋ Novo</button>
+        </div>
+        <div class="dm-list" id="dmList"></div>
+      </div>
+
+      <div class="dm-panel" id="dmEditor">
+        <div id="dmEmptyState" class="dm-empty">
+          Selecione um produto na lista ao lado ou clique em <b>＋ Novo</b> para cadastrar um novo plano dimensional.
+        </div>
+
+        <div id="dmEditorBody" style="display:none;">
+          <div class="dm-toolbar" style="justify-content:space-between;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-sm btn-primary" onclick="dmOpenChecklist()" title="Abrir o editor completo — idêntico ao checklist de Insp. de Layout (mesclar células, tolerância automática, simulação, desfazer, componentes, GD&amp;T, importar Excel/CSV, larguras de coluna, seleção estilo Excel)">📋 Abrir Checklist Completo</button>
+              <button class="btn btn-sm" onclick="dmImportChecklist()" title="Importar planilha Excel/CSV para este produto">📥 Importar Excel/CSV</button>
+              <button class="btn btn-sm" onclick="dmAddRow()">＋ Nova Cota</button>
+              <button class="btn btn-sm" onclick="dmDuplicateLast()">⧉ Duplicar Última</button>
+              <button class="btn btn-sm" onclick="dmDuplicateProduct()">⧉ Duplicar Produto</button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span id="dmSavedTag" style="font-size:11px;color:var(--text-secondary);"></span>
+              <button class="btn btn-sm" onclick="dmExportExcel()">⬇ Excel</button>
+              <button class="btn btn-sm" onclick="dmExportCSV()">⬇ CSV</button>
+              <button class="btn btn-sm" onclick="dmPrint()">🖨 Imprimir</button>
+              <button class="btn btn-sm btn-danger" onclick="dmDeleteProduct()">🗑 Excluir Produto</button>
+            </div>
+          </div>
+
+          <div class="dm-stats" id="dmStats"></div>
+
+          <!-- Folha do relatório — cópia exata do checklist de Inspeção de Layout -->
+          <div class="li-sheet" id="dmSheet" style="margin:14px 0 0;max-width:none;">
+            <div class="li-hdr">
+              <div class="li-logo">RÖCHLING<br><span style="font-size:9px;letter-spacing:2px;color:var(--text-secondary);">AUTOMOTIVE</span></div>
+              <div style="flex:1;">
+                <h2 contenteditable="true" id="dmTitle" oninput="dmHeadChange()">Evaluation Results — Layout Inspection</h2>
+                <div class="li-checks">
+                  <label><input type="checkbox" id="dmChkDim" onchange="dmHeadChange()"> Dimensional</label>
+                  <label><input type="checkbox" id="dmChkMat" onchange="dmHeadChange()"> Material</label>
+                  <label><input type="checkbox" id="dmChkOut" onchange="dmHeadChange()"> Outros</label>
+                  <input type="text" id="dmOutrosTxt" oninput="dmHeadChange()" placeholder="___" style="width:130px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="li-info">
+              <div class="cell"><div class="lbl">Supplier</div><input id="dmSupplier" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Supplier Number</div><input id="dmSap" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Part Number</div><input id="dmPn" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Revision Level</div><input id="dmRev" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Inspection Department</div><input id="dmOwner" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Part Name</div><input id="dmDesc" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Report N°</div><input id="dmReportN" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Customer</div><input id="dmClient" oninput="dmHeadChange()"></div>
+            </div>
+
+            <div class="li-tabs" id="dmTabsBar"></div>
+
+            <div class="li-table-wrap">
+              <table class="li-dim" id="dmDimTbl">
+                <colgroup>
+                  <col style="width:4%"><col style="width:15%"><col style="width:10%"><col style="width:5%">
+                  <col style="width:6%"><col style="width:6%">
+                  <col style="width:7.6%"><col style="width:7.6%"><col style="width:7.6%"><col style="width:7.6%"><col style="width:7.6%">
+                  <col style="width:6%"><col style="width:7%"><col class="li-noprint" style="width:4.5%">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th rowspan="2" data-lhk="item">ITEM</th>
+                    <th rowspan="2" data-lhk="char">CHARACTERISTIC</th>
+                    <th rowspan="2" data-lhk="nominal">NOMINAL</th>
+                    <th rowspan="2" data-lhk="spec">SPEC</th>
+                    <th colspan="2" data-lhk="tolerance">TOLERANCE</th>
+                    <th colspan="5" data-lhk="results">SUPPLIER MEASUREMENT RESULTS</th>
+                    <th rowspan="2" data-lhk="ok">OK</th>
+                    <th rowspan="2" data-lhk="nok">NOT OK</th>
+                    <th rowspan="2" class="li-noprint">—</th>
+                  </tr>
+                  <tr>
+                    <th data-lhk="low">LOW</th><th data-lhk="upper">UPPER</th>
+                    <th data-lhk="m0">1</th><th data-lhk="m1">2</th><th data-lhk="m2">3</th><th data-lhk="m3">4</th><th data-lhk="m4">5</th>
+                  </tr>
+                </thead>
+                <tbody id="dmTableBody"></tbody>
+              </table>
+            </div>
+
+            <div class="li-obs">
+              <label>Observações</label>
+              <textarea id="dmObs" oninput="dmHeadChange()"></textarea>
+            </div>
+
+            <div class="li-sign">
+              <div class="cell"><div class="lbl">Name</div><input id="dmSignName" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Title</div><input id="dmSignTitle" oninput="dmHeadChange()"></div>
+              <div class="cell"><div class="lbl">Date</div><input type="date" id="dmSignDate" oninput="dmHeadChange()"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1320,6 +1490,31 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     window.CloudSync.pause = function() { if (_unsub) { _unsub(); _unsub = null; } };
     window.CloudSync.resume = function() { if (_lastOnChange) window.CloudSync.subscribe(_lastOnChange); };
     window.CloudSync.isApplyingRemote = () => _applyingRemote;
+
+    // ===== DIMENSIONAIS DE PRODUTOS (coleção própria: produto_dimensionais) =====
+    const DIM_COL  = 'produto_dimensionais';
+    const dimColRef = () => collection(db, DIM_COL);
+    const dimDocRef = (id) => doc(db, DIM_COL, String(id));
+    window.CloudSync.dim = {
+      saveOne: async function(p) {
+        try { await setDoc(dimDocRef(p.id), { ...p, updatedAt: serverTimestamp() }); return true; }
+        catch (e) { console.warn('dim saveOne error:', e); window.CloudSync.lastError = _friendlyError(e); return false; }
+      },
+      deleteOne: async function(id) {
+        try { await deleteDoc(dimDocRef(id)); return true; }
+        catch (e) { console.warn('dim delete error:', e); return false; }
+      },
+      loadOnce: async function() {
+        try { const snap = await getDocs(dimColRef()); return snap.docs.map(d => _stripMeta(d.data())); }
+        catch (e) { console.warn('dim load error:', e); return null; }
+      },
+      subscribe: function(onChange) {
+        try {
+          return onSnapshot(dimColRef(), snap => onChange(snap.docs.map(d => _stripMeta(d.data()))),
+            err => console.warn('dim snapshot error:', err));
+        } catch (e) { return null; }
+      }
+    };
   }
 
   // Observa o estado de autenticação (sem login automático). Quando o usuário
@@ -1684,14 +1879,17 @@ function switchView(view, el) {
   const ov = document.getElementById('checklistOverlay');
   if (ov) ov.classList.remove('active');
   document.body.classList.remove('cl-open');
-  ['layout','layoutdash'].forEach(v => {
+  ['layout','layoutdash','dimensionais'].forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.style.display = v === view ? '' : 'none';
   });
-  const titles = {layout:'Cronograma de Inspeção de Layout', layoutdash:'Dashboard — Inspeção de Layout'};
+  const titles = {layout:'Cronograma de Inspeção de Layout', layoutdash:'Dashboard — Inspeção de Layout', dimensionais:'Dimensionais dos Produtos'};
   document.getElementById('viewTitle').textContent = titles[view] || view;
   if (view === 'layout') { updateLayoutFilterOptions(); filterLayout(); }
   if (view === 'layoutdash') renderLayoutDash();
+  if (view === 'dimensionais') {
+    if (typeof window.dmRenderAll === 'function') window.dmRenderAll();
+  }
   updateTopbarForView(view);
 }
 
@@ -2636,6 +2834,9 @@ function expList() { return isLayoutViewActive() ? layoutOnly() : auditOnly(); }
 function updateTopbarForView(view) {
   const lbl = document.getElementById('newItemBtnLabel');
   if (lbl) lbl.textContent = (view === 'layout') ? 'Novo Item de Layout' : 'Nova Auditoria';
+  // A aba Dimensionais tem a própria barra de ações; esconde a barra global.
+  const acts = document.querySelector('.topbar-actions');
+  if (acts) acts.style.display = (view === 'dimensionais') ? 'none' : '';
 }
 
 // ===== MIGRA\u00c7\u00c3O DO CRONOGRAMA ANTIGO (localStorage rochling_layout_inspection_v1) =====
@@ -3060,6 +3261,60 @@ function renderLayoutDash() {
    migrados (conforme combinado).
    ========================================================================= */
 let lcAuditId = null, lcMonth = null, lcRO = false;
+const DM_CHECKLIST_KEY = 'produto_dimensionais_checklist_v1';
+window._dmChecklistMode = false;
+
+function dmReadChecklist(){
+  try { return JSON.parse(localStorage.getItem(DM_CHECKLIST_KEY) || 'null'); } catch(e) { return null; }
+}
+/* Grava o relatório aberto de volta no produto dimensional correspondente
+   (ou no rascunho avulso quando não há produto vinculado). */
+function dmPersistChecklist(finalize){
+  if (!window._dmChecklistMode || typeof window.liExportRecord !== 'function') return null;
+  try {
+    const data = window.liExportRecord(!!finalize);
+    const pid = window._dmChecklistProduct;
+    if (pid && typeof window.dmSaveChecklistRecord === 'function') window.dmSaveChecklistRecord(pid, data);
+    else localStorage.setItem(DM_CHECKLIST_KEY, JSON.stringify(data));
+    return data;
+  } catch(e) { return null; }
+}
+window.dmPersistChecklist = dmPersistChecklist;
+
+function openDimensionalChecklist(productId){
+  if (typeof window.liLoadRecord !== 'function') {
+    notify('Checklist ainda carregando, tente novamente em instantes.', 'warn');
+    return;
+  }
+  window._dmChecklistMode = true;
+  window._dmChecklistProduct = productId || null;
+  const info = (productId && typeof window.dmChecklistInfo === 'function') ? window.dmChecklistInfo(productId) : null;
+  const saved = (productId && typeof window.dmReadChecklistRecord === 'function')
+    ? window.dmReadChecklistRecord(productId)
+    : dmReadChecklist();
+  window.liLoadRecord('dim_' + (productId || 'standalone'), saved, info || { pn:'', part:'', client:'', resp:'' });
+  document.getElementById('liSheetTag').textContent = info
+    ? ('Dimensionais — ' + (info.sap || info.pn || info.part || 'produto'))
+    : 'Dimensionais — Checklist';
+  window.liSetReadonly(false);
+  const ov = document.getElementById('liSheetOverlay');
+  if (ov) ov.classList.add('active');
+  document.body.classList.add('li-open');
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+}
+window.openDimensionalChecklist = openDimensionalChecklist;
+
+function closeDimensionalChecklist(){
+  if (typeof window.liCollectSilent === 'function') window.liCollectSilent();
+  dmPersistChecklist();
+  const ov = document.getElementById('liSheetOverlay');
+  if (ov) ov.classList.remove('active');
+  document.body.classList.remove('li-open');
+  window._dmChecklistMode = false;
+  window._dmChecklistProduct = null;
+  if (typeof window.dmRenderAll === 'function') window.dmRenderAll();
+  window.scrollTo(0, 0);
+}
 
 function _lcKey(auditId, monthIndex){ return String(auditId) + '_' + monthIndex; }
 
@@ -3092,6 +3347,7 @@ function openLayoutChecklist(itemId, monthIndex){
 }
 
 function closeLayoutChecklist(){
+  if (window._dmChecklistMode) { closeDimensionalChecklist(); return; }
   if (typeof window.liCollectSilent === 'function') window.liCollectSilent();
   const ov = document.getElementById('liSheetOverlay');
   if (ov) ov.classList.remove('active');
@@ -3130,6 +3386,12 @@ function lcDeleteChecklist(){
 }
 
 function saveLayoutChecklist(){
+  if (window._dmChecklistMode) {
+    dmPersistChecklist();
+    if (typeof liSetDirty === 'function') liSetDirty(false);
+    notify('💾 Checklist dimensional salvo ✔', 'success');
+    return;
+  }
   if (lcRO || lcAuditId == null) return;
   const a = state.audits.find(x => x.id === lcAuditId);
   if (!a) return;
@@ -3141,6 +3403,15 @@ function saveLayoutChecklist(){
 }
 
 function finalizeLayoutChecklist(){
+  if (window._dmChecklistMode) {
+    if (typeof window.liStats !== 'function') return;
+    const st = window.liStats();
+    if (!st.measured) { notify('Informe as medições de ao menos uma linha antes de finalizar', 'error'); return; }
+    const data = dmPersistChecklist(true);
+    closeDimensionalChecklist();
+    if (data) notify('✅ Checklist dimensional finalizado! Conclusão: ' + data.decision + ' · Conformidade: ' + data.score + '%');
+    return;
+  }
   if (lcRO || lcAuditId == null) return;
   const a = state.audits.find(x => x.id === lcAuditId);
   if (!a) return;
@@ -3179,12 +3450,13 @@ window.liStatsForRows=liStatsForRows; // exposto p/ printLayoutChecklist(), defi
 // onlyActive=false/undefined → imprime TODOS os componentes, cada um em sua
 // PRÓPRIA página, com cabeçalho, resumo e assinatura totalmente independentes
 // (nada é compartilhado entre componentes na impressão).
-function printLayoutChecklist(onlyActive){
-  if (typeof window.liCollectSilent === 'function') window.liCollectSilent();
-  const r = liGetReport(liCurrent);
-  if (typeof liSyncActiveSheet === 'function') liSyncActiveSheet();
+function printLayoutChecklist(onlyActive, reportOverride){
+  if (!reportOverride && typeof window.liCollectSilent === 'function') window.liCollectSilent();
+  const r = reportOverride || liGetReport(liCurrent);
+  if (!reportOverride && typeof liSyncActiveSheet === 'function') liSyncActiveSheet();
   const allSheets = (r.sheets && r.sheets.length) ? r.sheets : [{name:'', rows:r.rows||[], header:liBlankHeader(null)}];
   const sheetsToPrint = onlyActive ? [allSheets[r.activeSheet] || allSheets[0]] : allSheets;
+
 
   const h = k => liEsc(r.headers && r.headers[k] != null ? r.headers[k] : DEFAULT_HEADERS[k]);
   const v = s => liEsc(s) || '&nbsp;';
@@ -4126,9 +4398,16 @@ function liLoad(){
 }
 function liPersist(){
   clearTimeout(liPersistTimer);
-  liPersistTimer=setTimeout(()=>{try{localStorage.setItem(LI_KEY,JSON.stringify(liState))}catch(e){}},250);
+  liPersistTimer=setTimeout(()=>{
+    try{localStorage.setItem(LI_KEY,JSON.stringify(liState))}catch(e){}
+    if(window._dmChecklistMode&&typeof window.dmPersistChecklist==='function')window.dmPersistChecklist();
+  },250);
 }
-function liPersistNow(){clearTimeout(liPersistTimer);try{localStorage.setItem(LI_KEY,JSON.stringify(liState))}catch(e){}}
+function liPersistNow(){
+  clearTimeout(liPersistTimer);
+  try{localStorage.setItem(LI_KEY,JSON.stringify(liState))}catch(e){}
+  if(window._dmChecklistMode&&typeof window.dmPersistChecklist==='function')window.dmPersistChecklist();
+}
 function liUid(){return 'L'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function liSeed(){
   liState.items=[
@@ -5883,5 +6162,572 @@ window.liRefreshLayoutView=liRenderSchedule;
 })();
 </script>
 
+<!-- ===== MÓDULO: DIMENSIONAIS DOS PRODUTOS =====
+     Cadastro, edição e gestão do plano dimensional de cada produto.
+     Armazenamento: localStorage (cache local) + Firestore (coleção
+     produto_dimensionais) via window.CloudSync.dim, com sincronização
+     em tempo real quando o usuário está logado. -->
+<script>
+(function(){
+'use strict';
+
+const DM_KEY = 'produto_dimensionais_v1';
+const DM_UNITS = ['mm','cm','pol','°','g','kg','N','Nm','bar','%',''];
+const DM_CLASS = ['Normal','Significativa','Crítica','Segurança'];
+const DM_FREQ  = ['Layout','1x/turno','1x/dia','1x/semana','1x/mês','Setup','100%','Amostral'];
+const DM_STATUS = ['Pendente','Aprovado','Reprovado'];
+
+let dmProducts = [];
+let dmCurrentId = null;
+
+/* ---------- Utilidades ---------- */
+function dmEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function dmToast(msg, kind){ if (typeof window.notify === 'function') { try { window.notify(msg, kind||'success'); return; } catch(e){} } }
+function dmId(){ return 'dim_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function dmNum(v){ const n = parseFloat(String(v==null?'':v).replace(',','.')); return isNaN(n) ? null : n; }
+function dmFmt(n){ return (n==null) ? '' : (Math.round(n*10000)/10000).toString().replace('.',','); }
+
+function dmBlankRow(){
+  return { id: dmId(), item:'', char:'', nominal:'', spec:'', low:'', upper:'',
+           m:['','','','',''], ok:'', nok:'', _manual:false };
+}
+/* Mesma regra de OK / NOT OK do checklist de Inspeção de Layout */
+function dmParseNum(v){
+  if (v == null || v === '') return NaN;
+  const s = String(v).replace(/\s+/g,'').replace(/[()\[\]]/g,'');
+  const m = s.match(/-?\d+(?:[.,]\d+)?/);
+  return m ? parseFloat(m[0].replace(',','.')) : NaN;
+}
+function dmTol(r){
+  let lo = dmParseNum(r.low), up = dmParseNum(r.upper);
+  const loBlank = r.low == null || String(r.low).trim() === '';
+  const upBlank = r.upper == null || String(r.upper).trim() === '';
+  if (isFinite(up) && loBlank) lo = 0;
+  if (isFinite(lo) && upBlank) up = 0;
+  return { lo, up };
+}
+function dmAutoStatus(r){
+  if (r._manual) return;
+  const { lo, up } = dmTol(r);
+  let nom = dmParseNum(r.nominal);
+  if (!isFinite(nom)) nom = dmParseNum(r.spec);
+  let allOk = true, any = false;
+  (r.m||[]).forEach(v => {
+    const x = dmParseNum(v);
+    if (!isNaN(x)) { any = true; if (!isNaN(nom) && !isNaN(lo) && !isNaN(up)) { if (x < nom + lo || x > nom + up) allOk = false; } }
+  });
+  if (any) { r.ok = allOk ? 'OK' : ''; r.nok = allOk ? '' : 'NOT OK'; }
+  else { r.ok = ''; r.nok = ''; }
+}
+function dmRowsIn(rows){
+  return (Array.isArray(rows) ? rows : []).map(r => {
+    const row = Object.assign(dmBlankRow(), r);
+    row.id = r.id || dmId();
+    // compatibilidade com o formato antigo (cota/caracteristica/tolMais/tolMenos)
+    if (!row.item && r.cota) row.item = r.cota;
+    if (!row.char && r.caracteristica) row.char = r.caracteristica;
+    if (!row.low && r.tolMenos) row.low = '-' + String(r.tolMenos).replace('-','');
+    if (!row.upper && r.tolMais) row.upper = r.tolMais;
+    row.m = Array.isArray(r.m) ? r.m.slice(0,5) : ['','','','',''];
+    while (row.m.length < 5) row.m.push('');
+    delete row.cota; delete row.caracteristica; delete row.tolMais; delete row.tolMenos;
+    delete row.aprovacao; delete row.aprovacaoManual; delete row.unidade;
+    delete row.instrumento; delete row.metodo; delete row.classe; delete row.freq;
+    return row;
+  });
+}
+function dmNormalize(p){
+  const np = {
+    id: p.id || dmId(),
+    sap: p.sap || '', pn: p.pn || '', desc: p.desc || '', client: p.client || '',
+    rev: p.rev || '', owner: p.owner || '',
+    title: p.title || 'Evaluation Results — Layout Inspection',
+    chkDim: p.chkDim !== undefined ? !!p.chkDim : true,
+    chkMat: !!p.chkMat, chkOut: !!p.chkOut, outrosTxt: p.outrosTxt || '',
+    supplier: p.supplier || '', reportN: p.reportN || '',
+    obs: p.obs || '', signName: p.signName || '', signTitle: p.signTitle || '',
+    signDate: p.signDate || '',
+    updatedAt: p.updatedAt || Date.now(),
+    decision: p.decision || '', score: p.score != null ? p.score : null,
+    completedAt: p.completedAt || null,
+    report: p.report || null,
+    rows: dmRowsIn(p.rows)
+  };
+  dmEnsureReport(np);
+  return np;
+}
+
+/* ---------- Relatório completo (mesmo formato do checklist de Insp. de Layout) ----------
+   p.report guarda EXATAMENTE o mesmo registro usado pelo motor "li" (abas de
+   componentes, cabeçalho por aba, nomes de coluna, mesclagens, larguras…),
+   então o editor completo pode ser aberto sem qualquer conversão. p.rows é
+   sempre a MESMA referência do array de linhas da aba ativa. */
+function dmEnsureReport(p){
+  let rep = p.report;
+  if (!rep || typeof rep !== 'object') rep = {};
+  if (!Array.isArray(rep.sheets) || !rep.sheets.length) {
+    rep.sheets = [{
+      id: 'sh_' + dmId(),
+      name: 'Componente 1',
+      rows: (p.rows && p.rows.length) ? p.rows : [dmBlankRow(), dmBlankRow(), dmBlankRow()],
+      header: null
+    }];
+    rep.activeSheet = 0;
+  }
+  if (!rep.headers && window.DEFAULT_HEADERS) rep.headers = Object.assign({}, window.DEFAULT_HEADERS);
+  if (rep.activeSheet == null || rep.activeSheet < 0 || rep.activeSheet >= rep.sheets.length) rep.activeSheet = 0;
+  rep.sheets.forEach((sh, i) => {
+    if (!sh.id) sh.id = 'sh_' + dmId();
+    if (!sh.name) sh.name = 'Componente ' + (i + 1);
+    sh.rows = dmRowsIn(sh.rows);
+    sh.header = Object.assign(dmSheetHeader(p), sh.header || {});
+  });
+  p.report = rep;
+  p.rows = rep.sheets[rep.activeSheet].rows;
+  return rep;
+}
+function dmActiveSheet(p){ const rep = dmEnsureReport(p); return rep.sheets[rep.activeSheet]; }
+function dmSyncHeaderToReport(p){
+  const sh = dmActiveSheet(p);
+  sh.header = Object.assign(sh.header || {}, dmSheetHeader(p));
+}
+/* Ponte com o editor completo (motor "li") */
+function dmChecklistInfo(id){
+  const p = dmProducts.find(x => x.id === id); if (!p) return null;
+  return { sap: p.sap, pn: p.pn, part: p.desc, client: p.client, resp: p.signName };
+}
+function dmReadChecklistRecord(id){
+  const p = dmProducts.find(x => x.id === id); if (!p) return null;
+  dmSyncHeaderToReport(p);
+  return JSON.parse(JSON.stringify(p.report));
+}
+function dmSaveChecklistRecord(id, data){
+  const p = dmProducts.find(x => x.id === id); if (!p || !data) return;
+  p.report = JSON.parse(JSON.stringify(data));
+  const h = (p.report.sheets && p.report.sheets[p.report.activeSheet || 0] && p.report.sheets[p.report.activeSheet || 0].header) || {};
+  p.title = h.title || p.title;
+  p.supplier = h.supplier || ''; p.sap = h.supplierNumber || p.sap; p.pn = h.partNumber || '';
+  p.rev = h.revision || ''; p.owner = h.inspDept || ''; p.desc = h.partName || '';
+  p.reportN = h.reportN || ''; p.client = h.customer || '';
+  p.chkDim = !!h.chkDim; p.chkMat = !!h.chkMat; p.chkOut = !!h.chkOut; p.outrosTxt = h.outrosTxt || '';
+  p.obs = h.obs || ''; p.signName = h.signName || ''; p.signTitle = h.signTitle || ''; p.signDate = h.signDate || '';
+  if (data.decision) p.decision = data.decision;
+  if (data.score != null) p.score = data.score;
+  if (data.completedAt !== undefined) p.completedAt = data.completedAt;
+  dmEnsureReport(p);
+  dmPersist(p, true);
+  dmRenderAll();
+}
+function dmOpenChecklist(id){
+  const pid = id || dmCurrentId;
+  if (!pid) { dmToast('Selecione um produto primeiro', 'error'); return; }
+  if (typeof window.openDimensionalChecklist !== 'function') { dmToast('Editor ainda carregando', 'error'); return; }
+  dmCurrentId = pid;
+  const p = dmGetCurrent(); if (p) dmSyncHeaderToReport(p);
+  window.openDimensionalChecklist(pid);
+}
+function dmImportChecklist(){
+  if (!dmCurrentId) { dmToast('Selecione um produto primeiro', 'error'); return; }
+  dmOpenChecklist(dmCurrentId);
+  setTimeout(() => { if (typeof window.liOpenImport === 'function') window.liOpenImport(); }, 260);
+}
+function dmSwitchSheet(i){
+  const p = dmGetCurrent(); if (!p) return;
+  const rep = dmEnsureReport(p);
+  if (i < 0 || i >= rep.sheets.length) return;
+  rep.activeSheet = i;
+  p.rows = rep.sheets[i].rows;
+  dmPersist(p, true);
+  dmRenderAll();
+}
+function dmAddSheet(){
+  const p = dmGetCurrent(); if (!p) return;
+  const rep = dmEnsureReport(p);
+  rep.sheets.push({ id: 'sh_' + dmId(), name: 'Componente ' + (rep.sheets.length + 1),
+                    rows: [dmBlankRow(), dmBlankRow(), dmBlankRow()], header: dmSheetHeader(p) });
+  dmSwitchSheet(rep.sheets.length - 1);
+  dmToast('Componente adicionado');
+}
+function dmRenameSheet(i){
+  const p = dmGetCurrent(); if (!p) return;
+  const rep = dmEnsureReport(p); const sh = rep.sheets[i]; if (!sh) return;
+  const name = prompt('Nome do componente:', sh.name || '');
+  if (name == null) return;
+  sh.name = name.trim() || sh.name;
+  dmPersist(p, true); dmRenderAll();
+}
+function dmDelSheet(i){
+  const p = dmGetCurrent(); if (!p) return;
+  const rep = dmEnsureReport(p);
+  if (rep.sheets.length <= 1) { dmToast('O relatório precisa de ao menos um componente', 'error'); return; }
+  if (!confirm('Excluir o componente "' + (rep.sheets[i].name || '') + '"?')) return;
+  rep.sheets.splice(i, 1);
+  dmSwitchSheet(Math.max(0, i - 1));
+  dmToast('Componente excluído', 'warn');
+}
+function dmRenderTabs(p){
+  const bar = document.getElementById('dmTabsBar'); if (!bar) return;
+  const rep = dmEnsureReport(p);
+  bar.innerHTML = rep.sheets.map((sh, i) => `
+    <div class="li-tab${i === rep.activeSheet ? ' active' : ''}" onclick="dmSwitchSheet(${i})">
+      <span ondblclick="event.stopPropagation();dmRenameSheet(${i})" title="Duplo clique renomeia">${dmEsc(sh.name)}</span>
+      <span style="opacity:.6;margin-left:6px;" title="Excluir componente" onclick="event.stopPropagation();dmDelSheet(${i})">✕</span>
+    </div>`).join('') +
+    `<button type="button" class="li-tab-add" onclick="dmAddSheet()" title="Adicionar componente medido separadamente">＋ Componente</button>`;
+}
+
+/* ---------- Persistência ---------- */
+function dmSaveLocal(){
+  try { localStorage.setItem(DM_KEY, JSON.stringify(dmProducts)); } catch(e){}
+}
+function dmLoadLocal(){
+  try {
+    const raw = localStorage.getItem(DM_KEY);
+    if (raw) dmProducts = (JSON.parse(raw) || []).map(dmNormalize);
+  } catch(e){ dmProducts = []; }
+}
+let dmSaveTimer = null;
+function dmPersist(product, immediate){
+  product = product || dmGetCurrent();
+  if (product) product.updatedAt = Date.now();
+  dmSaveLocal();
+  const tag = document.getElementById('dmSavedTag');
+  if (tag) tag.textContent = 'Salvando...';
+  clearTimeout(dmSaveTimer);
+  const doCloud = () => {
+    if (product && window.CloudSync && window.CloudSync.dim && window.CloudSync.ready) {
+      window.CloudSync.dim.saveOne(product).then(ok => {
+        if (tag) tag.textContent = ok ? '☁️ Salvo na nuvem' : '💾 Salvo localmente (offline)';
+      });
+    } else if (tag) {
+      tag.textContent = '💾 Salvo localmente';
+    }
+  };
+  if (immediate) doCloud(); else dmSaveTimer = setTimeout(doCloud, 600);
+}
+
+/* ---------- Render: lista ---------- */
+function dmRenderList(){
+  const box = document.getElementById('dmList');
+  if (!box) return;
+  const q = (document.getElementById('dmSearch')?.value || '').toLowerCase().trim();
+  const list = dmProducts
+    .filter(p => !q || [p.sap,p.pn,p.desc,p.client,p.rev].join(' ').toLowerCase().includes(q))
+    .sort((a,b) => (a.sap||a.pn||'').localeCompare(b.sap||b.pn||''));
+  if (!list.length) {
+    box.innerHTML = '<div class="dm-empty" style="padding:22px 8px;">Nenhum produto cadastrado.</div>';
+    return;
+  }
+  box.innerHTML = list.map(p => `
+    <div class="dm-item ${p.id === dmCurrentId ? 'active' : ''}" onclick="dmSelect('${p.id}')">
+      <div class="dm-item-t">${dmEsc(p.sap || p.pn || '(sem código)')}</div>
+      <div class="dm-item-s">${dmEsc(p.desc || p.pn || '—')}</div>
+      <div class="dm-item-s" style="margin-top:5px;">
+        <span class="dm-badge">${(p.rows||[]).length} cotas</span>
+        ${p.client ? '<span style="margin-left:6px;">'+dmEsc(p.client)+'</span>' : ''}
+      </div>
+    </div>`).join('');
+}
+
+/* ---------- Render: editor ---------- */
+function dmGetCurrent(){ return dmProducts.find(p => p.id === dmCurrentId) || null; }
+
+function dmRenderEditor(){
+  const p = dmGetCurrent();
+  const empty = document.getElementById('dmEmptyState');
+  const body  = document.getElementById('dmEditorBody');
+  if (!empty || !body) return;
+  if (!p) { empty.style.display = ''; body.style.display = 'none'; return; }
+  empty.style.display = 'none'; body.style.display = '';
+
+  const rep = dmEnsureReport(p);
+  dmRenderTabs(p);
+  // nomes de coluna personalizados no editor completo refletem aqui
+  if (rep.headers) {
+    document.querySelectorAll('#dmDimTbl th[data-lhk]').forEach(th => {
+      const k = th.getAttribute('data-lhk');
+      if (rep.headers[k] != null && rep.headers[k] !== '' && th !== document.activeElement) th.textContent = rep.headers[k];
+    });
+  }
+
+
+  const set = (id, v) => { const el = document.getElementById(id); if (!el) return; if (el.type === 'checkbox') el.checked = !!v; else el.value = v || ''; };
+  const t = document.getElementById('dmTitle');
+  if (t && t !== document.activeElement) t.textContent = p.title || 'Evaluation Results — Layout Inspection';
+  set('dmSupplier', p.supplier); set('dmSap', p.sap); set('dmPn', p.pn); set('dmRev', p.rev);
+  set('dmOwner', p.owner); set('dmDesc', p.desc); set('dmReportN', p.reportN); set('dmClient', p.client);
+  set('dmChkDim', p.chkDim); set('dmChkMat', p.chkMat); set('dmChkOut', p.chkOut); set('dmOutrosTxt', p.outrosTxt);
+  set('dmObs', p.obs); set('dmSignName', p.signName); set('dmSignTitle', p.signTitle); set('dmSignDate', p.signDate);
+
+  const cell = (r, f, cls, style) =>
+    `<td${cls?` class="${cls}"`:''}><input value="${dmEsc(f.length===2&&f[0]==='m' ? (r.m||[])[+f[1]] : r[f])}" data-f="${f}"${style?` style="${style}"`:''} oninput="dmRowChange('${r.id}','${f}',this.value)"></td>`;
+
+  document.getElementById('dmTableBody').innerHTML = (p.rows||[]).map(r => {
+    dmAutoStatus(r);
+    const cls = (r.nok||'').toUpperCase().includes('NOT') ? 'nokrow' : (r.ok||'').toUpperCase().includes('OK') ? 'okrow' : '';
+    return `<tr class="${cls}" data-row="${r.id}">
+      ${cell(r,'item')}
+      ${cell(r,'char','char')}
+      ${cell(r,'nominal')}
+      ${cell(r,'spec')}
+      ${cell(r,'low')}
+      ${cell(r,'upper')}
+      ${[0,1,2,3,4].map(i=>cell(r,'m'+i)).join('')}
+      ${cell(r,'ok',null,'color:var(--success);font-weight:700')}
+      ${cell(r,'nok',null,'color:var(--danger);font-weight:700')}
+      <td class="li-noprint" style="text-align:center;"><button class="dm-row-del" title="Excluir cota" onclick="dmDelRow('${r.id}')">🗑</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="14" class="dm-empty">Nenhuma cota cadastrada. Clique em <b>＋ Nova Cota</b>.</td></tr>`;
+
+  dmRenderStats(p);
+}
+
+function dmRenderStats(p){
+  const box = document.getElementById('dmStats');
+  if (!box) return;
+  const rows = p.rows || [];
+  const ok  = rows.filter(r => (r.ok||'').toUpperCase().includes('OK')).length;
+  const nok = rows.filter(r => (r.nok||'').toUpperCase().includes('NOT')).length;
+  const cards = [
+    ['Itens', rows.length, 'var(--accent)'],
+    ['OK', ok, 'var(--success)'],
+    ['NOT OK', nok, 'var(--danger)'],
+    ['Em aberto', Math.max(0, rows.length - ok - nok), 'var(--warning)']
+  ];
+  box.innerHTML = cards.map(c => `<div class="dm-stat"><div class="v" style="color:${c[2]}">${c[1]}</div><div class="l">${c[0]}</div></div>`).join('');
+}
+
+function dmRenderAll(){ dmRenderList(); dmRenderEditor(); }
+
+/* ---------- Ações ---------- */
+function dmNewProduct(){
+  const p = dmNormalize({ rows: [dmBlankRow(), dmBlankRow(), dmBlankRow()] });
+  dmProducts.push(p);
+  dmCurrentId = p.id;
+  dmPersist(p, true);
+  dmRenderAll();
+  const el = document.getElementById('dmSap'); if (el) el.focus();
+  dmToast('Novo produto criado — preencha o SAP e as cotas');
+}
+function dmSelect(id){ dmCurrentId = id; dmRenderAll(); }
+
+function dmHeadChange(){
+  const p = dmGetCurrent(); if (!p) return;
+  const val = id => { const el = document.getElementById(id); return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; };
+  p.title    = (document.getElementById('dmTitle')?.textContent || '').trim();
+  p.supplier = val('dmSupplier');
+  p.sap      = val('dmSap');
+  p.pn       = val('dmPn');
+  p.rev      = val('dmRev');
+  p.owner    = val('dmOwner');
+  p.desc     = val('dmDesc');
+  p.reportN  = val('dmReportN');
+  p.client   = val('dmClient');
+  p.chkDim   = val('dmChkDim');
+  p.chkMat   = val('dmChkMat');
+  p.chkOut   = val('dmChkOut');
+  p.outrosTxt= val('dmOutrosTxt');
+  p.obs      = val('dmObs');
+  p.signName = val('dmSignName');
+  p.signTitle= val('dmSignTitle');
+  p.signDate = val('dmSignDate');
+  dmSyncHeaderToReport(p);
+  dmPersist(p);
+  dmRenderList();
+}
+
+function dmPaintRow(tr, r){
+  if (!tr) return;
+  tr.classList.toggle('nokrow', (r.nok||'').toUpperCase().includes('NOT'));
+  tr.classList.toggle('okrow',  (r.ok||'').toUpperCase().includes('OK'));
+  const io = tr.querySelector('[data-f="ok"]'), ino = tr.querySelector('[data-f="nok"]');
+  if (io && io !== document.activeElement) io.value = r.ok || '';
+  if (ino && ino !== document.activeElement) ino.value = r.nok || '';
+}
+
+function dmRowChange(rowId, field, val){
+  const p = dmGetCurrent(); if (!p) return;
+  const r = (p.rows||[]).find(x => x.id === rowId); if (!r) return;
+  if (field.length === 2 && field[0] === 'm') {
+    r.m = Array.isArray(r.m) ? r.m : ['','','','',''];
+    r.m[Number(field[1])] = val;
+    dmAutoStatus(r);
+  } else if (field === 'ok' || field === 'nok') {
+    r[field] = val;
+    const okv = (r.ok||'').trim(), nokv = (r.nok||'').trim();
+    if (!okv && !nokv) { r._manual = false; dmAutoStatus(r); }
+    else {
+      r._manual = true;
+      if (field === 'ok' && okv) r.nok = '';
+      if (field === 'nok' && nokv) r.ok = '';
+    }
+  } else {
+    r[field] = val;
+    dmAutoStatus(r);
+  }
+  const tr = document.querySelector('#dmTableBody tr[data-row="' + rowId + '"]');
+  dmPaintRow(tr, r);
+  dmRenderStats(p);
+  dmPersist(p);
+}
+
+function dmAddRow(){
+  const p = dmGetCurrent(); if (!p) return;
+  p.rows.push(dmBlankRow());
+  dmPersist(p, true); dmRenderAll();
+}
+function dmDuplicateLast(){
+  const p = dmGetCurrent(); if (!p) return;
+  const last = p.rows[p.rows.length-1];
+  p.rows.push(last ? Object.assign({}, last, { id: dmId(), m: [...(last.m || [])] }) : dmBlankRow());
+  dmPersist(p, true); dmRenderAll();
+}
+function dmDelRow(rowId){
+  const p = dmGetCurrent(); if (!p) return;
+  const i = p.rows.findIndex(r => r.id === rowId);
+  if (i < 0) return;
+  p.rows.splice(i, 1); // splice preserva a referência compartilhada com o relatório
+  dmPersist(p, true); dmRenderAll();
+  dmToast('Cota removida');
+}
+
+function dmDuplicateProduct(){
+  const p = dmGetCurrent(); if (!p) return;
+  const raw = JSON.parse(JSON.stringify(p));
+  raw.id = dmId();
+  raw.sap = (p.sap || '') + '-COPIA';
+  delete raw.rows;
+  if (raw.report && Array.isArray(raw.report.sheets)) {
+    raw.report.sheets.forEach(sh => { sh.id = 'sh_' + dmId(); (sh.rows||[]).forEach(r => { delete r.id; }); });
+  }
+  const copy = dmNormalize(raw);
+  dmProducts.push(copy);
+  dmCurrentId = copy.id;
+  dmPersist(copy, true); dmRenderAll();
+  dmToast('Produto duplicado');
+}
+function dmDeleteProduct(){
+  const p = dmGetCurrent(); if (!p) return;
+  if (!confirm('Excluir o dimensional de "' + (p.sap || p.pn || 'produto') + '"? Esta ação não pode ser desfeita.')) return;
+  dmProducts = dmProducts.filter(x => x.id !== p.id);
+  dmCurrentId = null;
+  dmSaveLocal();
+  if (window.CloudSync && window.CloudSync.dim && window.CloudSync.ready) window.CloudSync.dim.deleteOne(p.id);
+  dmRenderAll();
+  dmToast('Produto excluído');
+}
+
+/* ---------- Exportações (mesmo relatório do checklist de Layout) ---------- */
+function dmSheetHeader(p){
+  return {
+    title: p.title || 'Evaluation Results — Layout Inspection',
+    chkDim: !!p.chkDim, chkMat: !!p.chkMat, chkOut: !!p.chkOut, outrosTxt: p.outrosTxt || '',
+    supplier: p.supplier || '', supplierNumber: p.sap || '', partNumber: p.pn || '',
+    revision: p.rev || '', inspDept: p.owner || '', partName: p.desc || '',
+    reportN: p.reportN || '', customer: p.client || '',
+    obs: p.obs || '', signName: p.signName || '', signTitle: p.signTitle || '',
+    signDate: p.signDate || ''
+  };
+}
+function dmMatrixSheet(p, sh){
+  const h = Object.assign(dmSheetHeader(p), sh.header || {});
+  const H = (p.report && p.report.headers) || {};
+  const rows = (sh.rows||[]).map(r => [r.item, r.char, r.nominal, r.spec, r.low, r.upper,
+    ...(r.m||['','','','','']), r.ok || '', r.nok || '']);
+  return [
+    [h.title],
+    ['Componente', sh.name || ''],
+    ['Supplier', h.supplier, 'Supplier Number', h.supplierNumber, 'Part Number', h.partNumber, 'Revision Level', h.revision],
+    ['Inspection Department', h.inspDept, 'Part Name', h.partName, 'Report N°', h.reportN, 'Customer', h.customer],
+    [],
+    [H.item||'ITEM',H.char||'CHARACTERISTIC',H.nominal||'NOMINAL',H.spec||'SPEC',H.tolerance||'TOLERANCE','',H.results||'SUPPLIER MEASUREMENT RESULTS','','','','',H.ok||'OK',H.nok||'NOT OK'],
+    ['','','','',H.low||'LOW',H.upper||'UPPER',H.m0||'1',H.m1||'2',H.m2||'3',H.m3||'4',H.m4||'5','',''],
+    ...rows,
+    [],
+    ['Observações', h.obs],
+    ['Name', h.signName, 'Title', h.signTitle, 'Date', h.signDate]
+  ];
+}
+function dmExportExcel(){
+  const p = dmGetCurrent(); if (!p) return;
+  if (typeof XLSX === 'undefined') { dmToast('Biblioteca Excel não carregada', 'error'); return; }
+  const rep = dmEnsureReport(p);
+  const wb = XLSX.utils.book_new();
+  rep.sheets.forEach((sh, i) => {
+    const name = String(sh.name || ('Componente ' + (i+1))).replace(/[\\\/\?\*\[\]:]/g,'-').slice(0,28) || ('Comp'+(i+1));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dmMatrixSheet(p, sh)), name);
+  });
+  XLSX.writeFile(wb, 'dimensional_' + (p.sap || p.pn || 'produto') + '.xlsx');
+  dmToast('Excel exportado');
+}
+function dmExportCSV(){
+  const p = dmGetCurrent(); if (!p) return;
+  const rep = dmEnsureReport(p);
+  const all = [];
+  rep.sheets.forEach((sh, i) => { if (i) all.push([]); dmMatrixSheet(p, sh).forEach(r => all.push(r)); });
+  const csv = all.map(r => r.map(c => '"' + String(c==null?'':c).replace(/"/g,'""') + '"').join(';')).join('\n');
+  const url = URL.createObjectURL(new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dimensional_' + (p.sap || p.pn || 'produto') + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+  dmToast('CSV exportado');
+}
+/* Impressão: usa exatamente o mesmo gerador do checklist de Inspeção de Layout,
+   com TODOS os componentes (uma página por componente). */
+function dmPrint(onlyActive){
+  const p = dmGetCurrent(); if (!p) return;
+  if (typeof window.printLayoutChecklist !== 'function') { dmToast('Módulo de impressão indisponível', 'error'); return; }
+  dmSyncHeaderToReport(p);
+  const rep = dmEnsureReport(p);
+  window.printLayoutChecklist(!!onlyActive, {
+    activeSheet: rep.activeSheet,
+    rows: p.rows || [],
+    headers: rep.headers || window.DEFAULT_HEADERS,
+    sheets: rep.sheets
+  });
+}
+
+/* ---------- Sincronização em nuvem ---------- */
+function dmMerge(remote){
+  if (!Array.isArray(remote)) return;
+  const byId = {};
+  dmProducts.forEach(p => byId[p.id] = p);
+  remote.map(dmNormalize).forEach(rp => {
+    const local = byId[rp.id];
+    if (!local || (rp.updatedAt || 0) >= (local.updatedAt || 0)) byId[rp.id] = rp;
+  });
+  dmProducts = Object.values(byId);
+  dmSaveLocal();
+  const view = document.getElementById('view-dimensionais');
+  if (view && view.style.display !== 'none') dmRenderAll();
+}
+function dmWireCloud(){
+  if (!window.CloudSync || !window.CloudSync.dim) return false;
+  window.CloudSync.dim.loadOnce().then(list => { if (list) dmMerge(list); });
+  window.CloudSync.dim.subscribe(dmMerge);
+  return true;
+}
+function dmInit(){
+  dmLoadLocal();
+  dmRenderAll();
+  let tries = 0;
+  const t = setInterval(() => {
+    if ((window.CloudSync && window.CloudSync.ready && dmWireCloud()) || ++tries > 60) clearInterval(t);
+  }, 1000);
+}
+
+/* ---------- Exposição global (handlers inline) ---------- */
+Object.assign(window, {
+  dmRenderList, dmRenderAll, dmSelect, dmNewProduct, dmHeadChange, dmRowChange,
+  dmAddRow, dmDuplicateLast, dmDelRow, dmDuplicateProduct, dmDeleteProduct,
+  dmExportExcel, dmExportCSV, dmPrint,
+  dmOpenChecklist, dmImportChecklist, dmSwitchSheet, dmAddSheet, dmRenameSheet, dmDelSheet,
+  dmChecklistInfo, dmReadChecklistRecord, dmSaveChecklistRecord
+});
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', dmInit);
+else dmInit();
+})();
+</script>
 </body>
 </html>
