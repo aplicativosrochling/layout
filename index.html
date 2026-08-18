@@ -694,7 +694,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
   <div class="modal" style="max-width:380px;">
     <div style="padding:32px 28px 8px;text-align:center;">
       <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;background:var(--grad,linear-gradient(135deg,#00c6ff,#7b61ff));-webkit-background-clip:text;background-clip:text;color:transparent;">ROCHLING AUTOMOTIVE</div>
-      <div style="font-size:11px;color:var(--text-secondary);letter-spacing:1px;margin-top:2px;">PRODUCT AUDIT — LOGIN</div>
+      <div style="font-size:11px;color:var(--text-secondary);letter-spacing:1px;margin-top:2px;">LAYOUT INSPECTION — LOGIN</div>
     </div>
     <div style="padding:20px 28px 28px;display:flex;flex-direction:column;gap:12px;">
       <input class="form-input" id="loginEmail" type="email" placeholder="E-mail" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus();">
@@ -756,7 +756,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     <div class="topbar-title" id="viewTitle">Dashboard — Inspeção de Layout</div>
     <div class="topbar-actions">
       <button class="btn btn-primary" id="newItemBtn" onclick="openNewModal()">
-        <span>＋</span> <span id="newItemBtnLabel">Nova Auditoria</span>
+        <span>＋</span> <span id="newItemBtnLabel">Novo Item</span>
       </button>
       <button class="btn" onclick="openImportModal()" style="background:var(--card2);border:1px solid var(--border);">
         📥 Importar Excel
@@ -777,13 +777,13 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
   </div>
 
   <!-- CRONOGRAMA DE INSPEÇÃO DE LAYOUT -->
-  <!-- Estrutura, armazenamento (state.audits + Firebase), checklist e funcionalidades
-       IDÊNTICOS ao Cronograma de Auditorias. A única diferença é o marcador
+  <!-- Estrutura, armazenamento (state.items + Firebase), checklist e funcionalidades
+       IDÊNTICOS entre os itens legados e os de Layout. A única diferença é o marcador
        tipo:'layout' em cada registro, que separa as duas listas. -->
   <div id="view-layout" class="content" style="display:none;">
     <div style="margin-bottom:18px;">
       <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">📐 Cronograma de Inspeção de Layout — 2026</div>
-      <div style="font-size:13px;color:var(--text-secondary);">Röchling Automotive Brasil · Mesma estrutura, armazenamento e checklist do Cronograma de Auditorias</div>
+      <div style="font-size:13px;color:var(--text-secondary);">Röchling Automotive Brasil · Cronograma de Inspeção de Layout</div>
     </div>
 
     <div class="gantt-section">
@@ -826,7 +826,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
         </select>
         <button class="btn btn-sm" onclick="clearFiltersL()" title="Limpar todos os filtros" style="padding:7px 12px;font-size:12px;flex-shrink:0;">✕ Limpar</button>
         <button class="btn btn-sm btn-primary" onclick="openNewModal('layout')" style="padding:7px 12px;font-size:12px;flex-shrink:0;">＋ Novo Item</button>
-        <button class="btn btn-sm" onclick="importAuditsToLayout()" title="Copiar todos os produtos cadastrados no Cronograma de Auditoria para este cronograma" style="padding:7px 12px;font-size:12px;flex-shrink:0;">⇄ Importar da Auditoria</button>
+        <button class="btn btn-sm" onclick="importLegacyToLayout()" title="Copiar todos os produtos cadastrados no cronograma legado (itens antigos, tipo não-layout) para este cronograma" style="padding:7px 12px;font-size:12px;flex-shrink:0;">⇄ Importar Itens Legados</button>
         <button class="btn btn-sm" onclick="exportToExcel()" style="padding:7px 12px;font-size:12px;flex-shrink:0;">⬇ Excel</button>
         <button class="btn btn-sm" onclick="exportToPrint()" style="padding:7px 12px;font-size:12px;flex-shrink:0;">🖨 Imprimir</button>
         <span id="lGanttCount" style="font-size:12px;color:var(--text-secondary);white-space:nowrap;"></span>
@@ -1078,7 +1078,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
       <div class="import-summary" id="importSummary" style="display:none;">
         <div style="font-weight:700;font-size:14px;">✅ Importação concluída!</div>
         <div class="import-summary-grid">
-          <div class="import-summary-item"><div class="val" id="impTotal">0</div><div class="lbl">Auditorias</div></div>
+          <div class="import-summary-item"><div class="val" id="impTotal">0</div><div class="lbl">Itens</div></div>
           <div class="import-summary-item"><div class="val" id="impNew" style="color:var(--success)">0</div><div class="lbl">Novas</div></div>
           <div class="import-summary-item"><div class="val" id="impUpdated" style="color:var(--accent)">0</div><div class="lbl">Atualizadas</div></div>
         </div>
@@ -1092,11 +1092,11 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
   </div>
 </div>
 
-<!-- MODAL NOVA AUDITORIA -->
+<!-- MODAL NOVO ITEM (Insp. de Layout) -->
 <div class="modal-overlay" id="newModal">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-head-title" id="newModalTitle">＋ Nova Auditoria</div>
+      <div class="modal-head-title" id="newModalTitle">＋ Novo Item de Inspeção de Layout</div>
       <button class="modal-close-btn" onclick="closeModal('newModal')">✕</button>
     </div>
     <div class="modal-body">
@@ -1154,7 +1154,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('newModal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveNew()">Salvar Auditoria</button>
+      <button class="btn btn-primary" onclick="saveNew()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1163,7 +1163,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
 <div class="modal-overlay" id="editModal">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-head-title" id="editModalTitle">Editar Auditoria</div>
+      <div class="modal-head-title" id="editModalTitle">Editar Item</div>
       <button class="modal-close-btn" onclick="closeModal('editModal')">✕</button>
     </div>
     <div class="modal-body">
@@ -1216,7 +1216,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger" onclick="deleteAudit()">🗑 Excluir</button>
+      <button class="btn btn-danger" onclick="deleteItem()">🗑 Excluir</button>
       <button class="btn" onclick="closeModal('editModal')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveEdit()">Salvar Alterações</button>
     </div>
@@ -1244,7 +1244,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('viewModal')">Fechar</button>
-      <button class="btn" onclick="if(state.currentViewId){openChecklistAuto(state.currentViewId)}" style="background:rgba(0,198,255,.1);border-color:rgba(0,198,255,.35);color:var(--accent);" id="viewChecklistBtn">🗂 Executar Auditoria</button>
+      <button class="btn" onclick="if(state.currentViewId){openChecklistAuto(state.currentViewId)}" style="background:rgba(0,198,255,.1);border-color:rgba(0,198,255,.35);color:var(--accent);" id="viewChecklistBtn">🗂 Executar Checklist</button>
       <button class="btn btn-primary" onclick="openEditFromView()">✎ Editar</button>
     </div>
   </div>
@@ -1352,8 +1352,8 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     window.CloudSync.ready = true;
     window.CloudSync.lastError = null;
 
-    // Salva a lista inteira de auditorias, mas AGORA um documento por auditoria
-    // dentro da coleção `auditoria_items`. Isso remove o limite de 1 MiB por doc.
+    // Salva a lista inteira de itens, mas AGORA um documento por item
+    // dentro da coleção `auditoria_items` (nome da coleção mantido por compatibilidade). Isso remove o limite de 1 MiB por doc.
     // Estratégia: batches de até 400 setDoc (limite prático do writeBatch = 500).
     window.CloudSync.save = async function(audits) {
       try {
@@ -1375,9 +1375,9 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     };
 
     // BUGFIX: restaurar um backup ou "substituir tudo" na importação de Excel
-    // trocava state.audits pela lista nova e chamava apenas save(), que só faz
+    // trocava state.items pela lista nova e chamava apenas save(), que só faz
     // setDoc (criar/atualizar) — nunca apagava do Firestore os documentos de
-    // auditorias que não estavam mais na lista nova. Resultado: o onSnapshot
+    // itens que não estavam mais na lista nova. Resultado: o onSnapshot
     // em tempo real devolvia os itens "antigos" de volta à tela logo em
     // seguida, como se a restauração não tivesse funcionado. replaceAll()
     // primeiro apaga da coleção tudo que não está na nova lista e só então
@@ -1410,7 +1410,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
       }
     };
 
-    // Salva UMA auditoria isolada (útil para edições pontuais).
+    // Salva UM item isolado (útil para edições pontuais).
     window.CloudSync.saveOne = async function(a) {
       try {
         await setDoc(itemRef(_docId(a)), { ...a, updatedAt: serverTimestamp() });
@@ -1595,56 +1595,56 @@ function _mesesJaEncerrados() {
   return hoje.getMonth(); // 0..11 → nº de meses já encerrados neste ano
 }
 
-// Percorre todas as auditorias e, para cada mês já encerrado que estava
+// Percorre todos os itens e, para cada mês já encerrado que estava
 // como "Agendado" (1) e não foi realizado (não virou "Concluído"), muda
 // automaticamente para "Atrasado" (4). Retorna true se algo mudou, para
 // quem chamou decidir se precisa re-renderizar/salvar.
 function atualizarAtrasos(persist = true) {
   const limite = _mesesJaEncerrados();
   let mudou = false;
-  (state.audits || []).forEach(a => {
+  (state.items || []).forEach(a => {
     if (!Array.isArray(a.months)) return;
     for (let i = 0; i < limite; i++) {
       if (a.months[i] === 1) { // Agendado, mês já encerrado, nunca realizado
         a.months[i] = 4; // → Atrasado
         mudou = true;
-        if (persist) _dirtyAuditIds.add(a.id);
+        if (persist) _dirtyItemIds.add(a.id);
       }
     }
   });
   if (mudou && persist) {
-    try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
-    saveAudits(); // grava (debounced) só as auditorias marcadas como alteradas
+    try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.items)); } catch(e) {}
+    saveItems(); // grava (debounced) só os itens marcados como alterados
   }
   return mudou;
 }
 
-const DEFAULT_AUDITS = [];
+const DEFAULT_ITEMS = [];
 
-// BUGFIX: os IDs de novas auditorias eram gerados como max(id existente)+1.
+// BUGFIX: os IDs de novos itens eram gerados como max(id existente)+1.
 // Isso funciona num único navegador, mas agora que os dados são sincronizados
 // em tempo real pelo Firestore entre vários dispositivos/abas, dois usuários
-// criando uma auditoria quase ao mesmo tempo (antes de um ver o item do outro)
+// criando um item quase ao mesmo tempo (antes de um ver o item do outro)
 // podem calcular o mesmo "próximo id". Como o documento no Firestore é
 // identificado por esse id, um dos dois acaba sobrescrevendo silenciosamente
-// a auditoria do outro. genAuditId() gera um id praticamente impossível de
+// o item do outro. genItemId() gera um id praticamente impossível de
 // colidir (timestamp em ms + componente aleatório), mantendo o id numérico
 // que o restante do app espera.
-let _genAuditIdSeq = 0;
-function genAuditId() {
-  _genAuditIdSeq = (_genAuditIdSeq + 1) % 1000;
-  return Date.now() * 1000 + _genAuditIdSeq;
+let _genItemIdSeq = 0;
+function genItemId() {
+  _genItemIdSeq = (_genItemIdSeq + 1) % 1000;
+  return Date.now() * 1000 + _genItemIdSeq;
 }
 
 // ===== ESTADO GLOBAL =====
 const state = {
-  audits: [],
+  items: [],
   filtered: [],
   layoutFiltered: [],
   currentViewId: null,
   currentEditId: null,
   charts: {},
-  importedAudits: []
+  importedItems: []
 };
 
 // ===== FUNÇÕES DE UTILIDADE =====
@@ -1696,7 +1696,7 @@ function setCloudStatus(s, detail) {
 async function connectCloudSyncAndSubscribe() {
   const remote = await window.CloudSync.loadOnce();
   await _reconcileCloudLoad(remote);
-  window.CloudSync.subscribe(applyRemoteAudits);
+  window.CloudSync.subscribe(applyRemoteItems);
 }
 
 // Tenta reconectar ao Firebase sem precisar recarregar a página.
@@ -1852,7 +1852,7 @@ function setMonths(prefix, months) { months.forEach((v,i) => { const el = docume
 
 
 let _modalPreviewFile = null;
-let _ganttPopupAuditId = null;
+let _ganttPopupItemId = null;
 let _ganttPopupMonthIdx = null;
 
 
@@ -1865,7 +1865,7 @@ let _ganttPopupMonthIdx = null;
 function switchView(view, el) {
   if (view === 'checklist') {
     const ov = document.getElementById('checklistOverlay');
-    if (ov && clCurrentAuditId != null) {
+    if (ov && clCurrentItemId != null) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       const navCl = document.getElementById('navChecklist');
       if (navCl) navCl.classList.add('active');
@@ -1894,11 +1894,11 @@ function switchView(view, el) {
 }
 
 function toggleMonth(id, month) {
-  const a = state.audits.find(a => a.id === id);
+  const a = state.items.find(a => a.id === id);
   if (a) {
     a.months[month] = (a.months[month]+1) % 5;
-    saveAudits(id);
-    state.filtered = auditOnly();
+    saveItems(id);
+    state.filtered = legacyOnly();
     if (typeof filterLayout === 'function') filterLayout();
     if (typeof renderLayoutDash === 'function') renderLayoutDash();
     notify('Status de ' + MONTHS[month] + ' atualizado');
@@ -1908,11 +1908,11 @@ function toggleMonth(id, month) {
 
 
 
-// ===== NOVA AUDITORIA =====
+// ===== NOVO ITEM =====
 function openNewModal(scope) {
   _newItemScope = (scope === 'layout' || (scope === undefined && isLayoutViewActive())) ? 'layout' : 'audit';
   const _mt = document.getElementById('newModalTitle');
-  if (_mt) _mt.textContent = _newItemScope === 'layout' ? '＋ Novo Item de Inspeção de Layout' : '＋ Nova Auditoria';
+  if (_mt) _mt.textContent = '＋ Novo Item de Inspeção de Layout';
   ['nSap','nPn','nDesc','nFamily','nResp','nObs'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('nClient').value = 'VW';
   document.getElementById('nRisk').value   = 'Médio';
@@ -1930,8 +1930,8 @@ function saveNew() {
     document.getElementById('nPn').classList.toggle('error', !pn);
     return;
   }
-  const newId = genAuditId();
-  state.audits.push({
+  const newId = genItemId();
+  state.items.push({
     id: newId, tipo: (_newItemScope === 'layout' ? LAYOUT_TIPO : 'audit'), sap, pn,
     client: document.getElementById('nClient').value,
     desc:   document.getElementById('nDesc').value.trim(),
@@ -1942,8 +1942,8 @@ function saveNew() {
     status: document.getElementById('nStatus').value,
     obs:    document.getElementById('nObs').value.trim(),
   });
-  saveAudits(newId);
-  state.filtered = auditOnly();
+  saveItems(newId);
+  state.filtered = legacyOnly();
   updateLayoutFilterOptions();
   if (typeof filterLayout === 'function') filterLayout();
   if (typeof renderLayoutDash === 'function') renderLayoutDash();
@@ -1951,12 +1951,12 @@ function saveNew() {
   updateLayoutFilterOptions();
   filterLayout();
   renderLayoutDash();
-  notify((_newItemScope === 'layout' ? 'Item de layout ' : 'Auditoria ') + sap + ' criado(a) com sucesso!');
+  notify('Item ' + sap + ' criado(a) com sucesso!');
 }
 
 // ===== EDIÇÃO =====
 function openEditModal(id) {
-  const a = state.audits.find(x => x.id === id);
+  const a = state.items.find(x => x.id === id);
   if (!a) return;
   state.currentEditId = id;
   document.getElementById('editModalTitle').textContent = 'Editar — '+a.sap;
@@ -1974,7 +1974,7 @@ function openEditModal(id) {
 }
 
 function saveEdit() {
-  const a = state.audits.find(x => x.id === state.currentEditId);
+  const a = state.items.find(x => x.id === state.currentEditId);
   if (!a) return;
   a.sap    = document.getElementById('eSap').value.trim() || a.sap;
   a.pn     = document.getElementById('ePn').value.trim();
@@ -1986,38 +1986,38 @@ function saveEdit() {
   a.status = document.getElementById('eStatus').value;
   a.obs    = document.getElementById('eObs').value.trim();
   a.months = getMonths('e');
-  saveAudits(a.id);
-  state.filtered = auditOnly();
+  saveItems(a.id);
+  state.filtered = legacyOnly();
   updateLayoutFilterOptions();
   if (typeof filterLayout === 'function') filterLayout();
   if (typeof renderLayoutDash === 'function') renderLayoutDash();
   closeModal('editModal');
-  notify('Auditoria ' + a.sap + ' atualizada!');
+  notify('Item ' + a.sap + ' atualizado!');
 }
 
-function deleteAudit() {
-  if (!confirm('Excluir esta auditoria permanentemente?')) return;
+function deleteItem() {
+  if (!confirm('Excluir este item permanentemente?')) return;
   const _deletedId = state.currentEditId;
-  state.audits = state.audits.filter(a => a.id !== _deletedId);
-  // Remove o doc correspondente na coleção auditoria_items — senão o
+  state.items = state.items.filter(a => a.id !== _deletedId);
+  // Remove o doc correspondente na coleção auditoria_items (nome mantido por compatibilidade) — senão o
   // onSnapshot da coleção repõe o item na tela ao reiniciar/reconectar.
   if (window.CloudSync && window.CloudSync.ready && window.CloudSync.deleteOne) {
     window.CloudSync.deleteOne(_deletedId).catch(() => {});
   }
-  saveAudits();
-  state.filtered = auditOnly();
+  saveItems();
+  state.filtered = legacyOnly();
   updateLayoutFilterOptions();
   if (typeof filterLayout === 'function') filterLayout();
   if (typeof renderLayoutDash === 'function') renderLayoutDash();
   closeModal('editModal');
-  notify('Auditoria excluída', 'warn');
+  notify('Item excluído', 'warn');
 }
 
 function openEditFromView() { closeModal('viewModal'); openEditModal(state.currentViewId); }
 
 // ===== VISUALIZAÇÃO =====
-function viewAudit(id) {
-  const a = state.audits.find(x => x.id === id);
+function viewItem(id) {
+  const a = state.items.find(x => x.id === id);
   if (!a) return;
   state.currentViewId = id;
   document.getElementById('viewModalTitle').textContent = a.sap;
@@ -2074,7 +2074,7 @@ async function handleDrawingUpload(input) {
   input.value = '';
   if (!files.length) return;
   const id = state.currentViewId;
-  const a = state.audits.find(x => x.id === id);
+  const a = state.items.find(x => x.id === id);
   if (!a) return;
   if (!Array.isArray(a.drawings)) a.drawings = [];
 
@@ -2108,18 +2108,18 @@ async function handleDrawingUpload(input) {
       notify('Falha ao enviar ' + file.name + ': ' + (res.error || ''), 'error');
     }
   }
-  if (sent > 0) { saveAudits(id); notify('✅ ' + sent + ' anexo(s) salvos'); }
+  if (sent > 0) { saveItems(id); notify('✅ ' + sent + ' anexo(s) salvos'); }
 }
 
 function removeDrawing(idx) {
   const id = state.currentViewId;
-  const a = state.audits.find(x => x.id === id);
+  const a = state.items.find(x => x.id === id);
   if (!a || !Array.isArray(a.drawings) || !a.drawings[idx]) return;
   if (!confirm('Remover este desenho?')) return;
   const d = a.drawings[idx];
   a.drawings.splice(idx, 1);
   renderDrawingsList(a);
-  saveAudits(id);
+  saveItems(id);
   if (d.path && window.CloudSync && window.CloudSync.deleteDrawing) {
     window.CloudSync.deleteDrawing(d.path);
   }
@@ -2133,7 +2133,7 @@ function removeDrawing(idx) {
 
 function exportToPrint() {
   const win = window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>Auditorias T1 2026</title>
+  win.document.write(`<!DOCTYPE html><html><head><title>Inspeções de Layout T1 2026</title>
   <style>body{font-family:Arial,sans-serif;padding:30px;font-size:12px;}
   h1{color:#0066cc;margin-bottom:20px;}
   table{width:100%;border-collapse:collapse;}
@@ -2144,8 +2144,8 @@ function exportToPrint() {
   .re{background:#f8d7da;color:#721c24;padding:2px 6px;border-radius:10px;}
   .pe{background:#fff3cd;color:#856404;padding:2px 6px;border-radius:10px;}
   </style></head><body>
-  <h1>T1 Automotive — Auditorias 2026</h1>
-  <p style="margin-bottom:16px;color:#666;">Total: ${expList().length} auditorias | Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+  <h1>T1 Automotive — Inspeções de Layout 2026</h1>
+  <p style="margin-bottom:16px;color:#666;">Total: ${expList().length} itens | Gerado em ${new Date().toLocaleString('pt-BR')}</p>
   <table>
     <tr><th>SAP</th><th>PN</th><th>Cliente</th><th>Descrição</th><th>Família</th><th>Risco</th><th>Responsável</th><th>Status</th></tr>
     ${expList().map(a => `<tr>
@@ -2167,8 +2167,8 @@ function exportToExcel() {
       ...Object.fromEntries(MONTHS.map((m,i) => [m, STATUS_LABELS[a.months[i]]||'—']))
     })));
     ws['!cols'] = [{wch:14},{wch:12},{wch:12},{wch:24},{wch:14},{wch:10},{wch:16},{wch:12},{wch:30},...Array(12).fill({wch:12})];
-    XLSX.utils.book_append_sheet(wb, ws, 'Auditorias 2026');
-    XLSX.writeFile(wb, `T1_Auditorias_${new Date().toISOString().slice(0,10)}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'Insp. Layout 2026');
+    XLSX.writeFile(wb, `T1_InspLayout_${new Date().toISOString().slice(0,10)}.xlsx`);
     notify('Excel exportado com sucesso!');
   } catch(e) { notify('Erro ao exportar Excel','error'); }
   closeExportMenu();
@@ -2183,19 +2183,19 @@ function exportToCSV() {
   const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = url; link.download = `T1_Auditorias_${new Date().toISOString().slice(0,10)}.csv`; link.click();
+  link.href = url; link.download = `T1_InspLayout_${new Date().toISOString().slice(0,10)}.csv`; link.click();
   URL.revokeObjectURL(url);
   notify('CSV exportado com sucesso!');
   closeExportMenu();
 }
 
 function exportBackupJSON() {
-  const data = JSON.stringify(state.audits, null, 2);
+  const data = JSON.stringify(state.items, null, 2);
   const blob = new Blob([data], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   const date = new Date().toISOString().slice(0,10);
-  a.href = url; a.download = `T1-Audit-Backup-${date}.json`; a.click();
+  a.href = url; a.download = `T1-InspLayout-Backup-${date}.json`; a.click();
   URL.revokeObjectURL(url);
   notify('✅ Backup exportado com sucesso!');
   closeExportMenu();
@@ -2247,15 +2247,15 @@ function runAutoBackupIfDue(force) {
     // Guarda 3 cópias rotativas no navegador (rede de segurança extra, além do arquivo baixado)
     try {
       const slot = 'auto_backup_slot_' + (Math.floor(now / AUTO_BACKUP_INTERVAL_MS) % 3);
-      localStorage.setItem(slot, JSON.stringify({ savedAt: now, audits: state.audits }));
+      localStorage.setItem(slot, JSON.stringify({ savedAt: now, audits: state.items }));
     } catch(e) {}
 
-    const data  = JSON.stringify(state.audits, null, 2);
+    const data  = JSON.stringify(state.items, null, 2);
     const blob  = new Blob([data], {type:'application/json'});
     const url   = URL.createObjectURL(blob);
     const a     = document.createElement('a');
     const stamp = new Date(now).toISOString().slice(0,16).replace('T','_').replace(':','h');
-    a.href = url; a.download = `T1-Audit-AutoBackup-${stamp}.json`; a.click();
+    a.href = url; a.download = `T1-InspLayout-AutoBackup-${stamp}.json`; a.click();
     URL.revokeObjectURL(url);
 
     try { localStorage.setItem('auto_backup_last', String(now)); } catch(e) {}
@@ -2294,15 +2294,15 @@ async function testFirebaseConnection() {
     return;
   }
 
-  const localCount  = state.audits.length;
+  const localCount  = state.items.length;
   const remoteCount = remote.length;
   const igual = localCount === remoteCount;
 
   alert(
     (igual ? '✅ Conexão com o Firebase confirmada e sincronizada.' : '⚠️ Conexão com o Firebase confirmada, mas os números ainda não batem.') +
     `\n\nTempo de resposta: ${ms} ms` +
-    `\nAuditorias na nuvem (Firestore): ${remoteCount}` +
-    `\nAuditorias na tela (este navegador): ${localCount}` +
+    `\nItens na nuvem (Firestore): ${remoteCount}` +
+    `\nItens na tela (este navegador): ${localCount}` +
     (igual ? '\n\nTudo certo — sincronização em tempo real ativa.'
            : '\n\nSe você acabou de fazer uma alteração, aguarde alguns segundos e teste de novo. Se persistir, clique no status "☁️ ..." no menu lateral para forçar uma reconexão.')
   );
@@ -2310,7 +2310,7 @@ async function testFirebaseConnection() {
 
 function importBackupJSON(file) {
   if (!file) return;
-  if (!confirm(`Restaurar backup "${file.name}"?\n\nTODAS as auditorias atuais serão SUBSTITUÍDAS pelo conteúdo do arquivo.\n\nDeseja continuar?`)) return;
+  if (!confirm(`Restaurar backup "${file.name}"?\n\nTODOS os itens atuais serão SUBSTITUÍDOS pelo conteúdo do arquivo.\n\nDeseja continuar?`)) return;
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
@@ -2319,20 +2319,20 @@ function importBackupJSON(file) {
       if (!list || !list.length) { notify('Arquivo JSON inválido','error'); return; }
 
       // Pausa o listener em tempo real ANTES de mexer no estado, grava direto
-      // (sem o debounce de 600ms do saveAudits) e só religa depois de confirmado —
+      // (sem o debounce de 600ms do saveItems) e só religa depois de confirmado —
       // evita que um snapshot antigo chegue no meio do caminho e reverta o restore.
       if (window.CloudSync && window.CloudSync.pause) window.CloudSync.pause();
 
-      state.audits   = list;
-      state.filtered = auditOnly();
-      try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(err) {}
+      state.items   = list;
+      state.filtered = legacyOnly();
+      try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.items)); } catch(err) {}
       updateLayoutFilterOptions();
       if (typeof renderLayoutDash === 'function') renderLayoutDash();
       if (typeof filterLayout === 'function') filterLayout();
 
       if (window.CloudSync && window.CloudSync.ready && window.CloudSync.replaceAll) {
         setCloudStatus('saving');
-        const ok = await window.CloudSync.replaceAll(state.audits);
+        const ok = await window.CloudSync.replaceAll(state.items);
         setCloudStatus(ok ? 'synced' : 'error', ok ? null : window.CloudSync.lastError);
       } else {
         setCloudStatus('offline');
@@ -2340,7 +2340,7 @@ function importBackupJSON(file) {
       if (window.CloudSync && window.CloudSync.resume) window.CloudSync.resume();
       _verifyWriteSettled(list, 'Restaurar Backup', true);
 
-      notify(`✅ ${list.length} auditorias restauradas do backup!`);
+      notify(`✅ ${list.length} itens restaurados do backup!`);
       closeImportModal();
     } catch(e) { notify('Erro ao ler JSON: ' + e.message, 'error'); }
   };
@@ -2348,7 +2348,7 @@ function importBackupJSON(file) {
 }
 
 function openImportModal() {
-  state_importedAudits = [];
+  state_importedItems = [];
   document.getElementById('importDropzone').style.display = '';
   document.getElementById('importProgress').style.display = 'none';
   document.getElementById('importLog').style.display = 'none';
@@ -2504,7 +2504,7 @@ function parseWorkbook(wb) {
       const pn        = String(row[pnCol]||'').trim();
 
       if (desc || pn) {
-        parsed.push({id:genAuditId(), sap:sapRaw, pn, client:String(row[clientCol]||'').trim(), desc, family:String(row[familyCol]||'').trim()||'Outros', risk, months, resp:String(row[respCol]||'').trim(), status, obs:String(row[obsCol]||'').trim(), file:null});
+        parsed.push({id:genItemId(), sap:sapRaw, pn, client:String(row[clientCol]||'').trim(), desc, family:String(row[familyCol]||'').trim()||'Outros', risk, months, resp:String(row[respCol]||'').trim(), status, obs:String(row[obsCol]||'').trim(), file:null});
       } else skipped++;
     }
     i++;
@@ -2512,20 +2512,20 @@ function parseWorkbook(wb) {
 
   setImportProgress(90, 'Calculando diferenças...');
   if (skipped > 0) addImportLog(`⚠️ ${skipped} linhas ignoradas`, 'warn');
-  addImportLog(`📊 <b>${parsed.length}</b> auditorias encontradas`);
+  addImportLog(`📊 <b>${parsed.length}</b> itens encontrados`);
 
   if (parsed.length === 0) {
-    addImportLog('❌ Nenhuma auditoria reconhecida. Verifique o arquivo.','err');
+    addImportLog('❌ Nenhum item reconhecido. Verifique o arquivo.','err');
     setImportProgress(100,'Concluído com erros');
     return;
   }
 
-  const existingSaps = new Set(auditOnly().map(a => a.sap));
+  const existingSaps = new Set(legacyOnly().map(a => a.sap));
   const newOnes  = parsed.filter(a => !existingSaps.has(a.sap));
   const updated  = parsed.filter(a => existingSaps.has(a.sap));
   addImportLog(`🆕 Novas: <b class="log-ok">${newOnes.length}</b> · Atualizações: <b style="color:var(--accent)">${updated.length}</b>`);
 
-  state_importedAudits = parsed;
+  state_importedItems = parsed;
   document.getElementById('impTotal').textContent   = parsed.length;
   document.getElementById('impNew').textContent     = newOnes.length;
   document.getElementById('impUpdated').textContent = updated.length;
@@ -2534,28 +2534,28 @@ function parseWorkbook(wb) {
 }
 
 async function applyImport(mode) {
-  if (!state_importedAudits.length) return;
+  if (!state_importedItems.length) return;
   const _fullReplace = (mode === 'replace');
   if (mode === 'replace') {
-    state.audits = state_importedAudits;
-    notify(`✅ ${state.audits.length} auditorias importadas (substituição total)`);
+    state.items = state_importedItems;
+    notify(`✅ ${state.items.length} itens importados (substituição total)`);
   } else {
     const sapMap = {};
-    state.audits.forEach(a => { sapMap[a.sap] = a; });
+    state.items.forEach(a => { sapMap[a.sap] = a; });
     let added = 0, upd = 0;
-    state_importedAudits.forEach(imp => {
+    state_importedItems.forEach(imp => {
       if (sapMap[imp.sap]) {
         Object.assign(sapMap[imp.sap], {...imp, id:sapMap[imp.sap].id, file:sapMap[imp.sap].file});
         upd++;
       } else {
-        state.audits.push(imp);
+        state.items.push(imp);
         added++;
       }
     });
     notify(`✅ ${added} adicionadas · ${upd} atualizadas`);
   }
-  state.filtered = auditOnly();
-  try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
+  state.filtered = legacyOnly();
+  try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.items)); } catch(e) {}
   updateLayoutFilterOptions();
   if (typeof renderLayoutDash === 'function') renderLayoutDash();
   if (typeof filterLayout === 'function') filterLayout();
@@ -2566,13 +2566,13 @@ async function applyImport(mode) {
   const _syncFn = _fullReplace ? window.CloudSync.replaceAll : window.CloudSync.save;
   if (window.CloudSync && window.CloudSync.ready && _syncFn) {
     setCloudStatus('saving');
-    const ok = await _syncFn(state.audits);
+    const ok = await _syncFn(state.items);
     setCloudStatus(ok ? 'synced' : 'error', ok ? null : window.CloudSync.lastError);
   } else {
     setCloudStatus('offline');
   }
   if (window.CloudSync && window.CloudSync.resume) window.CloudSync.resume();
-  _verifyWriteSettled(state.audits, 'Importar Excel', _fullReplace);
+  _verifyWriteSettled(state.items, 'Importar Excel', _fullReplace);
 
   closeImportModal();
 }
@@ -2595,9 +2595,9 @@ function _verifyWriteSettled(expectedList, label, useReplaceAll) {
           console.warn(`[${label}] Documento no Firestore não bate com o que foi gravado (checagem em ${ms}ms) — outra escrita concorrente detectada. Regravando...`);
           const _fn = (useReplaceAll && window.CloudSync.replaceAll) ? window.CloudSync.replaceAll : window.CloudSync.save;
           await _fn(expectedList);
-          state.audits   = expectedList;
-          state.filtered = auditOnly();
-          try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
+          state.items   = expectedList;
+          state.filtered = legacyOnly();
+          try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.items)); } catch(e) {}
           updateLayoutFilterOptions();
           if (typeof renderLayoutDash === 'function') renderLayoutDash();
           if (typeof filterLayout === 'function') filterLayout();
@@ -2608,23 +2608,23 @@ function _verifyWriteSettled(expectedList, label, useReplaceAll) {
   });
 }
 
-// BUGFIX GRAVE: antes, TODA chamada a saveAudits() reescrevia as auditorias
-// INTEIRAS no Firestore (mesmo quando só um campo de uma auditoria mudou).
+// BUGFIX GRAVE: antes, TODA chamada a saveItems() reescrevia os itens
+// INTEIROS no Firestore (mesmo quando só um campo de um item mudou).
 // Com o autosave do checklist disparando a cada pausa de digitação, isso
 // gerava uma enxurrada de escritas repetidas — e com a coleção crescendo
-// (100+ auditorias), o Firestore chegou a recusar com
+// (100+ itens), o Firestore chegou a recusar com
 // "resource-exhausted: Write stream exhausted maximum allowed queued writes".
-// Agora rastreamos só os IDs que realmente mudaram (_dirtyAuditIds) e
+// Agora rastreamos só os IDs que realmente mudaram (_dirtyItemIds) e
 // gravamos apenas esses documentos. Importação/restauração de backup não
 // passam por aqui — usam window.CloudSync.save()/replaceAll() diretamente
 // com a lista completa, o que continua correto pra esses casos.
-const _dirtyAuditIds = new Set();
+const _dirtyItemIds = new Set();
 
-function saveAudits(changedId) {
-  if (changedId != null) _dirtyAuditIds.add(changedId);
+function saveItems(changedId) {
+  if (changedId != null) _dirtyItemIds.add(changedId);
   setCloudStatus('saving');
   // cache local imediato (garante que nada se perde mesmo offline)
-  try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
+  try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.items)); } catch(e) {}
 
   clearTimeout(window._saveTimer);
   window._saveTimer = setTimeout(async () => {
@@ -2634,15 +2634,15 @@ function saveAudits(changedId) {
       setCloudStatus('synced');
       return;
     }
-    const idsToSave = [..._dirtyAuditIds];
-    _dirtyAuditIds.clear();
+    const idsToSave = [..._dirtyItemIds];
+    _dirtyItemIds.clear();
     if (!idsToSave.length) {
       // Nada marcado como alterado (ex.: só uma exclusão, já tratada via
-      // CloudSync.deleteOne em deleteAudit()) — não precisa gravar nada.
+      // CloudSync.deleteOne em deleteItem()) — não precisa gravar nada.
       setCloudStatus('synced');
       return;
     }
-    const toSave = state.audits.filter(a => idsToSave.includes(a.id));
+    const toSave = state.items.filter(a => idsToSave.includes(a.id));
     if (window.CloudSync && window.CloudSync.ready && window.CloudSync.save) {
       const ok = await window.CloudSync.save(toSave);
       setCloudStatus(ok ? 'synced' : 'error');
@@ -2653,23 +2653,23 @@ function saveAudits(changedId) {
   }, 600);
 }
 
-function loadLocalAudits() {
+function loadLocalItems() {
   try {
     const raw = localStorage.getItem('audits_t1_cache');
     if (raw) { const p = JSON.parse(raw); if (Array.isArray(p) && p.length > 0) return p; }
   } catch(e) {}
-  return JSON.parse(JSON.stringify(DEFAULT_AUDITS));
+  return JSON.parse(JSON.stringify(DEFAULT_ITEMS));
 }
 
 // Aplica dados vindos da nuvem (Firestore) na tela, sem entrar em loop de salvamento
-function applyRemoteAudits(audits) {
+function applyRemoteItems(audits) {
   if (!Array.isArray(audits)) return;
   _markCloudSyncedOnce();
-  state.audits = audits;
-  try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.audits)); } catch(e) {}
+  state.items = audits;
+  try { localStorage.setItem('audits_t1_cache', JSON.stringify(state.items)); } catch(e) {}
   updateLayoutFilterOptions();
-  // BUGFIX: antes disto fazia state.filtered = auditOnly() (mostrando TODAS
-  // as auditorias) sempre que os dados chegavam da nuvem — o que acontece a cada
+  // BUGFIX: antes disto fazia state.filtered = legacyOnly() (mostrando TODAS
+  // os itens) sempre que os dados chegavam da nuvem — o que acontece a cada
   // save() (inclusive o seu próprio, que "ecoa" de volta pelo listener em tempo
   // real do Firestore). Resultado: ao finalizar um checklist com um filtro ativo
   // no Cronograma, a lista voltava a mostrar tudo, como se o filtro tivesse sido
@@ -2714,17 +2714,17 @@ try {
 // Decide o que fazer com o resultado de CloudSync.loadOnce() ao conectar/reconectar.
 async function _reconcileCloudLoad(remote) {
   if (Array.isArray(remote) && remote.length > 0) {
-    applyRemoteAudits(remote);
+    applyRemoteItems(remote);
     return;
   }
   if (Array.isArray(remote) && remote.length === 0) {
     if (_wasCloudSyncedBefore()) {
       // Nuvem realmente vazia (não é a primeira conexão) → reflete isso na tela.
-      applyRemoteAudits([]);
+      applyRemoteItems([]);
     } else {
       // Primeira conexão desta sessão/navegador: usa o cache local (se houver)
       // para popular a nuvem pela primeira vez.
-      const ok = await window.CloudSync.save(state.audits);
+      const ok = await window.CloudSync.save(state.items);
       setCloudStatus(ok ? 'synced' : 'error', ok ? null : window.CloudSync?.lastError);
       if (ok) _markCloudSyncedOnce();
     }
@@ -2760,8 +2760,8 @@ async function init() {
 
   // Carrega imediatamente o cache local para exibir algo sem demora,
   // e em seguida tenta buscar/sincronizar com o Firebase.
-  state.audits   = loadLocalAudits();
-  state.filtered = auditOnly();
+  state.items   = loadLocalItems();
+  state.filtered = legacyOnly();
 
   buildMonthsGrid('n');
   buildMonthsGrid('e');
@@ -2809,12 +2809,12 @@ async function init() {
    M\u00d3DULO: CRONOGRAMA DE INSPE\u00c7\u00c3O DE LAYOUT
    -------------------------------------------------------------------------
    Os itens do cronograma de layout s\u00e3o gravados na MESMA cole\u00e7\u00e3o/estrutura
-   das auditorias (state.audits + cache local + Firebase), marcados com
+   dos itens (state.items + cache local + Firebase), marcados com
    tipo:'layout'. Assim eles herdam automaticamente:
-     \u2022 mesma l\u00f3gica de armazenamento e sincroniza\u00e7\u00e3o em nuvem (saveAudits)
+     \u2022 mesma l\u00f3gica de armazenamento e sincroniza\u00e7\u00e3o em nuvem (saveItems)
      \u2022 checklist PR\u00d3PRIO de inspe\u00e7\u00e3o de layout (openLayoutChecklist /
        a.layoutChecklists) \u2014 relat\u00f3rio dimensional, diferente do checklist
-       de Auditoria de Produto
+       legado (Auditoria de Produto, não acessível pela navegação atual)
      \u2022 mesmos 5 estados de m\u00eas, filtros, exporta\u00e7\u00e3o, edi\u00e7\u00e3o e exclus\u00e3o
      \u2022 mesma regra autom\u00e1tica de atraso (atualizarAtrasos)
    ========================================================================= */
@@ -2822,18 +2822,18 @@ const LAYOUT_TIPO = 'layout';
 let _newItemScope = 'audit';
 
 function isLayoutItem(a) { return !!a && a.tipo === LAYOUT_TIPO; }
-function auditOnly()  { return (state.audits || []).filter(a => !isLayoutItem(a)); }
-function layoutOnly() { return (state.audits || []).filter(a =>  isLayoutItem(a)); }
+function legacyOnly()  { return (state.items || []).filter(a => !isLayoutItem(a)); }
+function layoutOnly() { return (state.items || []).filter(a =>  isLayoutItem(a)); }
 function isLayoutViewActive() {
   const el = document.getElementById('view-layout');
   return !!el && el.style.display !== 'none';
 }
 // Lista usada pelas exporta\u00e7\u00f5es (Excel / CSV / Imprimir): respeita a aba aberta
-function expList() { return isLayoutViewActive() ? layoutOnly() : auditOnly(); }
+function expList() { return isLayoutViewActive() ? layoutOnly() : legacyOnly(); }
 
 function updateTopbarForView(view) {
   const lbl = document.getElementById('newItemBtnLabel');
-  if (lbl) lbl.textContent = (view === 'layout') ? 'Novo Item de Layout' : 'Nova Auditoria';
+  if (lbl) lbl.textContent = 'Novo Item de Layout';
   // A aba Dimensionais tem a própria barra de ações; esconde a barra global.
   const acts = document.querySelector('.topbar-actions');
   if (acts) acts.style.display = (view === 'dimensionais') ? 'none' : '';
@@ -2853,8 +2853,8 @@ function migrateLegacyLayoutItems() {
       const hasData   = [it.pn, it.part, it.client, it.resp].some(v => (v || '').trim());
       const hasMonths = (it.months || []).some(v => v > 0);
       if (!hasData && !hasMonths) return;
-      const id = genAuditId();
-      state.audits.push({
+      const id = genItemId();
+      state.items.push({
         id, tipo: LAYOUT_TIPO,
         sap:    (it.pn || ('LAYOUT-' + (n + 1))),
         pn:     it.pn     || '',
@@ -2867,7 +2867,7 @@ function migrateLegacyLayoutItems() {
         status: 'Pendente',
         obs:    'Migrado do cronograma antigo de inspe\u00e7\u00e3o de layout'
       });
-      saveAudits(id);
+      saveItems(id);
       n++;
     });
     localStorage.setItem(LAYOUT_MIGRATED_KEY, '1');
@@ -2875,7 +2875,7 @@ function migrateLegacyLayoutItems() {
   } catch (e) { console.warn('Falha na migra\u00e7\u00e3o do cronograma de layout:', e); }
 }
 
-// ===== FILTROS (id\u00eanticos aos do Cronograma de Auditorias) =====
+// ===== FILTROS =====
 function updateLayoutFilterOptions() {
   const list     = layoutOnly();
   const clients  = [...new Set(list.map(a => a.client).filter(Boolean))].sort();
@@ -2963,7 +2963,7 @@ function renderLayoutGantt() {
   rows.innerHTML = state.layoutFiltered.map(a => {
     const rColor = RISK_COLORS[a.risk] || 'var(--accent)';
     return `
-      <div class="gantt-row" onclick="viewAudit(${a.id})">
+      <div class="gantt-row" onclick="viewItem(${a.id})">
         <div class="gantt-info">
           <div class="gantt-item-title">
             ${escapeHtml(a.sap)}
@@ -3005,17 +3005,17 @@ function renderLayoutGantt() {
   }).join('') || '<div style="padding:40px;text-align:center;color:var(--text-secondary);font-size:13px;">Nenhum item no cronograma de inspe\u00e7\u00e3o de layout. Clique em <b>\uFF0B Novo Item</b> para come\u00e7ar.</div>';
 }
 
-// ===== IMPORTAR TODOS OS PRODUTOS DO CRONOGRAMA DE AUDITORIA PARA O CRONOGRAMA DE INSPE\u00c7\u00c3O DE LAYOUT =====
-// Copia cada produto j\u00e1 cadastrado na aba Auditoria (tipo !== 'layout') criando um
+// ===== IMPORTAR TODOS OS PRODUTOS LEGADOS (N\u00c3O-LAYOUT) PARA O CRONOGRAMA DE INSPE\u00c7\u00c3O DE LAYOUT =====
+// Copia cada produto j\u00e1 cadastrado como item legado (tipo !== 'layout') criando um
 // registro novo e independente (tipo:'layout') com os mesmos dados de identifica\u00e7\u00e3o
 // do produto (SAP, PN, cliente, descri\u00e7\u00e3o, fam\u00edlia, risco, respons\u00e1vel). Os meses
 // come\u00e7am zerados, pois o agendamento de inspe\u00e7\u00e3o de layout \u00e9 independente do
-// agendamento de auditoria. Produtos que j\u00e1 existem no cronograma de layout (mesmo
+// novo agendamento. Produtos que j\u00e1 existem no cronograma de layout (mesmo
 // SAP + PN) n\u00e3o s\u00e3o duplicados.
-function importAuditsToLayout() {
-  const sourceItems = auditOnly();
+function importLegacyToLayout() {
+  const sourceItems = legacyOnly();
   if (!sourceItems.length) {
-    notify('N\u00e3o h\u00e1 produtos cadastrados no Cronograma de Auditoria para importar', 'warn');
+    notify('N\u00e3o h\u00e1 produtos legados (n\u00e3o-layout) cadastrados para importar', 'warn');
     return;
   }
 
@@ -3023,19 +3023,19 @@ function importAuditsToLayout() {
   const toImport = sourceItems.filter(a => !existingKeys.has((a.sap || '') + '|' + (a.pn || '')));
 
   if (!toImport.length) {
-    notify('Todos os produtos da Auditoria j\u00e1 est\u00e3o no Cronograma de Inspe\u00e7\u00e3o de Layout', 'warn');
+    notify('Todos os produtos legados j\u00e1 est\u00e3o no Cronograma de Inspe\u00e7\u00e3o de Layout', 'warn');
     return;
   }
 
   const skipped = sourceItems.length - toImport.length;
-  const msg = `Importar ${toImport.length} produto(s) do Cronograma de Auditoria para o Cronograma de Inspe\u00e7\u00e3o de Layout?` +
+  const msg = `Importar ${toImport.length} produto(s) legado(s) para o Cronograma de Inspe\u00e7\u00e3o de Layout?` +
     (skipped ? `\n(${skipped} j\u00e1 exist${skipped>1?'em':'e'} no cronograma de layout e ser${skipped>1?'\u00e3o':'\u00e1'} ignorado(s))` : '') +
     `\n\nOs meses ser\u00e3o criados em branco \u2014 voc\u00ea poder\u00e1 agendar as inspe\u00e7\u00f5es de layout separadamente.`;
   if (!confirm(msg)) return;
 
   toImport.forEach(a => {
-    const newId = genAuditId();
-    state.audits.push({
+    const newId = genItemId();
+    state.items.push({
       id: newId,
       tipo: LAYOUT_TIPO,
       sap: a.sap,
@@ -3047,9 +3047,9 @@ function importAuditsToLayout() {
       months: Array(12).fill(0),
       resp: a.resp,
       status: 'Pendente',
-      obs: 'Importado do Cronograma de Auditoria em ' + new Date().toLocaleDateString('pt-BR'),
+      obs: 'Importado do cronograma legado em ' + new Date().toLocaleDateString('pt-BR'),
     });
-    saveAudits(newId);
+    saveItems(newId);
   });
 
   updateLayoutFilterOptions();
@@ -3248,7 +3248,7 @@ function renderLayoutDash() {
    existia neste arquivo, porém órfão (guardava dados só em localStorage
    isolado, sem ligação com o Cronograma). O motor "li" está definido mais
    abaixo, no <script> próximo de </body>; aqui fazemos apenas a ponte com
-   state.audits / a.layoutChecklists[mês] / Firebase (saveAudits), mantendo
+   state.items / a.layoutChecklists[mês] / Firebase (saveItems), mantendo
    as mesmas assinaturas de função já usadas pelo restante do app (Gantt,
    dashboard, badges).
    DECISÃO DE ESCOPO: campos de Molde/Cavidade/Planta/Tipo de Inspeção e
@@ -3260,7 +3260,7 @@ function renderLayoutDash() {
    Registros antigos em a.layoutChecklists no formato anterior não são
    migrados (conforme combinado).
    ========================================================================= */
-let lcAuditId = null, lcMonth = null, lcRO = false;
+let lcItemId = null, lcMonth = null, lcRO = false;
 const DM_CHECKLIST_KEY = 'produto_dimensionais_checklist_v1';
 window._dmChecklistMode = false;
 
@@ -3316,18 +3316,18 @@ function closeDimensionalChecklist(){
   window.scrollTo(0, 0);
 }
 
-function _lcKey(auditId, monthIndex){ return String(auditId) + '_' + monthIndex; }
+function _lcKey(itemId, monthIndex){ return String(itemId) + '_' + monthIndex; }
 
 function openLayoutChecklist(itemId, monthIndex){
-  const a = state.audits.find(x => x.id === itemId);
+  const a = state.items.find(x => x.id === itemId);
   if (!a) return;
   if (typeof window.liLoadRecord !== 'function') { notify('Formulário de layout ainda carregando, tente novamente em instantes.', 'warn'); return; }
   a.layoutChecklists = a.layoutChecklists || {};
   if (monthIndex == null) monthIndex = _clDefaultMonthFor(a);
   // multi-checklist: salva o rascunho do relatório que estava aberto antes de trocar
-  if (lcAuditId != null && !(lcAuditId === itemId && lcMonth === monthIndex)) lcPersistCurrent();
-  if (lcFindOpen(itemId, monthIndex) < 0) lcOpen.push({ auditId: itemId, month: monthIndex });
-  lcAuditId = itemId; lcMonth = monthIndex;
+  if (lcItemId != null && !(lcItemId === itemId && lcMonth === monthIndex)) lcPersistCurrent();
+  if (lcFindOpen(itemId, monthIndex) < 0) lcOpen.push({ itemId: itemId, month: monthIndex });
+  lcItemId = itemId; lcMonth = monthIndex;
   const key = _lcKey(itemId, monthIndex);
   const saved = a.layoutChecklists[monthIndex];
   lcRO = !!(saved && saved.completedAt);
@@ -3353,31 +3353,31 @@ function closeLayoutChecklist(){
   if (ov) ov.classList.remove('active');
   document.body.classList.remove('li-open');
   lcPersistCurrent();
-  lcAuditId = null; lcMonth = null;
+  lcItemId = null; lcMonth = null;
   lcRenderOpenBar();
   window.scrollTo(0, 0);
 }
 
 function lcEnableEdit(){
-  const a = state.audits.find(x => x.id === lcAuditId);
+  const a = state.items.find(x => x.id === lcItemId);
   if (!a) return;
   if (!confirm('Reabrir este relatório de inspeção de layout para edição?')) return;
   const saved = a.layoutChecklists?.[lcMonth];
   if (saved) saved.completedAt = null;
-  saveAudits(a.id);
-  openLayoutChecklist(lcAuditId, lcMonth);
+  saveItems(a.id);
+  openLayoutChecklist(lcItemId, lcMonth);
   notify('✏️ Relatório reaberto para edição');
 }
 
 function lcDeleteChecklist(){
-  const a = state.audits.find(x => x.id === lcAuditId);
+  const a = state.items.find(x => x.id === lcItemId);
   if (!a) return;
   if (!confirm('Excluir definitivamente este relatório de inspeção de layout?')) return;
-  const key = _lcKey(lcAuditId, lcMonth);
+  const key = _lcKey(lcItemId, lcMonth);
   if (a.layoutChecklists) delete a.layoutChecklists[lcMonth];
   if (typeof window.liForgetRecord === 'function') window.liForgetRecord(key);
-  saveAudits(a.id);
-  const _ti = lcFindOpen(lcAuditId, lcMonth);
+  saveItems(a.id);
+  const _ti = lcFindOpen(lcItemId, lcMonth);
   if (_ti >= 0) lcOpen.splice(_ti, 1);
   closeLayoutChecklist();
   filterLayout();
@@ -3392,13 +3392,13 @@ function saveLayoutChecklist(){
     notify('💾 Checklist dimensional salvo ✔', 'success');
     return;
   }
-  if (lcRO || lcAuditId == null) return;
-  const a = state.audits.find(x => x.id === lcAuditId);
+  if (lcRO || lcItemId == null) return;
+  const a = state.items.find(x => x.id === lcItemId);
   if (!a) return;
   const data = window.liExportRecord(false);
   a.layoutChecklists = a.layoutChecklists || {};
   a.layoutChecklists[lcMonth] = data;
-  saveAudits(a.id);
+  saveItems(a.id);
   notify('💾 Rascunho do relatório salvo!');
 }
 
@@ -3412,8 +3412,8 @@ function finalizeLayoutChecklist(){
     if (data) notify('✅ Checklist dimensional finalizado! Conclusão: ' + data.decision + ' · Conformidade: ' + data.score + '%');
     return;
   }
-  if (lcRO || lcAuditId == null) return;
-  const a = state.audits.find(x => x.id === lcAuditId);
+  if (lcRO || lcItemId == null) return;
+  const a = state.items.find(x => x.id === lcItemId);
   if (!a) return;
   const st = window.liStats();
   if (!st.measured) { notify('Informe as medições de ao menos uma linha antes de finalizar', 'error'); return; }
@@ -3423,7 +3423,7 @@ function finalizeLayoutChecklist(){
   a.status = data.decision === 'Reprovado' ? 'Reprovado' : 'Aprovado';
   if (a.months && a.months[lcMonth] > 0) a.months[lcMonth] = 2;
 
-  saveAudits(a.id);
+  saveItems(a.id);
   closeLayoutChecklist();
   filterLayout();
   renderLayoutDash();
@@ -3460,7 +3460,7 @@ function printLayoutChecklist(onlyActive, reportOverride){
 
   const h = k => liEsc(r.headers && r.headers[k] != null ? r.headers[k] : DEFAULT_HEADERS[k]);
   const v = s => liEsc(s) || '&nbsp;';
-  const a = state.audits.find(x => x.id === lcAuditId);
+  const a = state.items.find(x => x.id === lcItemId);
   const chk = (on, label) => `<span class="chk-item">${on ? '☑' : '☐'} ${liEsc(label)}</span>`;
 
   let pagesHtml = '';
@@ -3714,9 +3714,9 @@ ${pagesHtml}
   win.document.close();
 }
 
-// Dispatcher: item de layout abre o relatório de layout; auditoria abre o checklist de auditoria
+// Dispatcher: item de layout abre o relatório de layout; item legado abre o checklist legado de auditoria de produto
 function openChecklistAuto(id, monthIndex){
-  const a = state.audits.find(x => x.id === id);
+  const a = state.items.find(x => x.id === id);
   if (!a) return;
   if (isLayoutItem(a)) openLayoutChecklist(id, monthIndex);
   else openChecklist(id, monthIndex);
@@ -3731,7 +3731,7 @@ function hasLayoutReport(a, i){
   let _lcAutoT = null;
   document.addEventListener('input', (e) => {
     if (!e.target.closest || !e.target.closest('#liSheetOverlay')) return;
-    if (lcRO || lcAuditId == null) return;
+    if (lcRO || lcItemId == null) return;
     clearTimeout(_lcAutoT);
     _lcAutoT = setTimeout(() => {
       try { saveLayoutChecklist(); } catch (err) { console.warn('autosave layout', err); }
@@ -3743,7 +3743,7 @@ function hasLayoutReport(a, i){
    MULTI-CHECKLIST — vários relatórios de inspeção de layout abertos ao mesmo
    tempo (visualizar / editar / copiar entre eles).
    -------------------------------------------------------------------------
-   lcOpen guarda a sessão de relatórios abertos ({auditId, month}). A folha
+   lcOpen guarda a sessão de relatórios abertos ({itemId, month}). A folha
    continua renderizando UM relatório por vez (motor "li"), mas a troca entre
    abas é instantânea e sempre grava o rascunho do relatório que sai
    (lcPersistCurrent → a.layoutChecklists[mês] + Firebase), então nada é
@@ -3752,37 +3752,37 @@ function hasLayoutReport(a, i){
    ========================================================================= */
 let lcOpen = [];
 
-function lcFindOpen(id, m){ return lcOpen.findIndex(t => t.auditId === id && t.month === m); }
+function lcFindOpen(id, m){ return lcOpen.findIndex(t => t.itemId === id && t.month === m); }
 
 function lcTabInfo(t){
-  const a = state.audits.find(x => x.id === t.auditId);
+  const a = state.items.find(x => x.id === t.itemId);
   const rec = a && a.layoutChecklists ? a.layoutChecklists[t.month] : null;
-  const label = (a ? (a.sap || a.pn || ('#' + a.id)) : ('#' + t.auditId)) + ' · ' + (MONTHS[t.month] || '');
+  const label = (a ? (a.sap || a.pn || ('#' + a.id)) : ('#' + t.itemId)) + ' · ' + (MONTHS[t.month] || '');
   return { a, rec, label, done: !!(rec && rec.completedAt) };
 }
 
 function lcPersistCurrent(){
-  if (lcRO || lcAuditId == null) return;
+  if (lcRO || lcItemId == null) return;
   if (typeof window.liExportRecord !== 'function') return;
   try {
-    const a = state.audits.find(x => x.id === lcAuditId);
+    const a = state.items.find(x => x.id === lcItemId);
     if (!a) return;
     const data = window.liExportRecord(false);
     a.layoutChecklists = a.layoutChecklists || {};
     a.layoutChecklists[lcMonth] = data;
-    saveAudits(a.id);
+    saveItems(a.id);
   } catch (err) { console.warn('multi-checklist persist', err); }
 }
 
 function lcRenderOpenBar(){
   const bar = document.getElementById('lcOpenBar');
   if (!bar) return;
-  if (!lcOpen.length || lcAuditId == null) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  if (!lcOpen.length || lcItemId == null) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
   bar.style.display = 'flex';
   let html = '<span class="lc-openbar-lbl">Relatórios abertos (' + lcOpen.length + ')</span>';
   lcOpen.forEach((t, i) => {
     const info = lcTabInfo(t);
-    const active = (t.auditId === lcAuditId && t.month === lcMonth);
+    const active = (t.itemId === lcItemId && t.month === lcMonth);
     html += '<span class="lc-tab' + (active ? ' active' : '') + '" onclick="lcActivateTab(' + i + ')" title="' + liEsc(info.label + (info.a && info.a.desc ? ' — ' + info.a.desc : '')) + '">' +
             '<span class="lc-tab-txt">' + liEsc(info.label) + '</span>' +
             (info.done ? '<span class="lc-tab-ro">👁</span>' : '') +
@@ -3800,19 +3800,19 @@ function lcRenderOpenBar(){
 function lcActivateTab(i){
   const t = lcOpen[i];
   if (!t) return;
-  if (t.auditId === lcAuditId && t.month === lcMonth) return;
-  openLayoutChecklist(t.auditId, t.month);
+  if (t.itemId === lcItemId && t.month === lcMonth) return;
+  openLayoutChecklist(t.itemId, t.month);
 }
 
 function lcCloseTab(i){
   const t = lcOpen[i];
   if (!t) return;
-  const wasActive = (t.auditId === lcAuditId && t.month === lcMonth);
+  const wasActive = (t.itemId === lcItemId && t.month === lcMonth);
   if (wasActive) lcPersistCurrent();
   lcOpen.splice(i, 1);
   if (!wasActive) { lcRenderOpenBar(); return; }
   const next = lcOpen[i] || lcOpen[i - 1];
-  if (next) { lcAuditId = null; lcMonth = null; openLayoutChecklist(next.auditId, next.month); }
+  if (next) { lcItemId = null; lcMonth = null; openLayoutChecklist(next.itemId, next.month); }
   else closeLayoutChecklist();
 }
 
@@ -3831,7 +3831,7 @@ function lcSaveAllOpen(){
 /* ---------- catálogo de relatórios disponíveis (para abrir / copiar) ---------- */
 function lcCatalog(){
   const out = [];
-  (state.audits || []).forEach(a => {
+  (state.items || []).forEach(a => {
     if (!isLayoutItem(a)) return;
     const recs = a.layoutChecklists || {};
     const months = new Set();
@@ -3841,7 +3841,7 @@ function lcCatalog(){
     Array.from(months).sort((x, y) => x - y).forEach(m => {
       const rec = recs[m];
       out.push({
-        auditId: a.id, month: m, audit: a, rec: rec || null,
+        itemId: a.id, month: m, item: a, rec: rec || null,
         state: rec ? (rec.completedAt ? 'done' : 'draft') : 'empty',
         text: [a.sap, a.pn, a.desc, a.client, MONTHS[m]].filter(Boolean).join(' ').toLowerCase()
       });
@@ -3857,11 +3857,11 @@ function lcRowHtml(c, kind){
     : '<span class="lc-pick-badge empty">— Vazio</span>';
   const sheets = c.rec && Array.isArray(c.rec.sheets) ? c.rec.sheets.length : 0;
   const input = kind === 'copy'
-    ? '<input type="radio" name="lcCopySrc" value="' + c.auditId + '_' + c.month + '"' + (c.state === 'empty' ? ' disabled' : '') + '>'
-    : '<input type="checkbox" class="lc-pick-chk" data-id="' + c.auditId + '" data-m="' + c.month + '"' + (lcFindOpen(c.auditId, c.month) >= 0 ? ' checked disabled' : '') + '>';
+    ? '<input type="radio" name="lcCopySrc" value="' + c.itemId + '_' + c.month + '"' + (c.state === 'empty' ? ' disabled' : '') + '>'
+    : '<input type="checkbox" class="lc-pick-chk" data-id="' + c.itemId + '" data-m="' + c.month + '"' + (lcFindOpen(c.itemId, c.month) >= 0 ? ' checked disabled' : '') + '>';
   return '<label class="lc-pick-row">' + input +
-    '<span class="lc-pick-main"><b>' + liEsc(c.audit.sap || c.audit.pn || ('#' + c.audit.id)) + '</b> · ' + liEsc(MONTHS[c.month] || '') +
-    '<div class="lc-pick-sub">' + liEsc((c.audit.desc || '').slice(0, 70) || 'sem descrição') +
+    '<span class="lc-pick-main"><b>' + liEsc(c.item.sap || c.item.pn || ('#' + c.item.id)) + '</b> · ' + liEsc(MONTHS[c.month] || '') +
+    '<div class="lc-pick-sub">' + liEsc((c.item.desc || '').slice(0, 70) || 'sem descrição') +
     (sheets ? ' · ' + sheets + ' componente(s)' : '') + '</div></span>' + badge + '</label>';
 }
 
@@ -3886,7 +3886,7 @@ function lcOpenSelected(){
   closeModal('lcPickModal');
   chks.forEach(ch => {
     const id = Number(ch.dataset.id), m = Number(ch.dataset.m);
-    if (lcFindOpen(id, m) < 0) lcOpen.push({ auditId: id, month: m });
+    if (lcFindOpen(id, m) < 0) lcOpen.push({ itemId: id, month: m });
   });
   const last = chks[chks.length - 1];
   openLayoutChecklist(Number(last.dataset.id), Number(last.dataset.m));
@@ -3896,7 +3896,7 @@ function lcOpenSelected(){
 function lcRenderCopyList(){
   const q = (document.getElementById('lcCopySearch').value || '').trim().toLowerCase();
   const list = lcCatalog().filter(c => c.state !== 'empty')
-    .filter(c => !(c.auditId === lcAuditId && c.month === lcMonth))
+    .filter(c => !(c.itemId === lcItemId && c.month === lcMonth))
     .filter(c => !q || c.text.includes(q));
   const el = document.getElementById('lcCopyList');
   el.innerHTML = list.length ? list.map(c => lcRowHtml(c, 'copy')).join('')
@@ -3904,10 +3904,10 @@ function lcRenderCopyList(){
 }
 
 function lcCopyPicker(){
-  if (lcAuditId == null) { notify('Abra um relatório antes de copiar para ele', 'warn'); return; }
+  if (lcItemId == null) { notify('Abra um relatório antes de copiar para ele', 'warn'); return; }
   if (lcRO) { notify('Este relatório está em modo leitura. Use “✎ Editar Relatório” antes de copiar.', 'warn'); return; }
   const tag = document.getElementById('lcCopyTargetTag');
-  if (tag) tag.textContent = lcTabInfo({ auditId: lcAuditId, month: lcMonth }).label;
+  if (tag) tag.textContent = lcTabInfo({ itemId: lcItemId, month: lcMonth }).label;
   const el = document.getElementById('lcCopySearch');
   if (el) el.value = '';
   lcRenderCopyList();
@@ -3918,7 +3918,7 @@ function lcDoCopy(){
   const sel = document.querySelector('#lcCopyList input[name="lcCopySrc"]:checked');
   if (!sel) { notify('Selecione o relatório de origem', 'warn'); return; }
   const [sid, sm] = sel.value.split('_');
-  const src = state.audits.find(x => x.id === Number(sid));
+  const src = state.items.find(x => x.id === Number(sid));
   const rec = src && src.layoutChecklists ? src.layoutChecklists[Number(sm)] : null;
   if (!rec) { notify('Relatório de origem não encontrado', 'error'); return; }
   const mode = document.getElementById('lcCopyMode').value;
@@ -3934,13 +3934,13 @@ Object.assign(window, {
   retryCloudSync,
   switchView, toggleTheme,
   openNewModal, closeModal, saveNew,
-  openEditModal, saveEdit, deleteAudit,
-  viewAudit, openEditFromView,
+  openEditModal, saveEdit, deleteItem,
+  viewItem, openEditFromView,
   renderDrawingsList, handleDrawingUpload, removeDrawing,
   toggleMonth,
   filterLayout, clearFiltersL, renderLayoutGantt, renderLayoutDash,
   updateLayoutFilterOptions, updateTopbarForView,
-  auditOnly, layoutOnly, isLayoutItem, expList,
+  legacyOnly, layoutOnly, isLayoutItem, expList,
   openImportModal, closeImportModal,
   handleImportFile, applyImport, importBackupJSON,
   exportToExcel, exportToCSV, exportToPrint,
@@ -3985,15 +3985,15 @@ document.addEventListener('keydown', (e) => {
   ov._autoBound = true;
   let _t = null;
   ov.addEventListener('input', () => {
-    if (clReadonly || clCurrentAuditId == null) return;
+    if (clReadonly || clCurrentItemId == null) return;
     clearTimeout(_t);
     _t = setTimeout(() => {
       try {
-        const a = state.audits.find(x => x.id === clCurrentAuditId);
+        const a = state.items.find(x => x.id === clCurrentItemId);
         if (!a) return;
         a.checklistsByMonth = a.checklistsByMonth || {};
         a.checklistsByMonth[clCurrentMonthIndex] = _clPayload(false);
-        saveAudits(a.id);
+        saveItems(a.id);
       } catch(e){ console.warn('autosave', e); }
     }, 400);
   });
@@ -4491,10 +4491,10 @@ function liGetReport(id){
 }
 window.liGetReport=liGetReport; // exposto p/ printLayoutChecklist(), definida fora desta IIFE
 
-/* ---------- Ponte com o Cronograma de Inspeção de Layout (state.audits) ----------
+/* ---------- Ponte com o Cronograma de Inspeção de Layout (state.items) ----------
    As funções abaixo são a interface pública usada por openLayoutChecklist /
    saveLayoutChecklist / finalizeLayoutChecklist (definidas fora deste IIFE).
-   Cada registro fica em liState.reports[chave], chave = auditId+'_'+mesIndex,
+   Cada registro fica em liState.reports[chave], chave = itemId+'_'+mesIndex,
    mas a fonte de verdade para persistência é sempre a.layoutChecklists[mês]
    (Firebase) — liState/localStorage aqui funciona só como buffer de edição. */
 function liNormalizeReport(saved, itemInfo){
