@@ -3450,12 +3450,41 @@ window.liStatsForRows=liStatsForRows; // exposto p/ printLayoutChecklist(), defi
 // onlyActive=false/undefined → imprime TODOS os componentes, cada um em sua
 // PRÓPRIA página, com cabeçalho, resumo e assinatura totalmente independentes
 // (nada é compartilhado entre componentes na impressão).
+// Lê as larguras de coluna que o usuário ajustou na tela (arrastando a borda
+// de cada coluna, salvas em LI_COL_WIDTHS_KEY) e converte para percentuais,
+// para que a impressão saia com as MESMAS proporções de coluna da visualização.
+function liPrintColWidthsPct(){
+  const n = LI_COL_KEYS.length;
+  let px = null;
+  try {
+    const raw = localStorage.getItem(LI_COL_WIDTHS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length >= n) {
+        const parsed = arr.slice(0, n).map(w => parseFloat(w) || 0);
+        if (parsed.every(v => v > 0)) px = parsed;
+      }
+    }
+  } catch(e) {}
+  if (!px) px = LI_COL_DEFAULT_PCT.slice(0, n).map(w => parseFloat(w) || 0);
+  const total = px.reduce((s, v) => s + v, 0) || 1;
+  return px.map(v => Math.max(1, (v / total) * 100));
+}
+
 function printLayoutChecklist(onlyActive, reportOverride){
   if (!reportOverride && typeof window.liCollectSilent === 'function') window.liCollectSilent();
   const r = reportOverride || liGetReport(liCurrent);
   if (!reportOverride && typeof liSyncActiveSheet === 'function') liSyncActiveSheet();
   const allSheets = (r.sheets && r.sheets.length) ? r.sheets : [{name:'', rows:r.rows||[], header:liBlankHeader(null)}];
   const sheetsToPrint = onlyActive ? [allSheets[r.activeSheet] || allSheets[0]] : allSheets;
+  // Índices em LI_COL_KEYS: item,char,nominal,spec,low,upper,m0,m1,m2,m3,m4,ok,nok
+  const cw = liPrintColWidthsPct();
+  const colgroupHtml = `<colgroup>
+    <col style="width:${cw[0]}%"><col style="width:${cw[1]}%"><col style="width:${cw[2]}%"><col style="width:${cw[3]}%">
+    <col style="width:${cw[4]}%"><col style="width:${cw[5]}%">
+    <col style="width:${cw[6]}%"><col style="width:${cw[7]}%"><col style="width:${cw[8]}%"><col style="width:${cw[9]}%"><col style="width:${cw[10]}%">
+    <col style="width:${cw[11]}%"><col style="width:${cw[12]}%">
+  </colgroup>`;
 
 
   const h = k => liEsc(r.headers && r.headers[k] != null ? r.headers[k] : DEFAULT_HEADERS[k]);
@@ -3553,12 +3582,7 @@ function printLayoutChecklist(onlyActive, reportOverride){
 
 <div class="section-title">Dimensional Results</div>
 <table class="main">
-  <colgroup>
-    <col class="c-item"><col class="c-char"><col class="c-nom"><col class="c-spec">
-    <col class="c-tol"><col class="c-tol">
-    <col class="c-m"><col class="c-m"><col class="c-m"><col class="c-m"><col class="c-m">
-    <col class="c-ok"><col class="c-ok">
-  </colgroup>
+  ${colgroupHtml}
   <thead>
     <tr>
       <th rowspan="2">${h('item')}</th>
@@ -3659,9 +3683,9 @@ function printLayoutChecklist(onlyActive, reportOverride){
   .section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #1a3a8f; margin: 10px 0 5px; display: flex; align-items: center; gap: 6px; }
   .section-title::after { content: ''; flex: 1; height: 1.5px; background: linear-gradient(90deg, #1a3a8f44, transparent); }
   table.main { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
-  table.main col.c-item{width:3.5%} table.main col.c-char{width:19%} table.main col.c-nom{width:11%}
-  table.main col.c-spec{width:7%} table.main col.c-tol{width:6%} table.main col.c-m{width:6.6%}
-  table.main col.c-ok{width:8%} table.main col.c-nok{width:8%}
+  /* Larguras das colunas vêm inline no <colgroup> (geradas em JS a partir do
+     que o usuário ajustou na tela), não mais fixas aqui — assim a impressão
+     acompanha a visualização. */
   table.main thead th { background: linear-gradient(180deg, #1a3a8f, #0d2160); color: #fff; padding: 6px 4px; border: 1px solid #0a1840; font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: .4px; text-align: center; }
   table.main thead tr.th2 th { background: #1e3d96; color: #ccd6f6; padding: 4px; font-size: 8px; }
   table.main td { border: 1px solid #d0d8ed; padding: 5px 4px; vertical-align: middle; text-align: center; word-wrap: break-word; }
