@@ -972,7 +972,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
             <div class="li-hdr">
               <div class="li-logo">RÖCHLING<br><span style="font-size:9px;letter-spacing:2px;color:var(--text-secondary);">AUTOMOTIVE</span></div>
               <div style="flex:1;">
-                <h2 contenteditable="true" id="dmTitle" oninput="dmHeadChange()">Evaluation Results — Layout Inspection</h2>
+                <h2 contenteditable="true" id="dmTitle" oninput="dmHeadChange()">Evaluation Results — Dimensional</h2>
                 <div class="li-checks">
                   <label><input type="checkbox" id="dmChkDim" onchange="dmHeadChange()"> Dimensional</label>
                   <label><input type="checkbox" id="dmChkMat" onchange="dmHeadChange()"> Material</label>
@@ -3482,6 +3482,7 @@ function liPrintColWidthsPct(){
 }
 
 function printLayoutChecklist(onlyActive, reportOverride){
+  const isDimensional = !!reportOverride;
   if (!reportOverride && typeof window.liCollectSilent === 'function') window.liCollectSilent();
   const r = reportOverride || liGetReport(liCurrent);
   if (!reportOverride && typeof liSyncActiveSheet === 'function') liSyncActiveSheet();
@@ -3556,13 +3557,13 @@ function printLayoutChecklist(onlyActive, reportOverride){
       <div class="logo-box">R</div>
       <div>
         <div class="co-name">Röchling Automotive</div>
-        <div class="doc-type">Layout Inspection Report</div>
+        <div class="doc-type">${isDimensional ? 'Dimensional Report' : 'Layout Inspection Report'}</div>
       </div>
     </div>
     <div class="doc-ref">Doc.: ${docId}</div>
   </div>
   <div class="ph-center">
-    <div class="doc-title">${liEsc(hdr.title || 'Evaluation Results — Layout Inspection')}</div>
+    <div class="doc-title">${liEsc(hdr.title || (isDimensional ? 'Evaluation Results — Dimensional' : 'Evaluation Results — Layout Inspection'))}</div>
     ${sheetsToPrint.length > 1 || allSheets.length > 1 ? `<div class="doc-component">Componente: ${liEsc(compName)}</div>` : ''}
     <div class="doc-checks">
       ${chk(!!hdr.chkDim, 'Dimensional')}
@@ -6275,7 +6276,7 @@ function dmNormalize(p){
     id: p.id || dmId(),
     sap: p.sap || '', pn: p.pn || '', desc: p.desc || '', client: p.client || '',
     rev: p.rev || '', owner: p.owner || '',
-    title: p.title || 'Evaluation Results — Layout Inspection',
+    title: p.title || 'Evaluation Results — Dimensional',
     chkDim: p.chkDim !== undefined ? !!p.chkDim : true,
     chkMat: !!p.chkMat, chkOut: !!p.chkOut, outrosTxt: p.outrosTxt || '',
     supplier: p.supplier || '', reportN: p.reportN || '',
@@ -6530,7 +6531,7 @@ function dmRenderEditor(){
 
   const set = (id, v) => { const el = document.getElementById(id); if (!el) return; if (el.type === 'checkbox') el.checked = !!v; else el.value = v || ''; };
   const t = document.getElementById('dmTitle');
-  if (t && t !== document.activeElement) t.textContent = p.title || 'Evaluation Results — Layout Inspection';
+  if (t && t !== document.activeElement) t.textContent = p.title || 'Evaluation Results — Dimensional';
   set('dmSupplier', p.supplier); set('dmSap', p.sap); set('dmPn', p.pn); set('dmRev', p.rev);
   set('dmOwner', p.owner); set('dmDesc', p.desc); set('dmReportN', p.reportN); set('dmClient', p.client);
   set('dmChkDim', p.chkDim); set('dmChkMat', p.chkMat); set('dmChkOut', p.chkOut); set('dmOutrosTxt', p.outrosTxt);
@@ -6697,7 +6698,7 @@ function dmDeleteProduct(){
 /* ---------- Exportações (mesmo relatório do checklist de Layout) ---------- */
 function dmSheetHeader(p){
   return {
-    title: p.title || 'Evaluation Results — Layout Inspection',
+    title: p.title || 'Evaluation Results — Dimensional',
     chkDim: !!p.chkDim, chkMat: !!p.chkMat, chkOut: !!p.chkOut, outrosTxt: p.outrosTxt || '',
     supplier: p.supplier || '', supplierNumber: p.sap || '', partNumber: p.pn || '',
     revision: p.rev || '', inspDept: p.owner || '', partName: p.desc || '',
