@@ -6279,7 +6279,7 @@ function dmNormalize(p){
     id: p.id || dmId(),
     sap: p.sap || '', pn: p.pn || '', desc: p.desc || '', client: p.client || '',
     rev: p.rev || '', owner: p.owner || '',
-    title: p.title || 'Evaluation Results — Dimensional',
+    title: (p.title && p.title !== 'Evaluation Results — Layout Inspection') ? p.title : 'Evaluation Results — Dimensional',
     chkDim: p.chkDim !== undefined ? !!p.chkDim : true,
     chkMat: !!p.chkMat, chkOut: !!p.chkOut, outrosTxt: p.outrosTxt || '',
     supplier: p.supplier || '', reportN: p.reportN || '',
@@ -6318,6 +6318,14 @@ function dmEnsureReport(p){
     if (!sh.id) sh.id = 'sh_' + dmId();
     if (!sh.name) sh.name = 'Componente ' + (i + 1);
     sh.rows = dmRowsIn(sh.rows);
+    // Migração: cotas salvas antes da separação Layout/Dimensional gravaram
+    // 'Evaluation Results — Layout Inspection' no cabeçalho de cada componente.
+    // Como esse valor fica gravado por aba, ele sobrepunha o novo padrão mesmo
+    // depois do título do produto já ter sido corrigido. Trata esse texto
+    // específico como se não tivesse sido definido, para reabrir o fallback.
+    if (sh.header && sh.header.title === 'Evaluation Results — Layout Inspection') {
+      sh.header = Object.assign({}, sh.header); delete sh.header.title;
+    }
     sh.header = Object.assign(dmSheetHeader(p), sh.header || {});
   });
   p.report = rep;
