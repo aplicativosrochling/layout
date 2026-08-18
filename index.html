@@ -4912,8 +4912,11 @@ window.liDeleteTab=function(idx){
    dentro de um wrapper com rolagem horizontal (.li-table-wrap), ent\u00e3o o total das
    colunas pode ultrapassar a largura vis\u00edvel sem cortar conte\u00fado. */
 const LI_COL_KEYS = ['item','char','nominal','spec','low','upper','m0','m1','m2','m3','m4','ok','nok'];
+window.LI_COL_KEYS = LI_COL_KEYS; // exposto p/ printLayoutChecklist()/liPrintColWidthsPct(), definidas fora desta IIFE
 const LI_COL_DEFAULT_PCT = ['4%','15%','10%','5%','6%','6%','7.6%','7.6%','7.6%','7.6%','7.6%','6%','7%','3%'];
 const LI_COL_WIDTHS_KEY = 'li_dim_col_widths_v1';
+window.LI_COL_DEFAULT_PCT = LI_COL_DEFAULT_PCT; // exposto p/ liPrintColWidthsPct(), definida fora desta IIFE
+window.LI_COL_WIDTHS_KEY = LI_COL_WIDTHS_KEY;   // exposto p/ liPrintColWidthsPct(), definida fora desta IIFE
 let _liResizeState = null;
 
 function liInitColResize(){
