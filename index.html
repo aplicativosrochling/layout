@@ -237,6 +237,19 @@ canvas{cursor:default;}
 .dm-item-t{font-weight:700;font-size:13px;}
 .dm-item-s{font-size:11px;color:var(--text-secondary);margin-top:2px;}
 .dm-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(0,198,255,.12);color:var(--accent);border:1px solid rgba(0,198,255,.3);}
+.dm-badge-active{background:rgba(34,197,94,.14);color:var(--success);border:1px solid rgba(34,197,94,.35);}
+.dm-badge-old{background:rgba(148,163,184,.14);color:var(--text-secondary);border:1px solid rgba(148,163,184,.3);}
+.dm-item.old-rev{opacity:.72;}
+.dm-rev-toggle{font-size:11px;color:var(--text-secondary);cursor:pointer;padding:5px 4px;user-select:none;display:flex;align-items:center;gap:5px;}
+.dm-rev-toggle:hover{color:var(--accent);}
+.dm-rev-toggle-arrow{font-size:9px;transition:transform .15s;}
+.dm-rev-toggle.collapsed .dm-rev-toggle-arrow{transform:rotate(-90deg);}
+.dm-rev-older{display:flex;flex-direction:column;gap:7px;padding-left:8px;border-left:2px solid var(--border);margin-left:4px;}
+.dm-rev-older.collapsed{display:none;}
+.dm-revstatus{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:600;margin-top:10px;}
+.dm-revstatus.active{background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.3);}
+.dm-revstatus.old{background:rgba(245,158,11,.1);color:var(--warning);border:1px solid rgba(245,158,11,.3);}
+.dm-revstatus button{margin-left:auto;}
 .dm-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
 .dm-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);}
 table.dm-table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:2240px;table-layout:fixed;}
@@ -964,7 +977,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
               <button class="btn btn-sm" onclick="dmImportChecklist()" title="Importar planilha Excel/CSV para este produto">📥 Importar Excel/CSV</button>
               <button class="btn btn-sm" onclick="dmAddRow()">＋ Nova Cota</button>
               <button class="btn btn-sm" onclick="dmDuplicateLast()">⧉ Duplicar Última</button>
-              <button class="btn btn-sm" onclick="dmDuplicateProduct()">⧉ Duplicar Produto</button>
+              <button class="btn btn-sm" onclick="dmDuplicateProduct()" title="Cria uma nova revisão deste mesmo produto (mesmo SAP/PN), copiando todas as cotas para você atualizar">🆕 Nova Revisão</button>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
               <span id="dmSavedTag" style="font-size:11px;color:var(--text-secondary);"></span>
@@ -976,6 +989,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
           </div>
 
           <div class="dm-stats" id="dmStats"></div>
+          <div id="dmRevStatus" style="display:none;"></div>
 
           <!-- Folha do relatório — cópia exata do checklist de Inspeção de Layout -->
           <div class="li-sheet" id="dmSheet" style="margin:14px 0 0;max-width:none;">
@@ -5522,11 +5536,11 @@ document.addEventListener('blur',e=>{
    ========================================================================= */
 const LI_FIELD_DEFS=[
   {k:'item',label:'ITEM',keys:['item','nº','n°','no.','no','pos','pos.','voce','voz','ítem','num','nº item']},
-  {k:'char',label:'CHARACTERISTIC',keys:['character','característica','caracteristica','merkmal','caratteristica','descrição','description','feature']},
+  {k:'char',label:'CHARACTERISTIC',keys:['characteristic specification','character','característica','caracteristica','merkmal','caratteristica','descrição','description','feature']},
   {k:'nom',label:'NOMINAL',keys:['nominal','nom','nominale','nennmaß','basic','básico']},
-  {k:'spec',label:'SPEC',keys:['spec','especific','spez','spec.','especif','tolerance zone','zone']},
-  {k:'low',label:'LOW / MIN',keys:['low','inferior','lower','min','min.','untere','unt','-tol','minus']},
-  {k:'up',label:'UPPER / MAX',keys:['upper','superior','max','max.','obere','ob','+tol','plus']},
+  {k:'spec',label:'SPEC',keys:['tolerance zone','zone','especific','spez','spec.','especif','spec']},
+  {k:'low',label:'LOW / MIN',keys:['inf.','inf','inferior','lower','untere','unt','-tol','minus','low','min','min.']},
+  {k:'up',label:'UPPER / MAX',keys:['sup.','sup','superior','obere','ob','+tol','plus','upper','max','max.']},
   {k:'m0',label:'MEDIÇÃO 1',keys:['1','m1','sample 1','sample01','sample 01','amostra 1','med 1','meas 1','reading 1']},
   {k:'m1',label:'MEDIÇÃO 2',keys:['2','m2','sample 2','sample02','sample 02','amostra 2','med 2','meas 2','reading 2']},
   {k:'m2',label:'MEDIÇÃO 3',keys:['3','m3','sample 3','sample03','sample 03','amostra 3','med 3','meas 3','reading 3']},
@@ -5537,7 +5551,7 @@ const LI_FIELD_DEFS=[
 ];
 function liNormalizeHeader(txt){
   return String(txt||'').toLowerCase()
-    .replace(/[\n\r\t]/g,' ')
+    .replace(/[\n\r\t]+/g,' ')
     .replace(/[°ºª]/g,'o')
     .replace(/[ç]/g,'c')
     .replace(/[áàâãä]/g,'a')
@@ -5545,8 +5559,15 @@ function liNormalizeHeader(txt){
     .replace(/[íìîï]/g,'i')
     .replace(/[óòôõö]/g,'o')
     .replace(/[úùûü]/g,'u')
+    .replace(/[,;:|()\[\]{}]/g,' ')
     .replace(/[^a-z0-9+\-./\s]/g,'')
+    .replace(/\s+/g,' ')
     .trim();
+}
+function liHeaderHasKey(text,key){
+  const esc=key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re=new RegExp('(^|[\\s/])'+esc+'($|[\\s/])');
+  return re.test(text);
 }
 function liDetectDataStart(rows, headerIdx2){
   for(let r=headerIdx2+1;r<Math.min(rows.length,headerIdx2+20);r++){
@@ -5586,14 +5607,15 @@ function liExtractMeta(rows){
 }
 function liAutoDetectCols(rows){
   let bestScore=-1,bestIdx=0,bestIdx2=0;
-  for(let r=0;r<Math.min(30,rows.length);r++){
-    for(let r2=r+1;r2<Math.min(r+4,rows.length);r2++){
+  const scanLimit=Math.min(200,rows.length);
+  for(let r=0;r<scanLimit;r++){
+    for(let r2=r+1;r2<Math.min(r+4,scanLimit);r2++){
       const line1=(rows[r]||[]).map(liNormalizeHeader);
       const line2=(rows[r2]||[]).map(liNormalizeHeader);
-      const combined=line1.map((a,i)=>a+' '+line2[i]).filter(Boolean);
+      const combined=line1.map((a,i)=>(a+' '+(line2[i]||'')).trim()).filter(Boolean);
       let score=0;
       LI_FIELD_DEFS.forEach(f=>{
-        const found=combined.some(c=>f.keys.some(k=>c.includes(k)));
+        const found=combined.some(c=>f.keys.some(k=>liHeaderHasKey(c,k)));
         if(found)score+=3;
       });
       const numRatio=combined.filter(c=>/\d/.test(c)).length/Math.max(combined.length,1);
@@ -5611,7 +5633,7 @@ function liAutoDetectCols(rows){
     for(const key of keys){
       for(let i=0;i<combined.length;i++){
         if(used.has(i))continue;
-        if(combined[i].includes(key)){used.add(i);return i}
+        if(liHeaderHasKey(combined[i],key)){used.add(i);return i}
       }
     }
     return -1;
@@ -5619,7 +5641,7 @@ function liAutoDetectCols(rows){
   const map={};
   LI_FIELD_DEFS.forEach(f=>{map[f.k]=findCol(f.keys)});
   const fallback={item:0,char:1,nom:2,spec:4,low:5,up:6,m0:7,m1:8,m2:9,m3:10,m4:11,ok:12,nok:13};
-  LI_FIELD_DEFS.forEach(f=>{if(map[f.k]===-1&&fallback[f.k]!==undefined&&fallback[f.k]<maxCols)map[f.k]=fallback[f.k]});
+  LI_FIELD_DEFS.forEach(f=>{if(map[f.k]===-1&&fallback[f.k]!==undefined&&fallback[f.k]<maxCols&&!used.has(fallback[f.k])){map[f.k]=fallback[f.k];used.add(fallback[f.k]);}});
   return{map,maxCols,headerIdx,headerIdx2};
 }
 function liColLabel(rows,idx,headerIdx,headerIdx2){
@@ -6360,6 +6382,7 @@ function dmNormalize(p){
     supplier: p.supplier || '', reportN: p.reportN || '',
     obs: p.obs || '', signName: p.signName || '', signTitle: p.signTitle || '',
     signDate: p.signDate || '',
+    revNum: p.revNum != null ? p.revNum : 1,
     updatedAt: p.updatedAt || Date.now(),
     decision: p.decision || '', score: p.score != null ? p.score : null,
     completedAt: p.completedAt || null,
@@ -6545,16 +6568,39 @@ window.dmToggleGroup = function(key){
   dmRenderList();
 };
 
-function dmItemHtml(p){
+function dmItemHtml(p, opts){
+  opts = opts || {};
+  const showRevBadge = opts.totalRevs && opts.totalRevs > 1;
+  const revBadge = showRevBadge
+    ? `<span class="dm-badge ${opts.isLatest ? 'dm-badge-active' : 'dm-badge-old'}">${opts.isLatest ? '✓ Ativa · ' : ''}Rev. ${p.revNum || 1}</span>`
+    : '';
   return `
-    <div class="dm-item ${p.id === dmCurrentId ? 'active' : ''}" onclick="dmSelect('${p.id}')">
+    <div class="dm-item ${p.id === dmCurrentId ? 'active' : ''} ${showRevBadge && !opts.isLatest ? 'old-rev' : ''}" onclick="dmSelect('${p.id}')">
       <div class="dm-item-t">${dmEsc(p.sap || p.pn || '(sem código)')}</div>
       <div class="dm-item-s">${dmEsc(p.desc || p.pn || '—')}</div>
-      <div class="dm-item-s" style="margin-top:5px;">
+      <div class="dm-item-s" style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
         <span class="dm-badge">${(p.rows||[]).length} cotas</span>
+        ${revBadge}
       </div>
     </div>`;
 }
+
+/* Grupos de revisão (por peça) que o usuário recolheu/expandiu — igual ao
+   collapse de clientes, mas numa chave separada. */
+const DM_COLLAPSED_REVS_KEY = 'dm_collapsed_revs_v1';
+function dmRevCollapsedSet(){
+  try { return new Set(JSON.parse(localStorage.getItem(DM_COLLAPSED_REVS_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+function dmSaveRevCollapsed(set){
+  try { localStorage.setItem(DM_COLLAPSED_REVS_KEY, JSON.stringify([...set])); } catch(e){}
+}
+window.dmToggleRevGroup = function(key){
+  const set = dmRevCollapsedSet();
+  if (set.has(key)) set.delete(key); else set.add(key);
+  dmSaveRevCollapsed(set);
+  dmRenderList();
+};
 
 function dmRenderList(){
   const box = document.getElementById('dmList');
@@ -6577,10 +6623,41 @@ function dmRenderList(){
   if (groups.has('__none__')) clientKeys.push('__none__');
 
   const collapsed = dmCollapsedSet();
+  const revCollapsed = dmRevCollapsedSet();
   box.innerHTML = clientKeys.map(key => {
-    const items = groups.get(key).sort((a,b) => (a.sap||a.pn||'').localeCompare(b.sap||b.pn||''));
+    const items = groups.get(key);
     const label = key === '__none__' ? 'Sem cliente' : key;
     const isCollapsed = collapsed.has(key);
+
+    // Sub-agrupa por peça (mesma SAP/PN = mesmo histórico de revisões)
+    const byPart = new Map();
+    items.forEach(p => {
+      const ik = dmIdentityKey(p);
+      if (!byPart.has(ik)) byPart.set(ik, []);
+      byPart.get(ik).push(p);
+    });
+    const partKeys = [...byPart.keys()].sort((a, b) => {
+      const pa = byPart.get(a)[0], pb = byPart.get(b)[0];
+      return (pa.sap || pa.pn || '').localeCompare(pb.sap || pb.pn || '');
+    });
+
+    const partsHtml = partKeys.map(pk => {
+      const revs = byPart.get(pk).sort((a, b) => (b.revNum || 1) - (a.revNum || 1));
+      const latest = revs[0];
+      const older = revs.slice(1);
+      const latestHtml = dmItemHtml(latest, { totalRevs: revs.length, isLatest: true });
+      if (!older.length) return latestHtml;
+      const rk = key + '|' + pk;
+      const rCollapsed = !revCollapsed.has(rk); // colapsado por padrão
+      return latestHtml + `
+        <div class="dm-rev-toggle${rCollapsed ? ' collapsed' : ''}" onclick="dmToggleRevGroup('${rk.replace(/'/g,"\\'")}')">
+          <span class="dm-rev-toggle-arrow">▾</span> Ver revisões anteriores (${older.length})
+        </div>
+        <div class="dm-rev-older${rCollapsed ? ' collapsed' : ''}">
+          ${older.map(p => dmItemHtml(p, { totalRevs: revs.length, isLatest: false })).join('')}
+        </div>`;
+    }).join('');
+
     return `
     <div class="dm-group${isCollapsed ? ' collapsed' : ''}">
       <div class="dm-group-hd" onclick="dmToggleGroup('${key.replace(/'/g,"\\'")}')">
@@ -6588,7 +6665,7 @@ function dmRenderList(){
         <span class="dm-group-name">${dmEsc(label)}</span>
         <span class="dm-group-count">${items.length}</span>
       </div>
-      <div class="dm-group-items">${items.map(dmItemHtml).join('')}</div>
+      <div class="dm-group-items">${partsHtml}</div>
     </div>`;
   }).join('');
 }
@@ -6644,6 +6721,7 @@ function dmRenderEditor(){
   }).join('') || `<tr><td colspan="14" class="dm-empty">Nenhuma cota cadastrada. Clique em <b>＋ Nova Cota</b>.</td></tr>`;
 
   dmRenderStats(p);
+  dmRenderRevStatus(p);
 }
 
 function dmRenderStats(p){
@@ -6661,11 +6739,46 @@ function dmRenderStats(p){
   box.innerHTML = cards.map(c => `<div class="dm-stat"><div class="v" style="color:${c[2]}">${c[1]}</div><div class="l">${c[0]}</div></div>`).join('');
 }
 
+function dmRenderRevStatus(p){
+  const box = document.getElementById('dmRevStatus');
+  if (!box) return;
+  const identityKey = dmIdentityKey(p);
+  const siblings = dmProducts.filter(x => dmIdentityKey(x) === identityKey);
+  if (siblings.length <= 1) { box.style.display = 'none'; return; }
+  const maxRev = siblings.reduce((m, x) => Math.max(m, x.revNum || 1), 0);
+  const isLatest = (p.revNum || 1) >= maxRev;
+  box.style.display = '';
+  if (isLatest) {
+    box.className = 'dm-revstatus active';
+    box.innerHTML = `✅ Esta é a revisão ativa (Rev. ${p.revNum || 1}) — ${siblings.length} revisão(ões) no histórico desta peça.`;
+  } else {
+    const latest = siblings.find(x => (x.revNum || 1) === maxRev);
+    box.className = 'dm-revstatus old';
+    box.innerHTML = `🕓 Você está vendo uma revisão anterior (Rev. ${p.revNum || 1}). A revisão ativa é a Rev. ${maxRev}.
+      <button class="btn btn-sm" onclick="dmSelect('${latest.id}')">Ir para a Rev. ${maxRev} →</button>`;
+  }
+}
+
 function dmRenderAll(){ dmRenderList(); dmRenderEditor(); }
 
 /* ---------- Ações ---------- */
+/* Identidade de "peça" usada para agrupar revisões — mesma SAP (ou PN, se não
+   houver SAP) cai no mesmo grupo. Produtos ainda sem código ficam sozinhos
+   (usando o próprio id), pra não misturar rascunhos em branco. */
+function dmIdentityKey(p){
+  const k = (p.sap || p.pn || '').trim().toLowerCase();
+  return k || ('__id_' + p.id);
+}
+/* Maior revNum já usado por essa peça (0 se ainda não existir nenhuma) */
+function dmMaxRev(identityKey, excludeId){
+  return dmProducts.reduce((max, x) => {
+    if (x.id === excludeId) return max;
+    if (dmIdentityKey(x) !== identityKey) return max;
+    return Math.max(max, x.revNum || 1);
+  }, 0);
+}
 function dmNewProduct(){
-  const p = dmNormalize({ rows: [dmBlankRow(), dmBlankRow(), dmBlankRow()] });
+  const p = dmNormalize({ rows: [dmBlankRow(), dmBlankRow(), dmBlankRow()], revNum: 1 });
   dmProducts.push(p);
   dmCurrentId = p.id;
   dmPersist(p, true);
@@ -6826,9 +6939,13 @@ function dmDelRow(rowId){
 
 function dmDuplicateProduct(){
   const p = dmGetCurrent(); if (!p) return;
+  const identityKey = dmIdentityKey(p);
+  const nextRev = dmMaxRev(identityKey) + 1;
   const raw = JSON.parse(JSON.stringify(p));
   raw.id = dmId();
-  raw.sap = (p.sap || '') + '-COPIA';
+  raw.revNum = nextRev;
+  // sap/pn permanecem os MESMOS — é isso que mantém a nova revisão agrupada
+  // com o histórico da mesma peça na lista lateral.
   delete raw.rows;
   if (raw.report && Array.isArray(raw.report.sheets)) {
     raw.report.sheets.forEach(sh => { sh.id = 'sh_' + dmId(); (sh.rows||[]).forEach(r => { delete r.id; }); });
@@ -6837,7 +6954,7 @@ function dmDuplicateProduct(){
   dmProducts.push(copy);
   dmCurrentId = copy.id;
   dmPersist(copy, true); dmRenderAll();
-  dmToast('Produto duplicado');
+  dmToast('Nova revisão criada — Rev. ' + nextRev + '. Atualize as cotas necessárias.');
 }
 function dmDeleteProduct(){
   const p = dmGetCurrent(); if (!p) return;
