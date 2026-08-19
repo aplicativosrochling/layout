@@ -667,6 +667,16 @@ table.li-dim td:hover .li-fillhandle,table.li-dim td:focus-within .li-fillhandle
 table.li-dim td.li-fill-target{outline:2px dashed var(--accent);outline-offset:-2px}
 body.li-filling,body.li-filling *{cursor:crosshair !important}
 table.li-dim tbody tr.li-row-selected td{background:rgba(0,198,255,.14) !important;box-shadow:inset 3px 0 0 var(--accent)}
+/* --- Alça de arrastar a linha inteira (igual Excel: copia todos os campos da linha) --- */
+table.li-dim td.li-actioncell{position:relative}
+.li-rowfillhandle{position:absolute;right:0;bottom:0;width:11px;height:11px;background:var(--warning,#e6a700);border:1px solid #fff;cursor:grab;z-index:5;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:7px;line-height:1;color:#fff;user-select:none}
+.li-rowfillhandle:active{cursor:grabbing}
+table.li-dim tbody tr.li-fill-row-target td{outline:2px dashed var(--warning,#e6a700);outline-offset:-2px}
+tr.dm-row.li-actioncell,
+td.dm-actioncell{position:relative}
+.dm-rowfillhandle{position:absolute;right:0;bottom:0;width:11px;height:11px;background:var(--warning,#e6a700);border:1px solid #fff;cursor:grab;z-index:5;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:7px;line-height:1;color:#fff;user-select:none}
+.dm-rowfillhandle:active{cursor:grabbing}
+#dmTableBody tr.dm-fill-row-target td{outline:2px dashed var(--warning,#e6a700);outline-offset:-2px}
 table.li-dim td.li-cell-range-selected{background:rgba(0,198,255,.20) !important;box-shadow:inset 0 0 0 1.5px var(--accent);}
 /* --- Células mescladas — linhas (rowspan ⇕) e colunas (colspan ⇔) --- */
 table.li-dim td.li-merged{background:rgba(255,255,255,.04);vertical-align:middle;position:relative;}
@@ -5244,7 +5254,7 @@ function liRenderRows(){
         <option value="down">⬇ Inserir abaixo</option>
         ${row._manual?'<option value="auto">↺ Voltar ao automático</option>':''}
         <option value="del">🗑 Remover</option>
-      </select></td>`;
+      </select><span class="li-rowfillhandle" title="Arraste para copiar esta linha inteira para as linhas abaixo/acima"></span></td>`;
     tr.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{
       const f=inp.dataset.f;
       if(f==='ok'||f==='nok'){
@@ -5852,6 +5862,71 @@ function liCommitFillDrag(){
 }
 document.addEventListener('mouseup',liCommitFillDrag);
 document.addEventListener('touchend',liCommitFillDrag);
+
+/* --- Arrastar a linha INTEIRA (todos os campos), igual à alça de preenchimento do Excel --- */
+let liRowFillDrag=null;
+function liClearRowFillHighlight(){document.querySelectorAll('table.li-dim tbody tr.li-fill-row-target').forEach(tr=>tr.classList.remove('li-fill-row-target'))}
+function liStartRowFillDrag(tr){
+  if(!tr||tr.dataset.idx==null)return;
+  const startIdx=+tr.dataset.idx;
+  const r=liGetReport(liCurrent);const row=r.rows[startIdx];if(!row)return;
+  liRowFillDrag={startIdx,source:JSON.parse(JSON.stringify(row)),lastTarget:startIdx};
+  document.body.classList.add('li-filling');
+}
+function liHoverRowFillDrag(tr){
+  if(!liRowFillDrag||!tr||tr.dataset.idx==null)return;
+  const idx=+tr.dataset.idx;
+  liClearRowFillHighlight();
+  const lo=Math.min(liRowFillDrag.startIdx,idx),hi=Math.max(liRowFillDrag.startIdx,idx);
+  const tb=document.getElementById('liDimBody');
+  for(let i=lo;i<=hi;i++){const rowTr=tb.children[i];if(rowTr)rowTr.classList.add('li-fill-row-target')}
+  liRowFillDrag.lastTarget=idx;
+}
+function liCommitRowFillDrag(){
+  if(!liRowFillDrag)return;
+  const{startIdx,source,lastTarget}=liRowFillDrag;
+  liClearRowFillHighlight();document.body.classList.remove('li-filling');
+  liRowFillDrag=null;
+  if(lastTarget===startIdx)return;
+  const r=liGetReport(liCurrent);
+  liSnapshot();
+  const lo=Math.min(startIdx,lastTarget),hi=Math.max(startIdx,lastTarget);
+  let n=0;
+  for(let i=lo;i<=hi;i++){
+    if(i===startIdx||!r.rows[i])continue;
+    const keepId=r.rows[i].id;
+    const copy=JSON.parse(JSON.stringify(source));
+    copy.id=keepId;
+    r.rows[i]=copy;
+    n++;
+  }
+  liCommitSnapshot();
+  liRenderRows();liUpdateSummary();liPersist();liSetDirty(true);
+  liToast('Linha copiada para '+n+' linha(s)','success');
+}
+document.getElementById('liDimBody').addEventListener('mousedown',e=>{
+  const handle=e.target.closest('.li-rowfillhandle');if(!handle)return;
+  e.preventDefault();
+  liStartRowFillDrag(handle.closest('tr'));
+});
+document.getElementById('liDimBody').addEventListener('touchstart',e=>{
+  const handle=e.target.closest('.li-rowfillhandle');if(!handle)return;
+  e.preventDefault();
+  liStartRowFillDrag(handle.closest('tr'));
+},{passive:false});
+document.getElementById('liDimBody').addEventListener('mouseover',e=>{
+  if(!liRowFillDrag)return;
+  liHoverRowFillDrag(e.target.closest('tr'));
+});
+document.addEventListener('touchmove',e=>{
+  if(!liRowFillDrag)return;
+  const touch=e.touches[0];if(!touch)return;
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);if(!el)return;
+  e.preventDefault();
+  liHoverRowFillDrag(el.closest('tr'));
+},{passive:false});
+document.addEventListener('mouseup',liCommitRowFillDrag);
+document.addEventListener('touchend',liCommitRowFillDrag);
 
 const LI_CELL_FIELDS=['item','char','nominal','spec','low','upper','m0','m1','m2','m3','m4','ok','nok'];
 function liGetCellPos(input){
@@ -6564,7 +6639,7 @@ function dmRenderEditor(){
       ${[0,1,2,3,4].map(i=>cell(r,'m'+i)).join('')}
       ${cell(r,'ok',null,'color:var(--success);font-weight:700')}
       ${cell(r,'nok',null,'color:var(--danger);font-weight:700')}
-      <td class="li-noprint" style="text-align:center;"><button class="dm-row-del" title="Excluir cota" onclick="dmDelRow('${r.id}')">🗑</button></td>
+      <td class="li-noprint dm-actioncell" style="text-align:center;"><button class="dm-row-del" title="Excluir cota" onclick="dmDelRow('${r.id}')">🗑</button><span class="dm-rowfillhandle" title="Arraste para copiar esta linha inteira para as linhas abaixo/acima"></span></td>
     </tr>`;
   }).join('') || `<tr><td colspan="14" class="dm-empty">Nenhuma cota cadastrada. Clique em <b>＋ Nova Cota</b>.</td></tr>`;
 
@@ -6665,6 +6740,75 @@ function dmAddRow(){
   p.rows.push(dmBlankRow());
   dmPersist(p, true); dmRenderAll();
 }
+/* --- Arrastar a linha INTEIRA (todos os campos), igual à alça de preenchimento do Excel --- */
+let dmRowFillDrag=null;
+function dmClearRowFillHighlight(){document.querySelectorAll('#dmTableBody tr.dm-fill-row-target').forEach(tr=>tr.classList.remove('dm-fill-row-target'))}
+function dmStartRowFillDrag(tr){
+  if(!tr||!tr.dataset.row)return;
+  const p=dmGetCurrent();if(!p)return;
+  const row=(p.rows||[]).find(x=>x.id===tr.dataset.row);if(!row)return;
+  dmRowFillDrag={startId:row.id,source:JSON.parse(JSON.stringify(row)),lastId:row.id};
+  document.body.classList.add('li-filling');
+}
+function dmHoverRowFillDrag(tr){
+  if(!dmRowFillDrag||!tr||!tr.dataset.row)return;
+  const p=dmGetCurrent();if(!p)return;
+  const ids=(p.rows||[]).map(x=>x.id);
+  const loIdx=ids.indexOf(dmRowFillDrag.startId),hiIdx=ids.indexOf(tr.dataset.row);
+  if(loIdx<0||hiIdx<0)return;
+  const lo=Math.min(loIdx,hiIdx),hi=Math.max(loIdx,hiIdx);
+  dmClearRowFillHighlight();
+  const tb=document.getElementById('dmTableBody');
+  for(let i=lo;i<=hi;i++){const rowTr=tb.children[i];if(rowTr)rowTr.classList.add('dm-fill-row-target')}
+  dmRowFillDrag.lastId=tr.dataset.row;
+}
+function dmCommitRowFillDrag(){
+  if(!dmRowFillDrag)return;
+  const{startId,source,lastId}=dmRowFillDrag;
+  dmClearRowFillHighlight();document.body.classList.remove('li-filling');
+  dmRowFillDrag=null;
+  if(lastId===startId)return;
+  const p=dmGetCurrent();if(!p)return;
+  const ids=(p.rows||[]).map(x=>x.id);
+  const loIdx=ids.indexOf(startId),hiIdx=ids.indexOf(lastId);
+  if(loIdx<0||hiIdx<0)return;
+  const lo=Math.min(loIdx,hiIdx),hi=Math.max(loIdx,hiIdx);
+  let n=0;
+  for(let i=lo;i<=hi;i++){
+    if(ids[i]===startId)continue;
+    const keepId=p.rows[i].id;
+    const copy=JSON.parse(JSON.stringify(source));
+    copy.id=keepId;
+    p.rows[i]=copy;
+    n++;
+  }
+  dmPersist(p,true);dmRenderAll();
+  dmToast('Linha copiada para '+n+' linha(s)','success');
+}
+document.getElementById('dmTableBody').addEventListener('mousedown',e=>{
+  const handle=e.target.closest('.dm-rowfillhandle');if(!handle)return;
+  e.preventDefault();
+  dmStartRowFillDrag(handle.closest('tr'));
+});
+document.getElementById('dmTableBody').addEventListener('touchstart',e=>{
+  const handle=e.target.closest('.dm-rowfillhandle');if(!handle)return;
+  e.preventDefault();
+  dmStartRowFillDrag(handle.closest('tr'));
+},{passive:false});
+document.getElementById('dmTableBody').addEventListener('mouseover',e=>{
+  if(!dmRowFillDrag)return;
+  dmHoverRowFillDrag(e.target.closest('tr'));
+});
+document.addEventListener('touchmove',e=>{
+  if(!dmRowFillDrag)return;
+  const touch=e.touches[0];if(!touch)return;
+  const el=document.elementFromPoint(touch.clientX,touch.clientY);if(!el)return;
+  e.preventDefault();
+  dmHoverRowFillDrag(el.closest('tr'));
+},{passive:false});
+document.addEventListener('mouseup',dmCommitRowFillDrag);
+document.addEventListener('touchend',dmCommitRowFillDrag);
+
 function dmDuplicateLast(){
   const p = dmGetCurrent(); if (!p) return;
   const last = p.rows[p.rows.length-1];
