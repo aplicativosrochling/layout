@@ -231,9 +231,27 @@ canvas{cursor:default;}
 .dm-wrap>.dm-panel{min-width:0;}
 .dm-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm);}
 .dm-list{display:flex;flex-direction:column;gap:7px;max-height:66vh;overflow-y:auto;margin-top:10px;}
-.dm-item{padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--card2);cursor:pointer;transition:all .15s;}
+.dm-item{padding:10px 12px 10px 13px;border:1px solid var(--border);border-left:3px solid var(--border);border-radius:11px;background:var(--card2);cursor:pointer;transition:all .15s;}
 .dm-item:hover{border-color:var(--border-hover);transform:translateX(2px);}
-.dm-item.active{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent);}
+.dm-item.active{background:rgba(0,198,255,.08);box-shadow:0 0 0 1.5px var(--accent);}
+.dm-item.health-good{border-left-color:var(--success);}
+.dm-item.health-warn{border-left-color:var(--warning);}
+.dm-item.health-bad{border-left-color:var(--danger);}
+.dm-item.health-none{border-left-color:var(--border);}
+.dm-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.dm-item-time{font-size:9.5px;color:var(--text-secondary);opacity:.8;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.dm-item-stats{display:flex;align-items:center;gap:7px;margin-top:6px;flex-wrap:wrap;}
+.dm-item-stat{font-size:10.5px;font-weight:700;white-space:nowrap;}
+.dm-health-bar{height:4px;border-radius:3px;background:var(--border);overflow:hidden;display:flex;margin-top:7px;}
+.dm-health-bar .ok{background:var(--success);height:100%;}
+.dm-health-bar .nok{background:var(--danger);height:100%;}
+.dm-list-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;}
+.dm-sort-btn{font-size:10px;padding:5px 9px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--text-secondary);cursor:pointer;font-weight:700;white-space:nowrap;transition:all .15s;}
+.dm-sort-btn:hover{border-color:var(--border-hover);color:var(--text);}
+.dm-sort-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.dm-filter-chip{font-size:10px;padding:5px 9px;border-radius:20px;border:1px solid rgba(255,61,87,.35);background:transparent;color:var(--danger);cursor:pointer;font-weight:700;white-space:nowrap;margin-left:auto;transition:all .15s;}
+.dm-filter-chip.active{background:var(--danger);color:#fff;}
+.dm-group-stats{font-size:9.5px;color:var(--text-secondary);white-space:nowrap;}
 .dm-item-t{font-weight:700;font-size:13px;}
 .dm-item-s{font-size:11px;color:var(--text-secondary);margin-top:2px;}
 .dm-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(0,198,255,.12);color:var(--accent);border:1px solid rgba(0,198,255,.3);}
@@ -975,6 +993,12 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
         <div style="display:flex;gap:8px;margin-top:14px;">
           <input id="dmSearch" class="form-input" placeholder="Buscar por SAP, PN, descrição, cliente..." oninput="dmRenderList()" style="flex:1;">
           <button class="btn btn-sm btn-primary" onclick="dmNewProduct()" title="Novo produto dimensional" style="flex-shrink:0;">＋ Novo</button>
+        </div>
+        <div class="dm-list-toolbar" id="dmListToolbar">
+          <button class="dm-sort-btn active" data-sort="name" onclick="dmSetSort('name')">A–Z</button>
+          <button class="dm-sort-btn" data-sort="recent" onclick="dmSetSort('recent')">Recentes</button>
+          <button class="dm-sort-btn" data-sort="worst" onclick="dmSetSort('worst')">Piores</button>
+          <button class="dm-filter-chip" id="dmOnlyFailsBtn" onclick="dmToggleOnlyFails()">⛔ Só reprovações</button>
         </div>
         <div class="dm-list" id="dmList"></div>
       </div>
@@ -6640,22 +6664,77 @@ window.dmToggleGroup = function(key){
   dmRenderList();
 };
 
+function dmRelTime(ts){
+  if (!ts) return '';
+  const diffMin = Math.floor((Date.now() - ts) / 60000);
+  if (diffMin < 1) return 'agora';
+  if (diffMin < 60) return diffMin + 'min';
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return diffH + 'h';
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 30) return diffD + 'd';
+  const diffMo = Math.floor(diffD / 30);
+  if (diffMo < 12) return diffMo + 'm';
+  return Math.floor(diffMo / 12) + 'a';
+}
+/* Estatísticas de conformidade de UM produto (todas as abas/componentes) */
+function dmPartStats(p){
+  const rows = dmAllRowsOf(p);
+  const ok = rows.filter(r => (r.ok || '').toUpperCase().includes('OK')).length;
+  const nok = rows.filter(r => (r.nok || '').toUpperCase().includes('NOT')).length;
+  const total = rows.length;
+  const pct = (ok + nok) > 0 ? (ok / (ok + nok)) * 100 : null;
+  return { ok, nok, total, pct };
+}
+function dmHealthClass(pct){
+  if (pct === null) return 'health-none';
+  if (pct >= 95) return 'health-good';
+  if (pct >= 80) return 'health-warn';
+  return 'health-bad';
+}
 function dmItemHtml(p, opts){
   opts = opts || {};
+  const stats = opts.stats || dmPartStats(p);
+  const { ok, nok, total, pct } = stats;
+  const okPct = total ? (ok / total) * 100 : 0;
+  const nokPct = total ? (nok / total) * 100 : 0;
   const showRevBadge = opts.totalRevs && opts.totalRevs > 1;
   const revBadge = showRevBadge
     ? `<span class="dm-badge ${opts.isLatest ? 'dm-badge-active' : 'dm-badge-old'}">${opts.isLatest ? '✓ Ativa · ' : ''}Rev. ${p.revNum || 1}</span>`
     : '';
   return `
-    <div class="dm-item ${p.id === dmCurrentId ? 'active' : ''} ${showRevBadge && !opts.isLatest ? 'old-rev' : ''}" onclick="dmSelect('${p.id}')">
-      <div class="dm-item-t">${dmEsc(p.sap || p.pn || '(sem código)')}</div>
-      <div class="dm-item-s">${dmEsc(p.desc || p.pn || '—')}</div>
-      <div class="dm-item-s" style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
-        <span class="dm-badge">${(p.rows||[]).length} cotas</span>
+    <div class="dm-item ${dmHealthClass(pct)} ${p.id === dmCurrentId ? 'active' : ''} ${showRevBadge && !opts.isLatest ? 'old-rev' : ''}" onclick="dmSelect('${p.id}')">
+      <div class="dm-item-top">
+        <div style="min-width:0;">
+          <div class="dm-item-t">${dmEsc(p.sap || p.pn || '(sem código)')}</div>
+          <div class="dm-item-s">${dmEsc(p.desc || p.pn || '—')}</div>
+        </div>
+        <div class="dm-item-time" title="Última atualização">${dmRelTime(p.updatedAt)}</div>
+      </div>
+      <div class="dm-item-stats">
+        <span class="dm-item-stat" style="color:var(--text-secondary);">${total} cotas</span>
+        ${ok > 0 ? `<span class="dm-item-stat" style="color:var(--success);">${ok} OK</span>` : ''}
+        ${nok > 0 ? `<span class="dm-item-stat" style="color:var(--danger);">${nok} NOT OK</span>` : ''}
         ${revBadge}
       </div>
+      ${total > 0 ? `<div class="dm-health-bar"><div class="ok" style="width:${okPct}%"></div><div class="nok" style="width:${nokPct}%"></div></div>` : ''}
     </div>`;
 }
+
+/* Ordenação e filtro da lista lateral */
+let dmSortMode = 'name';
+let dmOnlyFails = false;
+window.dmSetSort = function(mode){
+  dmSortMode = mode;
+  document.querySelectorAll('#dmListToolbar .dm-sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === mode));
+  dmRenderList();
+};
+window.dmToggleOnlyFails = function(){
+  dmOnlyFails = !dmOnlyFails;
+  const btn = document.getElementById('dmOnlyFailsBtn');
+  if (btn) btn.classList.toggle('active', dmOnlyFails);
+  dmRenderList();
+};
 
 /* Grupos de revisão (por peça) que o usuário recolheu/expandiu — igual ao
    collapse de clientes, mas numa chave separada. */
@@ -6696,7 +6775,9 @@ function dmRenderList(){
 
   const collapsed = dmCollapsedSet();
   const revCollapsed = dmRevCollapsedSet();
-  box.innerHTML = clientKeys.map(key => {
+  let anyPartRendered = false;
+
+  const html = clientKeys.map(key => {
     const items = groups.get(key);
     const label = key === '__none__' ? 'Sem cliente' : key;
     const isCollapsed = collapsed.has(key);
@@ -6708,25 +6789,48 @@ function dmRenderList(){
       if (!byPart.has(ik)) byPart.set(ik, []);
       byPart.get(ik).push(p);
     });
-    const partKeys = [...byPart.keys()].sort((a, b) => {
-      const pa = byPart.get(a)[0], pb = byPart.get(b)[0];
-      return (pa.sap || pa.pn || '').localeCompare(pb.sap || pb.pn || '');
-    });
 
-    const partsHtml = partKeys.map(pk => {
+    // Monta info de cada peça: revisões ordenadas, a ativa, e suas estatísticas
+    let parts = [...byPart.keys()].map(pk => {
       const revs = byPart.get(pk).sort((a, b) => (b.revNum || 1) - (a.revNum || 1));
       const latest = revs[0];
-      const older = revs.slice(1);
-      const latestHtml = dmItemHtml(latest, { totalRevs: revs.length, isLatest: true });
-      if (!older.length) return latestHtml;
-      const rk = key + '|' + pk;
+      const stats = dmPartStats(latest);
+      return { pk, revs, latest, older: revs.slice(1), stats };
+    });
+
+    if (dmOnlyFails) parts = parts.filter(x => x.stats.nok > 0);
+    if (!parts.length) return '';
+
+    // Ordena as peças dentro do grupo conforme o modo escolhido
+    if (dmSortMode === 'recent') {
+      parts.sort((a, b) => (b.latest.updatedAt || 0) - (a.latest.updatedAt || 0));
+    } else if (dmSortMode === 'worst') {
+      parts.sort((a, b) => {
+        const pa = a.stats.pct === null ? 999 : a.stats.pct, pb = b.stats.pct === null ? 999 : b.stats.pct;
+        return pa - pb;
+      });
+    } else {
+      parts.sort((a, b) => (a.latest.sap || a.latest.pn || '').localeCompare(b.latest.sap || b.latest.pn || ''));
+    }
+
+    // Estatísticas agregadas do cliente (soma das revisões ativas)
+    let gOk = 0, gNok = 0, gTotal = 0;
+    parts.forEach(x => { gOk += x.stats.ok; gNok += x.stats.nok; gTotal += x.stats.total; });
+    const gPct = (gOk + gNok) > 0 ? Math.round((gOk / (gOk + gNok)) * 100) : null;
+    const gColor = gPct === null ? 'var(--text-secondary)' : gPct >= 95 ? 'var(--success)' : gPct >= 80 ? 'var(--warning)' : 'var(--danger)';
+
+    anyPartRendered = true;
+    const partsHtml = parts.map(x => {
+      const latestHtml = dmItemHtml(x.latest, { totalRevs: x.revs.length, isLatest: true, stats: x.stats });
+      if (!x.older.length) return latestHtml;
+      const rk = key + '|' + x.pk;
       const rCollapsed = !revCollapsed.has(rk); // colapsado por padrão
       return latestHtml + `
         <div class="dm-rev-toggle${rCollapsed ? ' collapsed' : ''}" onclick="dmToggleRevGroup('${rk.replace(/'/g,"\\'")}')">
-          <span class="dm-rev-toggle-arrow">▾</span> Ver revisões anteriores (${older.length})
+          <span class="dm-rev-toggle-arrow">▾</span> Ver revisões anteriores (${x.older.length})
         </div>
         <div class="dm-rev-older${rCollapsed ? ' collapsed' : ''}">
-          ${older.map(p => dmItemHtml(p, { totalRevs: revs.length, isLatest: false })).join('')}
+          ${x.older.map(p => dmItemHtml(p, { totalRevs: x.revs.length, isLatest: false })).join('')}
         </div>`;
     }).join('');
 
@@ -6735,11 +6839,14 @@ function dmRenderList(){
       <div class="dm-group-hd" onclick="dmToggleGroup('${key.replace(/'/g,"\\'")}')">
         <span class="dm-group-arrow">▾</span>
         <span class="dm-group-name">${dmEsc(label)}</span>
-        <span class="dm-group-count">${items.length}</span>
+        <span class="dm-group-stats">${gTotal} cotas${gPct !== null ? ` · <b style="color:${gColor}">${gPct}%</b>` : ''}</span>
+        <span class="dm-group-count">${parts.length}</span>
       </div>
       <div class="dm-group-items">${partsHtml}</div>
     </div>`;
   }).join('');
+
+  box.innerHTML = anyPartRendered ? html : `<div class="dm-empty" style="padding:22px 8px;">Nenhum produto com reprovações no momento. 🎉</div>`;
 }
 
 /* ---------- Render: editor ---------- */
