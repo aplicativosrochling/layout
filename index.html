@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <style>
@@ -7393,5 +7394,282 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 else dmInit();
 })();
 </script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   EXPORTAÇÃO EXCEL FORMATADA (espelha exatamente o layout da impressão/PDF)
+   Usa ExcelJS para gerar .xlsx com cores, bordas, mesclagens, larguras de
+   coluna e configuração de impressão (A4 paisagem, ajustar à largura).
+   Se o ExcelJS não estiver disponível, cai no exportador simples (XLSX).
+   ══════════════════════════════════════════════════════════════════════════ */
+(function(){
+  const C = {
+    navy:'FF0D2160', navy2:'FF1A3A8F', white:'FFFFFFFF', text:'FF1E2433',
+    grid:'FFDDE3F0', soft:'FFF4F7FC', lbl:'FF6B7280',
+    okBg:'FFE8F8EE', okTx:'FF0A6B2A', nokBg:'FFFDF0F0', nokTx:'FFC0392B',
+    openBg:'FFFEFCE8', openTx:'FF8A6D00'
+  };
+  const thin = {style:'thin', color:{argb:C.grid}};
+  const box  = {top:thin,left:thin,bottom:thin,right:thin};
+  const NCOL = 13;
+  const col = n => String.fromCharCode(64+n);
+  const S = v => (v==null?'':String(v));
+
+  function widths(){
+    let pct;
+    try { pct = window.liPrintColWidthsPct ? window.liPrintColWidthsPct() : null; } catch(e){ pct = null; }
+    if(!pct || pct.length < NCOL) pct = [5,26,9,11,7,7,6,6,6,6,6,7,7];
+    const tot = pct.reduce((s,v)=>s+v,0)||1;
+    return pct.slice(0,NCOL).map(v => Math.max(6, (v/tot)*175));
+  }
+
+  function setRow(ws, r, vals, opts){
+    opts = opts || {};
+    vals.forEach((v,i)=>{
+      const c = ws.getCell(r, i+1);
+      if(v !== undefined) c.value = v;
+      if(opts.style) opts.style(c, i+1);
+    });
+    if(opts.height) ws.getRow(r).height = opts.height;
+  }
+  function merge(ws, r1,c1,r2,c2){ try{ ws.mergeCells(r1,c1,r2,c2); }catch(e){} }
+  function paint(ws, r1,c1,r2,c2, fn){
+    for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) fn(ws.getCell(r,c), r, c);
+  }
+  function fill(argb){ return {type:'pattern', pattern:'solid', fgColor:{argb}}; }
+
+  function buildSheet(wb, sh, r, si, opts){
+    const hdr = sh.header || (window.liBlankHeader ? window.liBlankHeader(null) : {});
+    const st  = window.liStatsForRows ? window.liStatsForRows(sh.rows) : {ok:0,nok:0,total:(sh.rows||[]).length,pct:0};
+    const H   = Object.assign({}, window.DEFAULT_HEADERS||{}, r.headers||{});
+    const compName = sh.name || ('Componente ' + (si+1));
+    const decision = st.nok>0 ? 'Reprovado' : (st.ok>0 ? 'Aprovado' : 'Em aberto');
+    const decBg = decision==='Aprovado'?C.okBg:decision==='Reprovado'?C.nokBg:C.openBg;
+    const decTx = decision==='Aprovado'?C.okTx:decision==='Reprovado'?C.nokTx:C.openTx;
+    const docId = 'LI-' + S(hdr.partNumber||'—') + '-' + compName.replace(/\s+/g,'') + '-' + new Date().toISOString().slice(0,10).replace(/-/g,'');
+
+    let name = compName.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31) || ('Comp'+(si+1));
+    if(opts.used[name]){ opts.used[name]++; name = name.slice(0,28)+' '+opts.used[name]; } else opts.used[name]=1;
+
+    const ws = wb.addWorksheet(name, {
+      pageSetup:{ paperSize:9, orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0,
+                  horizontalCentered:true, margins:{left:0.3,right:0.3,top:0.4,bottom:0.4,header:0.2,footer:0.2} },
+      views:[{showGridLines:false}]
+    });
+    widths().forEach((w,i)=>{ ws.getColumn(i+1).width = w; });
+
+    /* ── Cabeçalho (faixa azul) ── */
+    merge(ws,1,1,3,3);
+    ws.getCell(1,1).value = { richText:[
+      {text:'  R   Röchling Automotive\n', font:{bold:true,size:14,color:{argb:C.white},name:'Arial'}},
+      {text:'      ' + (opts.isDimensional?'Dimensional Report':'Layout Inspection Report') + '\n', font:{size:9,color:{argb:'FFB9C6E8'},name:'Arial'}},
+      {text:'      Doc.: '+docId, font:{size:7,color:{argb:'FF93A5D6'},name:'Arial'}}
+    ]};
+    ws.getCell(1,1).alignment = {vertical:'middle', horizontal:'left', wrapText:true};
+
+    merge(ws,1,4,3,9);
+    ws.getCell(1,4).value = { richText:[
+      {text:S(hdr.title||'Evaluation Results — Layout Inspection')+'\n', font:{bold:true,size:13,color:{argb:C.white},name:'Arial'}},
+      {text:'Componente: '+compName+'\n', font:{size:9,color:{argb:'FFD6DEF5'},name:'Arial'}},
+      {text:(hdr.chkDim?'☑':'☐')+' Dimensional    '+(hdr.chkMat?'☑':'☐')+' Material    '+(hdr.chkOut?'☑':'☐')+' '+(hdr.outrosTxt?('Outros: '+hdr.outrosTxt):'Outros'),
+       font:{size:8,color:{argb:'FFD6DEF5'},name:'Arial'}}
+    ]};
+    ws.getCell(1,4).alignment = {vertical:'middle', horizontal:'center', wrapText:true};
+
+    merge(ws,1,10,1,13); ws.getCell(1,10).value = 'Report N°: ' + (S(hdr.reportN)||'—');
+    merge(ws,2,10,2,13); ws.getCell(2,10).value = 'Emitido: ' + new Date().toLocaleString('pt-BR');
+    merge(ws,3,10,3,13); ws.getCell(3,10).value = decision;
+    paint(ws,1,10,2,13,c=>{ c.font={size:9,color:{argb:C.white},bold:true,name:'Arial'}; c.alignment={vertical:'middle',horizontal:'right'}; });
+    const dc = ws.getCell(3,10);
+    dc.font={size:10,bold:true,color:{argb:decTx},name:'Arial'};
+    dc.fill=fill(decBg); dc.alignment={vertical:'middle',horizontal:'center'}; dc.border=box;
+
+    paint(ws,1,1,3,9,c=>{ c.fill=fill(C.navy); });
+    paint(ws,1,10,2,13,c=>{ c.fill=fill(C.navy2); });
+    ws.getCell(3,10).fill = fill(decBg);
+    [1,2,3].forEach(rr=> ws.getRow(rr).height = 22);
+
+    /* ── Grade de informações ── */
+    const info = [
+      [['Supplier',hdr.supplier],['Supplier Number',hdr.supplierNumber],['Part Number',hdr.partNumber],['Revision Level',hdr.revision]],
+      [['Inspection Department',hdr.inspDept],['Part Name',hdr.partName],['Customer',hdr.customer],['Date',hdr.signDate]]
+    ];
+    const spans = [[1,3],[4,6],[7,9],[10,13]];
+    info.forEach((line, li)=>{
+      const rr = 5 + li;
+      ws.getRow(rr).height = 30;
+      line.forEach((pair, pi)=>{
+        const sp = spans[pi];
+        merge(ws, rr, sp[0], rr, sp[1]);
+        const c = ws.getCell(rr, sp[0]);
+        c.value = { richText:[
+          {text: pair[0] + '\n', font:{size:7.5, color:{argb:C.lbl}, name:'Arial'}},
+          {text: S(pair[1]) || '—', font:{size:10, bold:true, color:{argb:C.text}, name:'Arial'}}
+        ]};
+        c.alignment = {vertical:'middle', horizontal:'left', wrapText:true, indent:1};
+        c.fill = fill(C.soft);
+      });
+      paint(ws, rr,1,rr,NCOL, c=>{ c.border=box; });
+    });
+
+    /* ── Título de seção ── */
+    let R = 8;
+    merge(ws,R,1,R,NCOL);
+    ws.getCell(R,1).value = 'Dimensional Results';
+    ws.getCell(R,1).font = {bold:true,size:10,color:{argb:C.white},name:'Arial'};
+    paint(ws,R,1,R,NCOL,c=>{ c.fill=fill(C.navy2); c.alignment={vertical:'middle'}; });
+    ws.getRow(R).height = 18;
+
+    /* ── Cabeçalho da tabela (2 linhas) ── */
+    const h = k => S(H[k] != null ? H[k] : k);
+    const R1 = R+1, R2 = R+2;
+    [[1,'item'],[2,'char'],[3,'nominal'],[4,'spec']].forEach(([c,k])=>{ merge(ws,R1,c,R2,c); ws.getCell(R1,c).value = h(k); });
+    merge(ws,R1,5,R1,6);  ws.getCell(R1,5).value = h('tolerance');
+    merge(ws,R1,7,R1,11); ws.getCell(R1,7).value = h('results');
+    merge(ws,R1,12,R2,12); ws.getCell(R1,12).value = h('ok');
+    merge(ws,R1,13,R2,13); ws.getCell(R1,13).value = h('nok');
+    ws.getCell(R2,5).value = h('low'); ws.getCell(R2,6).value = h('upper');
+    ['m0','m1','m2','m3','m4'].forEach((k,i)=>{ ws.getCell(R2,7+i).value = h(k); });
+    paint(ws,R1,1,R2,NCOL,c=>{
+      c.fill = fill(C.navy2);
+      c.font = {bold:true,size:8,color:{argb:C.white},name:'Arial'};
+      c.alignment = {vertical:'middle',horizontal:'center',wrapText:true};
+      c.border = {top:thin,left:thin,bottom:thin,right:thin};
+    });
+    ws.getRow(R1).height = 20; ws.getRow(R2).height = 16;
+
+    /* ── Linhas de dados (com mesclagens da tela) ── */
+    const FIELDS = window.LI_MERGE_FIELDS || ['item','char','nominal','spec','low','upper','m0','m1','m2','m3','m4','ok','nok'];
+    const rows = sh.rows || [];
+    const D0 = R2 + 1;
+    rows.forEach((row, ri)=>{
+      const rr = D0 + ri;
+      const vals = [row.item,row.char,row.nominal,row.spec,row.low,row.upper,
+        ...(row.m||['','','','','']), row.ok?('✓ '+row.ok):'', row.nok?('✗ '+row.nok):''];
+      vals.forEach((v,i)=>{ ws.getCell(rr,i+1).value = (v===''||v==null)?null:v; });
+      const bg = row.nok ? C.nokBg : (row.ok ? C.okBg : null);
+      paint(ws,rr,1,rr,NCOL,(c,_r,ci)=>{
+        c.font = {size:9,color:{argb:C.text},name:'Arial'};
+        c.alignment = {vertical:'middle', horizontal: ci===2 ? 'left':'center', wrapText:true};
+        c.border = box;
+        if(bg) c.fill = fill(bg);
+      });
+      ws.getCell(rr,12).font = {size:9,bold:true,color:{argb:C.okTx},name:'Arial'};
+      ws.getCell(rr,13).font = {size:9,bold:true,color:{argb:C.nokTx},name:'Arial'};
+      ws.getRow(rr).height = 18;
+      // rowspan
+      FIELDS.forEach((f,ci)=>{
+        const n = window.liSpanOf ? window.liSpanOf(row,f) : 1;
+        if(n>1) merge(ws, rr, ci+1, D0+Math.min(ri+n-1, rows.length-1), ci+1);
+      });
+      // colspan
+      if(row._colSpan) Object.entries(row._colSpan).forEach(([f,cn])=>{
+        if(cn<=1) return;
+        const ci = FIELDS.indexOf(f); if(ci<0) return;
+        merge(ws, rr, ci+1, rr, Math.min(ci+cn, NCOL));
+      });
+    });
+
+    /* ── Resumo ── */
+    let RR = D0 + rows.length + 1;
+    const cards = [['Itens avaliados', st.total, null], ['OK', st.ok, C.okBg], ['Not OK', st.nok, C.nokBg], ['Conformidade', st.pct+'%', null]];
+    const cSpans = [[1,3],[4,6],[7,9],[10,13]];
+    cards.forEach((cd, i)=>{
+      const sp = cSpans[i];
+      merge(ws, RR, sp[0], RR, sp[1]);
+      const c = ws.getCell(RR, sp[0]);
+      c.value = cd[0] + ': ' + cd[1];
+      c.font = {bold:true, size:11, color:{argb: cd[2]===C.okBg?C.okTx : cd[2]===C.nokBg?C.nokTx : C.text}, name:'Arial'};
+      c.alignment = {vertical:'middle', horizontal:'center'};
+      c.fill = fill(cd[2] || C.soft);
+      paint(ws, RR, sp[0], RR, sp[1], x=>{ x.border=box; });
+    });
+    ws.getRow(RR).height = 24;
+
+    /* ── Observações ── */
+    RR += 2;
+    merge(ws,RR,1,RR,NCOL);
+    ws.getCell(RR,1).value = 'Observações';
+    paint(ws,RR,1,RR,NCOL,c=>{ c.fill=fill(C.navy2); c.font={bold:true,size:10,color:{argb:C.white},name:'Arial'}; c.alignment={vertical:'middle'}; });
+    ws.getRow(RR).height = 18;
+    RR += 1;
+    merge(ws,RR,1,RR+1,NCOL);
+    ws.getCell(RR,1).value = S(hdr.obs) || '—';
+    paint(ws,RR,1,RR+1,NCOL,c=>{ c.border=box; c.font={size:9,color:{argb:C.text},name:'Arial'}; c.alignment={vertical:'top',wrapText:true}; });
+    ws.getRow(RR).height = 20; ws.getRow(RR+1).height = 20;
+
+    /* ── Assinaturas ── */
+    RR += 3;
+    const sig = [['Name', hdr.signName], ['Title', hdr.signTitle], ['Date', hdr.signDate]];
+    const sSpans = [[1,4],[5,9],[10,13]];
+    sig.forEach((s2,i)=>{
+      const sp = sSpans[i];
+      merge(ws, RR, sp[0], RR, sp[1]);
+      merge(ws, RR+1, sp[0], RR+1, sp[1]);
+      ws.getCell(RR, sp[0]).value = s2[0];
+      ws.getCell(RR, sp[0]).font = {size:8, color:{argb:C.lbl}, name:'Arial'};
+      ws.getCell(RR, sp[0]).fill = fill(C.soft);
+      ws.getCell(RR+1, sp[0]).value = S(s2[1]) || ' ';
+      ws.getCell(RR+1, sp[0]).font = {size:10, bold:true, color:{argb:C.text}, name:'Arial'};
+      paint(ws, RR, sp[0], RR+1, sp[1], c=>{ c.border=box; c.alignment=Object.assign({vertical:'middle'}, c.alignment||{}); });
+    });
+    ws.getRow(RR).height = 16; ws.getRow(RR+1).height = 24;
+
+    /* ── Rodapé ── */
+    RR += 3;
+    merge(ws,RR,1,RR,NCOL);
+    ws.getCell(RR,1).value = 'Röchling Automotive do Brasil Ltda · Av. Emílio Chechinato, 4195 · Itupeva-SP 13295-000 · +55 11 4496-8420   |   ⚠ Documento Confidencial — Uso Interno   |   Doc. ID: ' + docId;
+    paint(ws,RR,1,RR,NCOL,c=>{ c.font={size:7,color:{argb:C.lbl},name:'Arial'}; c.alignment={vertical:'middle',horizontal:'center'}; c.border={top:thin}; });
+    ws.getRow(RR).height = 16;
+
+    ws.pageSetup.printTitlesRow = R1 + ':' + R2;
+  }
+
+  window.liExportFormattedExcel = async function(report, filename, isDimensional){
+    if(typeof ExcelJS === 'undefined') return false;
+    const r = report;
+    const sheets = (r.sheets && r.sheets.length) ? r.sheets : [{name:'Layout', rows:r.rows||[], header:(window.liBlankHeader?window.liBlankHeader(null):{})}];
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Röchling Automotive'; wb.created = new Date();
+    const opts = {used:{}, isDimensional:!!isDimensional};
+    sheets.forEach((sh, i)=> buildSheet(wb, sh, r, i, opts));
+    const buf = await wb.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    return true;
+  };
+
+  /* ── Substitui os exportadores existentes ── */
+  const liLegacy = window.liExportSheetExcel;
+  window.liExportSheetExcel = function(){
+    try{
+      if(typeof liCollect === 'function') liCollect();
+      if(typeof window.liCollectSilent === 'function') window.liCollectSilent();
+      if(typeof liSyncActiveSheet === 'function') liSyncActiveSheet();
+    }catch(e){}
+    const r = window.liGetReport ? window.liGetReport(window.liCurrent) : null;
+    if(!r) return;
+    const pn = (r.sheets && r.sheets[0] && r.sheets[0].header && r.sheets[0].header.partNumber) || 'relatorio';
+    window.liExportFormattedExcel(r, 'checklist_layout_'+pn+'.xlsx', false).then(ok=>{
+      if(ok){ if(window.liToast) liToast('Excel formatado exportado ✔','success'); }
+      else if(typeof liLegacy === 'function'){ liLegacy(); }
+    }).catch(err=>{ console.error(err); if(typeof liLegacy === 'function') liLegacy(); });
+  };
+
+  const dmLegacy = window.dmExportExcel;
+  window.dmExportExcel = function(){
+    const p = window.dmGetCurrent ? window.dmGetCurrent() : null; if(!p) return;
+    if(window.dmSyncHeaderToReport) window.dmSyncHeaderToReport(p);
+    const rep = window.dmEnsureReport ? window.dmEnsureReport(p) : null; if(!rep) { if(typeof dmLegacy==='function') dmLegacy(); return; }
+    const r = { activeSheet: rep.activeSheet, rows: p.rows || [], headers: rep.headers || window.DEFAULT_HEADERS, sheets: rep.sheets };
+    window.liExportFormattedExcel(r, 'dimensional_' + (p.sap || p.pn || 'produto') + '.xlsx', true).then(ok=>{
+      if(ok){ if(window.dmToast) dmToast('Excel formatado exportado'); }
+      else if(typeof dmLegacy === 'function'){ dmLegacy(); }
+    }).catch(err=>{ console.error(err); if(typeof dmLegacy === 'function') dmLegacy(); });
+  };
+})();
+</script>
+
 </body>
 </html>
