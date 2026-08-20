@@ -237,6 +237,17 @@ canvas{cursor:default;}
 .dm-item-t{font-weight:700;font-size:13px;}
 .dm-item-s{font-size:11px;color:var(--text-secondary);margin-top:2px;}
 .dm-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(0,198,255,.12);color:var(--accent);border:1px solid rgba(0,198,255,.3);}
+.dm-ring-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px 0 6px;}
+.dm-ring{width:148px;height:148px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient(var(--border) 0deg,var(--border) 360deg);transition:background 0.4s;}
+.dm-ring::before{content:'';position:absolute;inset:14px;border-radius:50%;background:var(--card);}
+.dm-ring-val{position:relative;z-index:1;font-family:'Syne',sans-serif;font-size:26px;font-weight:800;}
+.dm-ring-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.7px;}
+.dm-rank-item{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px;background:var(--card2);border:1px solid var(--border);}
+.dm-rank-num{width:28px;height:28px;border-radius:50%;background:rgba(255,61,87,.13);color:var(--danger);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;}
+.dm-rank-info{flex:1;min-width:0;}
+.dm-rank-title{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dm-rank-sub{font-size:10.5px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dm-rank-count{font-size:11px;font-weight:800;color:var(--danger);background:rgba(255,61,87,.1);padding:3px 9px;border-radius:20px;flex-shrink:0;white-space:nowrap;}
 .dm-badge-active{background:rgba(34,197,94,.14);color:var(--success);border:1px solid rgba(34,197,94,.35);}
 .dm-badge-old{background:rgba(148,163,184,.14);color:var(--text-secondary);border:1px solid rgba(148,163,184,.3);}
 .dm-item.old-rev{opacity:.72;}
@@ -756,6 +767,9 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
     <div class="nav-item" id="navDim" onclick="switchView('dimensionais',this)">
       <span class="nav-icon">📏</span><span>Dimensionais</span>
     </div>
+    <div class="nav-item" id="navDimDash" onclick="switchView('dimdash',this)">
+      <span class="nav-icon">📊</span><span>Dash. Dimensional</span>
+    </div>
   </nav>
   <div class="sidebar-footer">
     <div id="loggedUserBox" style="display:none;font-size:11px;text-align:center;margin-bottom:8px;color:var(--text-secondary);">
@@ -1061,6 +1075,61 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD DIMENSIONAL — visão geral das peças/revisões cadastradas ===== -->
+  <div id="view-dimdash" class="content" style="display:none;">
+    <div style="margin-bottom:18px;">
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">📊 Dashboard — Dimensionais</div>
+      <div style="font-size:13px;color:var(--text-secondary);">Visão geral de conformidade das peças cadastradas (sempre com base na revisão ativa de cada peça)</div>
+    </div>
+    <div class="metrics-grid" id="dmDashMetrics"></div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div><div class="chart-title">Conformidade Geral</div><div class="chart-sub">Cotas aprovadas / cotas avaliadas</div></div>
+        </div>
+        <div class="dm-ring-wrap"><div class="dm-ring" id="dmRingConf"><span class="dm-ring-val" id="dmRingConfVal">0%</span></div><div class="dm-ring-label">Conformidade</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div><div class="chart-title">Cotas Avaliadas</div><div class="chart-sub">Com resultado lançado / total cadastradas</div></div>
+        </div>
+        <div class="dm-ring-wrap"><div class="dm-ring" id="dmRingEval"><span class="dm-ring-val" id="dmRingEvalVal">0%</span></div><div class="dm-ring-label">Avaliadas</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div><div class="chart-title">Peças com Mais Reprovações</div><div class="chart-sub">Somando todas as cotas da revisão ativa</div></div>
+        </div>
+        <div id="dmDashTop3" style="display:flex;flex-direction:column;gap:8px;padding:4px 2px;"></div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <div><div class="chart-title">Atividade por Mês</div><div class="chart-sub">Peças/revisões criadas ou atualizadas nos últimos 12 meses</div></div>
+        </div>
+        <div class="chart-body"><canvas id="dmDashMonthlyChart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-top:18px;">
+      <div class="chart-header">
+        <div><div class="chart-title">Detalhamento por Cliente</div><div class="chart-sub">Peças, cotas, aprovadas, reprovadas e % de conformidade — revisão ativa de cada peça</div></div>
+      </div>
+      <div style="overflow:auto;">
+        <table class="li-tbl" id="dmDashClientTable" style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Cliente</th>
+              <th style="text-align:center;">Peças</th>
+              <th style="text-align:center;">Cotas</th>
+              <th style="text-align:center;">Aprovadas</th>
+              <th style="text-align:center;">Reprovadas</th>
+              <th style="text-align:center;">% Conformidade</th>
+            </tr>
+          </thead>
+          <tbody id="dmDashClientTableBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -1913,16 +1982,19 @@ function switchView(view, el) {
   const ov = document.getElementById('checklistOverlay');
   if (ov) ov.classList.remove('active');
   document.body.classList.remove('cl-open');
-  ['layout','layoutdash','dimensionais'].forEach(v => {
+  ['layout','layoutdash','dimensionais','dimdash'].forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.style.display = v === view ? '' : 'none';
   });
-  const titles = {layout:'Cronograma de Inspeção de Layout', layoutdash:'Dashboard — Inspeção de Layout', dimensionais:'Dimensionais dos Produtos'};
+  const titles = {layout:'Cronograma de Inspeção de Layout', layoutdash:'Dashboard — Inspeção de Layout', dimensionais:'Dimensionais dos Produtos', dimdash:'Dashboard — Dimensionais'};
   document.getElementById('viewTitle').textContent = titles[view] || view;
   if (view === 'layout') { updateLayoutFilterOptions(); filterLayout(); }
   if (view === 'layoutdash') renderLayoutDash();
   if (view === 'dimensionais') {
     if (typeof window.dmRenderAll === 'function') window.dmRenderAll();
+  }
+  if (view === 'dimdash') {
+    if (typeof window.dmRenderDash === 'function') window.dmRenderDash();
   }
   updateTopbarForView(view);
 }
@@ -7067,12 +7139,147 @@ function dmInit(){
 }
 
 /* ---------- Exposição global (handlers inline) ---------- */
+/* ---------- Dashboard Dimensional ---------- */
+/* Todas as linhas (cotas) de um produto, somando todos os componentes/abas —
+   não só a aba ativa (p.rows), já que um produto pode ter vários componentes. */
+function dmAllRowsOf(p){
+  if (p.report && Array.isArray(p.report.sheets) && p.report.sheets.length) {
+    return p.report.sheets.reduce((acc, sh) => acc.concat(sh.rows || []), []);
+  }
+  return p.rows || [];
+}
+/* Só a revisão mais recente de cada peça (mesma regra de identidade usada
+   na lista lateral) — é isso que deve alimentar as métricas do dashboard,
+   pra não misturar reprovações antigas já corrigidas em revisões novas. */
+function dmActiveProducts(){
+  const map = new Map();
+  dmProducts.forEach(p => {
+    const k = dmIdentityKey(p);
+    const cur = map.get(k);
+    if (!cur || (p.revNum || 1) > (cur.revNum || 1)) map.set(k, p);
+  });
+  return [...map.values()];
+}
+function dmDashStats(){
+  const active = dmActiveProducts();
+  let ok = 0, nok = 0, total = 0;
+  const perPart = active.map(p => {
+    const rows = dmAllRowsOf(p);
+    const pOk = rows.filter(r => (r.ok || '').toUpperCase().includes('OK')).length;
+    const pNok = rows.filter(r => (r.nok || '').toUpperCase().includes('NOT')).length;
+    ok += pOk; nok += pNok; total += rows.length;
+    return { p, ok: pOk, nok: pNok, total: rows.length };
+  });
+  return { active, ok, nok, total, perPart };
+}
+function dmSetRing(ringId, valId, pct, colorVar){
+  const ring = document.getElementById(ringId), val = document.getElementById(valId);
+  if (!ring || !val) return;
+  const p = Math.max(0, Math.min(100, pct));
+  ring.style.background = `conic-gradient(var(${colorVar}) ${p * 3.6}deg, var(--border) 0deg)`;
+  val.textContent = (Math.round(p * 10) / 10) + '%';
+}
+let dmDashMonthlyChart = null;
+function dmRenderDash(){
+  const box = document.getElementById('dmDashMetrics');
+  if (!box) return; // view ainda não está no DOM
+  const { active, ok, nok, total, perPart } = dmDashStats();
+  const confPct = (ok + nok) > 0 ? (ok / (ok + nok)) * 100 : 0;
+  const evalPct = total > 0 ? ((ok + nok) / total) * 100 : 0;
+
+  box.innerHTML = [
+    ['📏', 'blue', active.length, 'Peças Cadastradas'],
+    ['🧾', 'purple', dmProducts.length, 'Revisões no Total'],
+    ['📐', 'blue', total, 'Cotas na Revisão Ativa'],
+    ['✅', 'green', ok, 'Aprovadas'],
+    ['⛔', 'red', nok, 'Reprovadas']
+  ].map(([icon, color, val, label]) =>
+    `<div class="metric-card"><div class="metric-icon ${color}">${icon}</div><div class="metric-value">${val}</div><div class="metric-label">${label}</div></div>`
+  ).join('');
+
+  dmSetRing('dmRingConf', 'dmRingConfVal', confPct, '--success');
+  dmSetRing('dmRingEval', 'dmRingEvalVal', evalPct, '--accent');
+
+  // Top 3 peças com mais reprovações (revisão ativa)
+  const top3Box = document.getElementById('dmDashTop3');
+  if (top3Box) {
+    const ranked = perPart.filter(x => x.nok > 0).sort((a, b) => b.nok - a.nok).slice(0, 3);
+    top3Box.innerHTML = ranked.length ? ranked.map((x, i) => `
+      <div class="dm-rank-item">
+        <div class="dm-rank-num">${i + 1}º</div>
+        <div class="dm-rank-info">
+          <div class="dm-rank-title">${dmEsc(x.p.sap || x.p.pn || '(sem código)')}</div>
+          <div class="dm-rank-sub">${dmEsc(x.p.desc || x.p.client || '—')} · Rev. ${x.p.revNum || 1}</div>
+        </div>
+        <div class="dm-rank-count">${x.nok} reprov.</div>
+      </div>`).join('')
+      : `<div class="dm-empty" style="padding:18px 8px;font-size:12px;">🎉 Nenhuma reprovação nas revisões ativas.</div>`;
+  }
+
+  // Atividade por mês (últimos 12 meses, por updatedAt de cada revisão)
+  const chartEl = document.getElementById('dmDashMonthlyChart');
+  if (chartEl && window.Chart) {
+    const now = new Date();
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: d.getFullYear() + '-' + d.getMonth(), label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '') });
+    }
+    const counts = months.map(m => 0);
+    dmProducts.forEach(p => {
+      if (!p.updatedAt) return;
+      const d = new Date(p.updatedAt);
+      const key = d.getFullYear() + '-' + d.getMonth();
+      const idx = months.findIndex(m => m.key === key);
+      if (idx >= 0) counts[idx]++;
+    });
+    if (dmDashMonthlyChart) dmDashMonthlyChart.destroy();
+    dmDashMonthlyChart = new Chart(chartEl, {
+      type: 'bar',
+      data: {
+        labels: months.map(m => m.label),
+        datasets: [{ label: 'Revisões atualizadas', data: counts, backgroundColor: 'rgba(0,198,255,.55)', borderRadius: 5, maxBarThickness: 34 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  // Detalhamento por cliente (revisão ativa)
+  const tbody = document.getElementById('dmDashClientTableBody');
+  if (tbody) {
+    const byClient = new Map();
+    perPart.forEach(x => {
+      const key = (x.p.client || '').trim() || 'Sem cliente';
+      if (!byClient.has(key)) byClient.set(key, { parts: 0, ok: 0, nok: 0, total: 0 });
+      const c = byClient.get(key);
+      c.parts++; c.ok += x.ok; c.nok += x.nok; c.total += x.total;
+    });
+    const rows = [...byClient.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    tbody.innerHTML = rows.length ? rows.map(([client, c]) => {
+      const pct = (c.ok + c.nok) > 0 ? Math.round((c.ok / (c.ok + c.nok)) * 1000) / 10 : 0;
+      const color = pct >= 95 ? 'var(--success)' : pct >= 80 ? 'var(--warning)' : 'var(--danger)';
+      return `<tr>
+        <td style="text-align:left;">${dmEsc(client)}</td>
+        <td style="text-align:center;">${c.parts}</td>
+        <td style="text-align:center;">${c.total}</td>
+        <td style="text-align:center;color:var(--success);">${c.ok}</td>
+        <td style="text-align:center;color:var(--danger);">${c.nok}</td>
+        <td style="text-align:center;font-weight:700;color:${color};">${pct}%</td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="6" class="dm-empty">Nenhum produto cadastrado.</td></tr>`;
+  }
+}
+
 Object.assign(window, {
   dmRenderList, dmRenderAll, dmSelect, dmNewProduct, dmHeadChange, dmRowChange,
   dmAddRow, dmDuplicateLast, dmDelRow, dmDuplicateProduct, dmDeleteProduct,
   dmExportExcel, dmExportCSV, dmPrint,
   dmOpenChecklist, dmImportChecklist, dmSwitchSheet, dmAddSheet, dmRenameSheet, dmDelSheet,
-  dmChecklistInfo, dmReadChecklistRecord, dmSaveChecklistRecord
+  dmChecklistInfo, dmReadChecklistRecord, dmSaveChecklistRecord, dmRenderDash
 });
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', dmInit);
