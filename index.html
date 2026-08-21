@@ -232,8 +232,8 @@ canvas{cursor:default;}
 .dm-wrap>.dm-panel{min-width:0;}
 .dm-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm);}
 .dm-list{display:flex;flex-direction:column;gap:7px;max-height:66vh;overflow-y:auto;margin-top:10px;}
-.dm-item{padding:10px 12px 10px 13px;border:1px solid var(--border);border-left:3px solid var(--border);border-radius:11px;background:var(--card2);cursor:pointer;transition:all .15s;}
-.dm-item:hover{border-color:var(--border-hover);transform:translateX(2px);}
+.dm-item{padding:11px 13px 11px 14px;border:1px solid var(--border);border-left:3px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer;transition:all .15s;}
+.dm-item:hover{border-color:var(--accent);transform:translateX(2px);box-shadow:var(--shadow-sm);}
 .dm-item.active{background:rgba(0,198,255,.08);box-shadow:0 0 0 1.5px var(--accent);}
 .dm-item.health-good{border-left-color:var(--success);}
 .dm-item.health-warn{border-left-color:var(--warning);}
@@ -253,8 +253,19 @@ canvas{cursor:default;}
 .dm-filter-chip{font-size:10px;padding:5px 9px;border-radius:20px;border:1px solid rgba(255,61,87,.35);background:transparent;color:var(--danger);cursor:pointer;font-weight:700;white-space:nowrap;margin-left:auto;transition:all .15s;}
 .dm-filter-chip.active{background:var(--danger);color:#fff;}
 .dm-group-stats{font-size:9.5px;color:var(--text-secondary);white-space:nowrap;}
-.dm-item-t{font-weight:700;font-size:13px;}
-.dm-item-s{font-size:11px;color:var(--text-secondary);margin-top:2px;}
+.dm-item-t{font-weight:800;font-size:13.5px;letter-spacing:.1px;}
+.dm-item-s{font-size:11px;color:var(--text-secondary);margin-top:3px;line-height:1.35;}
+
+/* ---------- Barra de clientes (chips filtráveis) ---------- */
+.dm-client-bar{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px;padding-bottom:2px;}
+.dm-client-chip{display:flex;align-items:center;gap:6px;padding:5px 10px 5px 6px;border-radius:20px;border:1px solid var(--border);background:var(--card2);cursor:pointer;font-size:10.5px;font-weight:700;color:var(--text-secondary);transition:all .15s;}
+.dm-client-chip:hover{border-color:var(--border-hover);color:var(--text);}
+.dm-client-chip.active{border-color:var(--accent);background:rgba(0,198,255,.1);color:var(--text);box-shadow:0 0 0 1px var(--accent);}
+.dm-client-chip-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:800;color:#fff;flex-shrink:0;}
+.dm-client-chip-all{font-size:12px;width:18px;text-align:center;flex-shrink:0;}
+.dm-client-chip-name{white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+.dm-client-chip-count{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0 6px;font-size:9.5px;color:var(--text-secondary);font-weight:700;}
+.dm-client-chip-pct{font-weight:800;font-size:10px;}
 .dm-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(0,198,255,.12);color:var(--accent);border:1px solid rgba(0,198,255,.3);}
 .dm-ring-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px 0 6px;}
 .dm-ring{width:148px;height:148px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient(var(--border) 0deg,var(--border) 360deg);transition:background 0.4s;}
@@ -308,16 +319,25 @@ table.dm-table select option{background:var(--card);color:var(--text);}
 .dm-crit-critica{color:var(--danger);}
 .dm-crit-significativa{color:var(--warning);}
 .dm-empty{padding:40px 20px;text-align:center;color:var(--text-secondary);font-size:13px;}
-.dm-group{margin-top:4px;}
+.dm-group{margin-top:14px;border-radius:14px;border:1px solid var(--border);background:var(--card2);overflow:hidden;}
 .dm-group:first-child{margin-top:0;}
-.dm-group-hd{display:flex;align-items:center;gap:8px;padding:7px 4px;cursor:pointer;user-select:none;}
-.dm-group-hd:hover .dm-group-name{color:var(--accent);}
+.dm-group-hd{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;position:sticky;top:0;z-index:3;background:var(--card2);border-bottom:1px solid var(--border);transition:background .15s;}
+.dm-group-hd:hover{background:var(--card);}
+.dm-group-avatar{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.dm-group-info{flex:1;min-width:0;}
+.dm-group-name{font-size:12.5px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dm-group-meta{font-size:10px;color:var(--text-secondary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dm-group-side{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.dm-group-nok-badge{font-size:9.5px;font-weight:800;color:var(--danger);background:rgba(255,61,87,.12);border:1px solid rgba(255,61,87,.3);padding:2px 7px;border-radius:20px;white-space:nowrap;}
+.dm-group-pct{font-size:12px;font-weight:800;white-space:nowrap;min-width:34px;text-align:right;}
 .dm-group-arrow{font-size:10px;color:var(--text-secondary);transition:transform .15s;flex-shrink:0;}
 .dm-group.collapsed .dm-group-arrow{transform:rotate(-90deg);}
-.dm-group-name{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text);flex:1;}
 .dm-group-count{font-size:10px;color:var(--text-secondary);background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:1px 8px;}
-.dm-group-items{display:flex;flex-direction:column;gap:7px;}
-.dm-group.collapsed .dm-group-items{display:none;}
+.dm-group-healthbar{height:3px;background:var(--border);display:flex;}
+.dm-group-healthbar .ok{background:var(--success);height:100%;}
+.dm-group-healthbar .nok{background:var(--danger);height:100%;}
+.dm-group-items{display:flex;flex-direction:column;gap:8px;padding:10px;}
+.dm-group.collapsed .dm-group-items,.dm-group.collapsed .dm-group-healthbar{display:none;}
 .dm-head-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
 .dm-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
 .dm-stat{flex:1;min-width:110px;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
@@ -995,6 +1015,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
           <input id="dmSearch" class="form-input" placeholder="Buscar por SAP, PN, descrição, cliente..." oninput="dmRenderList()" style="flex:1;">
           <button class="btn btn-sm btn-primary" onclick="dmNewProduct()" title="Novo produto dimensional" style="flex-shrink:0;">＋ Novo</button>
         </div>
+        <div class="dm-client-bar" id="dmClientBar" style="display:none;"></div>
         <div class="dm-list-toolbar" id="dmListToolbar">
           <button class="dm-sort-btn active" data-sort="name" onclick="dmSetSort('name')">A–Z</button>
           <button class="dm-sort-btn" data-sort="recent" onclick="dmSetSort('recent')">Recentes</button>
@@ -6928,12 +6949,91 @@ window.dmToggleRevGroup = function(key){
   dmRenderList();
 };
 
+/* ---------- Barra de clientes (chips) ---------- */
+const DM_CLIENT_PALETTE = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#3b82f6'];
+function dmClientInitials(name){
+  const words = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '?';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+function dmClientColor(name){
+  const s = name || '';
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  return DM_CLIENT_PALETTE[hash % DM_CLIENT_PALETTE.length];
+}
+/* Resume, por cliente, quantas peças (identidades SAP/PN distintas — ignora
+   revisões antigas) e a conformidade agregada (com base na revisão ATIVA de
+   cada peça). Usado tanto pela barra de chips quanto pelos cartões de grupo. */
+function dmClientSummaries(list){
+  const groups = new Map();
+  list.forEach(p => {
+    const key = (p.client || '').trim() || '__none__';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+  const out = [];
+  groups.forEach((items, key) => {
+    const byPart = new Map();
+    items.forEach(p => {
+      const ik = dmIdentityKey(p);
+      if (!byPart.has(ik)) byPart.set(ik, []);
+      byPart.get(ik).push(p);
+    });
+    let ok = 0, nok = 0, total = 0;
+    byPart.forEach(revs => {
+      const latest = revs.slice().sort((a, b) => (b.revNum || 1) - (a.revNum || 1))[0];
+      const st = dmPartStats(latest);
+      ok += st.ok; nok += st.nok; total += st.total;
+    });
+    const pct = (ok + nok) > 0 ? Math.round((ok / (ok + nok)) * 100) : null;
+    out.push({ key, label: key === '__none__' ? 'Sem cliente' : key, parts: byPart.size, ok, nok, total, pct });
+  });
+  return out.sort((a, b) => {
+    if (a.key === '__none__') return 1;
+    if (b.key === '__none__') return -1;
+    return b.parts - a.parts || a.label.localeCompare(b.label);
+  });
+}
+let dmActiveClient = null; // null = todos os clientes
+window.dmSetClientFilter = function(key){
+  dmActiveClient = (dmActiveClient === key) ? null : key;
+  dmRenderList();
+};
+function dmRenderClientBar(list){
+  const bar = document.getElementById('dmClientBar');
+  if (!bar) return;
+  const summaries = dmClientSummaries(list);
+  if (summaries.length <= 1) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = 'flex';
+  const totalParts = summaries.reduce((a, s) => a + s.parts, 0);
+  let html = `<button class="dm-client-chip${!dmActiveClient ? ' active' : ''}" onclick="dmSetClientFilter(null)" title="Mostrar todos os clientes">` +
+    `<span class="dm-client-chip-all">🗂</span><span class="dm-client-chip-name">Todos</span>` +
+    `<span class="dm-client-chip-count">${totalParts}</span></button>`;
+  html += summaries.map(s => {
+    const active = dmActiveClient === s.key;
+    const pctColor = s.pct === null ? 'var(--text-secondary)' : s.pct >= 95 ? 'var(--success)' : s.pct >= 80 ? 'var(--warning)' : 'var(--danger)';
+    return `<button class="dm-client-chip${active ? ' active' : ''}" onclick="dmSetClientFilter('${s.key.replace(/'/g, "\\'")}')" title="${dmEsc(s.label)} — ${s.parts} peça(s)">` +
+      `<span class="dm-client-chip-avatar" style="background:${dmClientColor(s.label)}">${dmEsc(dmClientInitials(s.label))}</span>` +
+      `<span class="dm-client-chip-name">${dmEsc(s.label)}</span>` +
+      `<span class="dm-client-chip-count">${s.parts}</span>` +
+      (s.pct !== null ? `<span class="dm-client-chip-pct" style="color:${pctColor}">${s.pct}%</span>` : '') +
+      `</button>`;
+  }).join('');
+  bar.innerHTML = html;
+}
+
 function dmRenderList(){
   const box = document.getElementById('dmList');
   if (!box) return;
   const q = (document.getElementById('dmSearch')?.value || '').toLowerCase().trim();
   const list = dmProducts
     .filter(p => !q || [p.sap,p.pn,p.desc,p.client,p.rev].join(' ').toLowerCase().includes(q));
+  // Barra de clientes: reflete a busca, mas não o filtro "Só reprovações" nem
+  // o próprio filtro de cliente ativo — assim o usuário sempre vê o panorama
+  // completo para escolher rapidamente outro cliente.
+  dmRenderClientBar(list);
   if (!list.length) {
     box.innerHTML = '<div class="dm-empty" style="padding:22px 8px;">Nenhum produto cadastrado.</div>';
     return;
@@ -6945,8 +7045,10 @@ function dmRenderList(){
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(p);
   });
-  const clientKeys = [...groups.keys()].filter(k => k !== '__none__').sort((a,b) => a.localeCompare(b));
+  let clientKeys = [...groups.keys()].filter(k => k !== '__none__').sort((a,b) => a.localeCompare(b));
   if (groups.has('__none__')) clientKeys.push('__none__');
+  // Se um chip de cliente estiver selecionado, mostra só esse cliente
+  if (dmActiveClient) clientKeys = clientKeys.filter(k => k === dmActiveClient);
 
   const collapsed = dmCollapsedSet();
   const revCollapsed = dmRevCollapsedSet();
@@ -7009,19 +7111,31 @@ function dmRenderList(){
         </div>`;
     }).join('');
 
+    const gOkPct = gTotal ? (gOk / gTotal) * 100 : 0;
+    const gNokPct = gTotal ? (gNok / gTotal) * 100 : 0;
     return `
     <div class="dm-group${isCollapsed ? ' collapsed' : ''}">
       <div class="dm-group-hd" onclick="dmToggleGroup('${key.replace(/'/g,"\\'")}')">
-        <span class="dm-group-arrow">▾</span>
-        <span class="dm-group-name">${dmEsc(label)}</span>
-        <span class="dm-group-stats">${gTotal} cotas${gPct !== null ? ` · <b style="color:${gColor}">${gPct}%</b>` : ''}</span>
-        <span class="dm-group-count">${parts.length}</span>
+        <span class="dm-group-avatar" style="background:${dmClientColor(label)}">${dmEsc(dmClientInitials(label))}</span>
+        <div class="dm-group-info">
+          <div class="dm-group-name">${dmEsc(label)}</div>
+          <div class="dm-group-meta">${parts.length} peça${parts.length===1?'':'s'} · ${gTotal} cota${gTotal===1?'':'s'}</div>
+        </div>
+        <div class="dm-group-side">
+          ${gNok > 0 ? `<span class="dm-group-nok-badge">⛔ ${gNok} NOK</span>` : ''}
+          <span class="dm-group-pct" style="color:${gColor}">${gPct !== null ? gPct + '%' : '—'}</span>
+          <span class="dm-group-count">${parts.length}</span>
+          <span class="dm-group-arrow">▾</span>
+        </div>
       </div>
+      ${gTotal > 0 ? `<div class="dm-group-healthbar"><div class="ok" style="width:${gOkPct}%"></div><div class="nok" style="width:${gNokPct}%"></div></div>` : ''}
       <div class="dm-group-items">${partsHtml}</div>
     </div>`;
   }).join('');
 
-  box.innerHTML = anyPartRendered ? html : `<div class="dm-empty" style="padding:22px 8px;">Nenhum produto com reprovações no momento. 🎉</div>`;
+  box.innerHTML = anyPartRendered ? html : (dmActiveClient
+    ? `<div class="dm-empty" style="padding:22px 8px;">Nenhum item deste cliente com os filtros atuais. <span style="text-decoration:underline;cursor:pointer;" onclick="dmSetClientFilter(null)">Ver todos</span></div>`
+    : `<div class="dm-empty" style="padding:22px 8px;">Nenhum produto com reprovações no momento. 🎉</div>`);
 }
 
 /* ---------- Render: editor ---------- */
