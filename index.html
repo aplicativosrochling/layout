@@ -3417,8 +3417,13 @@ function openDimensionalChecklist(productId){
     notify('Checklist ainda carregando, tente novamente em instantes.', 'warn');
     return;
   }
+  // Espelha o reset acima: ao abrir um Dimensional, limpa qualquer estado de
+  // Inspeção de Layout que tenha ficado aberto, para as duas abas não se
+  // misturarem (defesa adicional, independente da guarda do lcOpenPicker).
+  lcItemId = null; lcMonth = null; lcRO = false;
   window._dmChecklistMode = true;
   window._dmChecklistProduct = productId || null;
+  if (productId != null && typeof window.dmRegisterOpenTab === 'function') window.dmRegisterOpenTab(productId);
   const info = (productId && typeof window.dmChecklistInfo === 'function') ? window.dmChecklistInfo(productId) : null;
   const saved = (productId && typeof window.dmReadChecklistRecord === 'function')
     ? window.dmReadChecklistRecord(productId)
@@ -3431,6 +3436,7 @@ function openDimensionalChecklist(productId){
   const ov = document.getElementById('liSheetOverlay');
   if (ov) ov.classList.add('active');
   document.body.classList.add('li-open');
+  if (typeof window.dmRenderOpenBar === 'function') window.dmRenderOpenBar();
   requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 window.openDimensionalChecklist = openDimensionalChecklist;
@@ -3444,6 +3450,7 @@ function closeDimensionalChecklist(){
   window._dmChecklistMode = false;
   window._dmChecklistProduct = null;
   if (typeof window.dmRenderAll === 'function') window.dmRenderAll();
+  if (typeof window.dmRenderOpenBar === 'function') window.dmRenderOpenBar();
   window.scrollTo(0, 0);
 }
 
@@ -3452,6 +3459,11 @@ function _lcKey(itemId, monthIndex){ return String(itemId) + '_' + monthIndex; }
 function openLayoutChecklist(itemId, monthIndex){
   const a = state.items.find(x => x.id === itemId);
   if (!a) return;
+  // Garante que este relatório abra sempre como Inspeção de Layout, mesmo se
+  // chamado a partir do editor Dimensional (ex.: botão "＋ Abrir"). Sem isso,
+  // o modo Dimensional ficava "grudado" e o salvar/fechar gravava os dados
+  // deste relatório de Layout por cima do produto Dimensional anterior.
+  if (window._dmChecklistMode) { window._dmChecklistMode = false; window._dmChecklistProduct = null; }
   if (typeof window.liLoadRecord !== 'function') { notify('Formulário de layout ainda carregando, tente novamente em instantes.', 'warn'); return; }
   a.layoutChecklists = a.layoutChecklists || {};
   if (monthIndex == null) monthIndex = _clDefaultMonthFor(a);
@@ -3930,6 +3942,12 @@ function lcPersistCurrent(){
   } catch (err) { console.warn('multi-checklist persist', err); }
 }
 
+/* ---------- barra de abas — INDEPENDENTE por tipo -----------------------
+   Dimensional só enxerga/abre abas Dimensionais; Layout só enxerga/abre
+   abas de Layout. As duas usam o mesmo elemento #lcOpenBar (ele fica dentro
+   da folha compartilhada), mas cada uma desenha e controla só a sua própria
+   lista (lcOpen / dmOpenTabs) — sem misturar. Dentro de cada tipo, abrir um
+   novo item mantém os demais já abertos, disponíveis em abas. */
 function lcRenderOpenBar(){
   const bar = document.getElementById('lcOpenBar');
   if (!bar) return;
@@ -3978,6 +3996,8 @@ function lcCloseAllTabs(){
   closeLayoutChecklist();
   notify('Todas as abas de relatórios foram fechadas');
 }
+
+
 
 function lcSaveAllOpen(){
   lcPersistCurrent();
@@ -4030,6 +4050,14 @@ function lcRenderPickList(){
 }
 
 function lcOpenPicker(){
+  // Este catálogo lista apenas relatórios de Inspeção de Layout (state.items).
+  // Dentro do editor Dimensional, redireciona para o seletor equivalente de
+  // produtos Dimensionais (dmOpenPicker), que abre vários produtos em abas.
+  if (window._dmChecklistMode) {
+    if (typeof window.dmOpenPicker === 'function') { window.dmOpenPicker(); return; }
+    notify('Seletor de Dimensionais indisponível no momento.', 'warn');
+    return;
+  }
   const el = document.getElementById('lcPickSearch');
   if (el) el.value = '';
   lcRenderPickList();
@@ -4060,6 +4088,7 @@ function lcRenderCopyList(){
 }
 
 function lcCopyPicker(){
+  if (window._dmChecklistMode) { notify('“Copiar de outro relatório” está disponível apenas para Inspeção de Layout.', 'warn'); return; }
   if (lcItemId == null) { notify('Abra um relatório antes de copiar para ele', 'warn'); return; }
   if (lcRO) { notify('Este relatório está em modo leitura. Use “✎ Editar Relatório” antes de copiar.', 'warn'); return; }
   const tag = document.getElementById('lcCopyTargetTag');
@@ -4498,6 +4527,25 @@ if (document.readyState === 'loading') {
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('lcPickModal')">Cancelar</button>
       <button class="btn btn-primary" onclick="lcOpenSelected()">📂 Abrir selecionados</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ABRIR VÁRIOS PRODUTOS DIMENSIONAIS AO MESMO TEMPO -->
+<div class="modal-overlay" id="dmPickModal" style="z-index:600;">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-head">
+      <div class="modal-head-title">➕ Abrir vários produtos Dimensionais ao mesmo tempo</div>
+      <button class="modal-close-btn" onclick="closeModal('dmPickModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:0;">Selecione quantos produtos Dimensionais quiser: todos ficam abertos em abas no topo da folha, podendo ser visualizados e editados sem fechar os outros. O rascunho é salvo automaticamente ao trocar de aba.</p>
+      <input class="form-input" id="dmPickSearch" placeholder="🔎 Filtrar por SAP, part number ou descrição..." oninput="dmRenderPickList()" style="margin-bottom:12px;">
+      <div id="dmPickList" style="max-height:380px;overflow:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('dmPickModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="dmOpenSelected()">📂 Abrir selecionados</button>
     </div>
   </div>
 </div>
@@ -6572,6 +6620,132 @@ function dmImportChecklist(){
   dmOpenChecklist(dmCurrentId);
   setTimeout(() => { if (typeof window.liOpenImport === 'function') window.liOpenImport(); }, 260);
 }
+
+/* =========================================================================
+   MULTI-DIMENSIONAL — vários produtos Dimensionais abertos ao mesmo tempo
+   (visualizar / editar), no mesmo padrão do multi-checklist de Inspeção de
+   Layout (lcOpen/lcTab...). dmOpenTabs guarda os ids dos produtos abertos;
+   a folha renderiza UM produto por vez (motor "li"), e trocar de aba grava
+   o rascunho do produto que sai antes de carregar o próximo, então nada é
+   perdido ao alternar. Reaproveita o mesmo elemento #lcOpenBar e as mesmas
+   classes .lc-tab/.lc-pick-row do multi-checklist de Layout — só um dos
+   dois (Layout OU Dimensional) fica ativo por vez, então não há conflito.
+   ========================================================================= */
+let dmOpenTabs = [];
+function dmFindOpenTab(pid){ return dmOpenTabs.indexOf(pid); }
+function dmRegisterOpenTab(pid){ if (dmFindOpenTab(pid) < 0) dmOpenTabs.push(pid); }
+window.dmRegisterOpenTab = dmRegisterOpenTab;
+
+function dmPersistCurrentTab(){
+  if (!window._dmChecklistProduct) return;
+  if (typeof window.dmPersistChecklist === 'function') window.dmPersistChecklist();
+}
+
+function dmRenderOpenBar(){
+  const bar = document.getElementById('lcOpenBar');
+  if (!bar) return;
+  if (!dmOpenTabs.length || !window._dmChecklistProduct) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = 'flex';
+  const esc = window.liEsc || (s => s);
+  let html = '<span class="lc-openbar-lbl">Produtos abertos (' + dmOpenTabs.length + ')</span>';
+  dmOpenTabs.forEach((pid, i) => {
+    const p = dmProducts.find(x => x.id === pid);
+    const active = (pid === window._dmChecklistProduct);
+    const label = p ? (p.sap || p.pn || ('#' + p.id)) : ('#' + pid);
+    const done = !!(p && p.completedAt);
+    html += '<span class="lc-tab' + (active ? ' active' : '') + '" onclick="dmActivateTab(' + i + ')" title="' + esc(label + (p && p.desc ? (' — ' + p.desc) : '')) + '">' +
+            '<span class="lc-tab-txt">' + esc(label) + '</span>' +
+            (done ? '<span class="lc-tab-ro">👁</span>' : '') +
+            '<button class="lc-tab-x" onclick="event.stopPropagation();dmCloseTab(' + i + ')" title="Fechar esta aba">✕</button>' +
+            '</span>';
+  });
+  html += '<div style="flex:1;"></div>' +
+          '<button class="btn" onclick="dmOpenPicker()">➕ Abrir outro</button>' +
+          '<button class="btn" onclick="dmCloseAllTabs()" title="Fechar todas as abas de produtos Dimensionais">✕ Fechar todos</button>';
+  bar.innerHTML = html;
+}
+window.dmRenderOpenBar = dmRenderOpenBar;
+
+function dmActivateTab(i){
+  const pid = dmOpenTabs[i];
+  if (pid == null || pid === window._dmChecklistProduct) return;
+  dmPersistCurrentTab();
+  window._dmChecklistProduct = null;
+  window.openDimensionalChecklist(pid);
+}
+window.dmActivateTab = dmActivateTab;
+
+function dmCloseTab(i){
+  const pid = dmOpenTabs[i];
+  if (pid == null) return;
+  const wasActive = (pid === window._dmChecklistProduct);
+  if (wasActive) dmPersistCurrentTab();
+  dmOpenTabs.splice(i, 1);
+  if (!wasActive) { dmRenderOpenBar(); return; }
+  const nextPid = dmOpenTabs[i] != null ? dmOpenTabs[i] : dmOpenTabs[i - 1];
+  window._dmChecklistProduct = null;
+  if (nextPid != null) window.openDimensionalChecklist(nextPid);
+  else if (typeof window.closeDimensionalChecklist === 'function') window.closeDimensionalChecklist();
+}
+window.dmCloseTab = dmCloseTab;
+
+function dmCloseAllTabs(){
+  dmPersistCurrentTab();
+  dmOpenTabs = [];
+  if (typeof window.closeDimensionalChecklist === 'function') window.closeDimensionalChecklist();
+  dmToast('Todas as abas de produtos Dimensionais foram fechadas');
+}
+window.dmCloseAllTabs = dmCloseAllTabs;
+
+function dmCatalogList(){
+  return (dmProducts || []).map(p => ({
+    p, done: !!p.completedAt,
+    text: [p.sap, p.pn, p.desc, p.client].filter(Boolean).join(' ').toLowerCase()
+  }));
+}
+function dmPickRowHtml(c){
+  const esc = window.liEsc || (s => s);
+  const badge = c.done ? '<span class="lc-pick-badge">✓ Finalizado</span>' : '<span class="lc-pick-badge draft">✎ Rascunho</span>';
+  const already = dmFindOpenTab(c.p.id) >= 0;
+  const input = '<input type="checkbox" class="dm-pick-chk" data-id="' + c.p.id + '"' + (already ? ' checked disabled' : '') + '>';
+  return '<label class="lc-pick-row">' + input +
+    '<span class="lc-pick-main"><b>' + esc(c.p.sap || c.p.pn || ('#' + c.p.id)) + '</b>' + (c.p.pn && c.p.sap ? ' · ' + esc(c.p.pn) : '') +
+    '<div class="lc-pick-sub">' + esc((c.p.desc || '').slice(0, 70) || 'sem descrição') + (c.p.client ? ' · ' + esc(c.p.client) : '') + '</div></span>' + badge + '</label>';
+}
+function dmRenderPickList(){
+  const q = (document.getElementById('dmPickSearch').value || '').trim().toLowerCase();
+  const list = dmCatalogList().filter(c => !q || c.text.includes(q));
+  const el = document.getElementById('dmPickList');
+  el.innerHTML = list.length ? list.map(dmPickRowHtml).join('')
+    : '<div style="font-size:12px;color:var(--text-secondary);padding:14px;">Nenhum produto Dimensional cadastrado.</div>';
+}
+window.dmRenderPickList = dmRenderPickList;
+
+function dmOpenPicker(){
+  const el = document.getElementById('dmPickSearch');
+  if (el) el.value = '';
+  dmRenderPickList();
+  document.getElementById('dmPickModal').classList.add('active');
+}
+window.dmOpenPicker = dmOpenPicker;
+
+function dmOpenSelected(){
+  const chks = Array.from(document.querySelectorAll('#dmPickList .dm-pick-chk:checked:not(:disabled)'));
+  if (!chks.length) { notify('Selecione ao menos um produto', 'warn'); return; }
+  closeModal('dmPickModal');
+  // Os ids de produto Dimensional são strings (ex.: "dim_abc123"), não
+  // números — usar Number(...) aqui gerava NaN, o que fazia o checklist
+  // abrir em branco (sem achar o produto) e perder a aba do que já estava
+  // aberto. Mantém o id como veio do dataset (string).
+  chks.forEach(ch => dmRegisterOpenTab(ch.dataset.id));
+  const lastPid = chks[chks.length - 1].dataset.id;
+  dmPersistCurrentTab();
+  window._dmChecklistProduct = null;
+  window.openDimensionalChecklist(lastPid);
+  notify('📂 ' + chks.length + ' produto(s) dimensional(is) aberto(s) em abas');
+}
+window.dmOpenSelected = dmOpenSelected;
+
 function dmSwitchSheet(i){
   const p = dmGetCurrent(); if (!p) return;
   const rep = dmEnsureReport(p);
