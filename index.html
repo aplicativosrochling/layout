@@ -3606,7 +3606,12 @@ function liStatsForRows(rows){
     if(row.m&&row.m.some(v=>String(v||'').trim()!==''))measured++;
   });
   const total=count||1;
-  return{ok,nok,measured:measured>0,total:count,pct:Math.round(ok/total*100)};
+  // Conformidade = OK / (OK + NOT OK), ou seja, apenas sobre cotas com
+  // critério de aprovação/reprovação definido. Itens de referência (sem
+  // tolerância, sem flag OK/NOT OK) entram em "total" mas ficam fora do %.
+  const evaluated = ok+nok;
+  const pct = evaluated>0 ? Math.round(ok/evaluated*100) : 0;
+  return{ok,nok,measured:measured>0,total:count,pct};
 }
 window.liStatsForRows=liStatsForRows; // exposto p/ printLayoutChecklist(), definida fora desta IIFE
 
