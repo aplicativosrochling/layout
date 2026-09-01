@@ -227,11 +227,11 @@ canvas{cursor:default;}
 
 
 /* ===== ABA DIMENSIONAIS DE PRODUTOS ===== */
-.dm-wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start;}
-@media(max-width:1000px){.dm-wrap{grid-template-columns:1fr;}}
+.dm-wrap{display:flex;flex-direction:column;gap:16px;}
+@media(min-width:1001px){.dm-wrap{display:grid;grid-template-columns:290px 1fr;align-items:start;}}
 .dm-wrap>.dm-panel{min-width:0;}
 .dm-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm);}
-.dm-list{display:flex;flex-direction:column;gap:7px;max-height:66vh;overflow-y:auto;margin-top:10px;}
+.dm-list{display:flex;flex-direction:column;gap:7px;margin-top:10px;}
 .dm-item{padding:11px 13px 11px 14px;border:1px solid var(--border);border-left:3px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer;transition:all .15s;}
 .dm-item:hover{border-color:var(--accent);transform:translateX(2px);box-shadow:var(--shadow-sm);}
 .dm-item.active{background:rgba(0,198,255,.08);box-shadow:0 0 0 1.5px var(--accent);}
@@ -7259,7 +7259,14 @@ function dmNewProduct(){
   const el = document.getElementById('dmSap'); if (el) el.focus();
   dmToast('Novo produto criado — preencha o SAP e as cotas');
 }
-function dmSelect(id){ dmCurrentId = id; dmRenderAll(); }
+function dmSelect(id){
+  dmCurrentId = id;
+  dmRenderAll();
+  if (window.innerWidth <= 1000) {
+    const ed = document.getElementById('dmEditor');
+    if (ed) ed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 
 function dmHeadChange(){
   const p = dmGetCurrent(); if (!p) return;
