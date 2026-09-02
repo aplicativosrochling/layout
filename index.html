@@ -24,13 +24,13 @@
   --border: #1f2736;
   --border-hover: #2d3a52;
   --accent: #0064B3;
-  --accent2: #004F8D;
+  --accent2: #0064B3;
   --success: #00e676;
   --warning: #ffb300;
   --danger: #ff3d57;
   --orange: #ff6c2f;
   --purple: #a855f7;
-  --grad: linear-gradient(135deg, #0064B3, #004F8D);
+  --grad: linear-gradient(135deg, #0064B3, #0064B3);
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
   --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
@@ -46,7 +46,7 @@ body.light {
   --border: #dde3ee;
   --border-hover: #b8c4d8;
   --accent: #0064B3;
-  --accent2: #004F8D;
+  --accent2: #0064B3;
   --success: #00a651;
   --warning: #e67e00;
   --danger: #dc2626;
@@ -83,10 +83,8 @@ body{
 }
 .rl-logo-badge{
   display:inline-flex;align-items:center;
-  background:#fff;border-radius:10px;padding:10px 14px;
-  box-shadow:var(--shadow-sm);
 }
-.rl-logo-badge svg{display:block;width:140px;height:auto;}
+.rl-logo-badge svg{display:block;width:150px;height:auto;}
 .sidebar-logo .brand{
   font-family:'Syne',sans-serif;
   font-size:18px;font-weight:800;
@@ -124,26 +122,32 @@ body{
   padding:20px 32px;background:var(--surface);
   border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:50;gap:16px;
+  transition:padding .15s ease;
 }
-.topbar-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;}
-.topbar-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.topbar.topbar-min{padding:10px 32px;}
+.topbar-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;display:none;}
+.topbar-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-left:auto;}
 
 .btn{
   display:inline-flex;align-items:center;gap:8px;
-  padding:10px 20px;border-radius:10px;border:1px solid var(--border);
+  padding:10px 18px;border-radius:12px;border:1px solid var(--border);
   background:var(--card);color:var(--text);
-  font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .18s ease;
   font-family:'DM Sans',sans-serif;white-space:nowrap;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
 }
-.btn:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm);}
-.btn-primary{background:var(--grad);color:#fff;border:none;}
-.btn-primary:hover{filter:brightness(1.1);}
-.btn-ghost{background:transparent;border-color:transparent;padding:8px 12px;}
+.btn:hover{border-color:var(--accent);transform:translateY(-1.5px);box-shadow:var(--shadow-sm);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--grad);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,100,179,.28);}
+.btn-primary:hover{filter:brightness(1.08);box-shadow:0 6px 18px rgba(0,100,179,.36);}
+.btn-ghost{background:transparent;border-color:transparent;padding:8px 12px;box-shadow:none;}
 .btn-ghost:hover{background:var(--card);}
 .btn-danger{background:rgba(255,61,87,.1);color:var(--danger);border-color:var(--danger);}
 .btn-danger:hover{background:var(--danger);color:#fff;}
 .btn-sm{padding:7px 14px;font-size:12px;}
-.btn-icon{width:40px;height:40px;padding:0;justify-content:center;border-radius:10px;}
+.btn-icon{width:40px;height:40px;padding:0;justify-content:center;border-radius:12px;}
+.topbar-actions .btn{font-weight:700;letter-spacing:.1px;}
+.topbar-actions .btn span:first-child{font-size:15px;line-height:1;}
 
 .content{padding:28px 32px;}
 
@@ -192,9 +196,37 @@ canvas{cursor:default;}
 .search-box input::placeholder{color:var(--text-secondary);}
 .filter-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .filter-select option{background:var(--card);color:var(--text);}
-.gantt-wrap{overflow-x:auto;padding:20px 22px;}
-.gantt-head{display:flex;padding-left:280px;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:10px;}
-.gantt-month-label{flex:1;text-align:center;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;}
+.gantt-wrap{overflow-x:auto;padding:20px 22px;position:relative;}
+.gantt-head{
+  display:flex;padding-left:280px;margin-bottom:10px;
+  background:var(--accent);border-bottom:2px solid var(--accent);
+  padding-bottom:10px;padding-top:8px;
+}
+.gantt-month-label{
+  flex:1;text-align:center;
+  font-family:'Syne',sans-serif;
+  font-size:13px;font-weight:800;
+  color:#fff;
+  text-transform:uppercase;letter-spacing:1.4px;
+}
+/* Cabeçalho fixo (clone controlado via JS) exibido durante o scroll vertical */
+.gantt-head-fixed{
+  display:none;
+  position:fixed;
+  z-index:60;
+  overflow:hidden;
+  background:var(--accent);
+  border-bottom:2px solid var(--accent);
+  box-shadow:0 6px 14px -6px rgba(0,0,0,.35);
+  padding:0 22px;
+  box-sizing:border-box;
+}
+.gantt-head-fixed-inner{
+  display:flex;
+  padding-left:280px;
+  padding-top:8px;padding-bottom:10px;
+  will-change:transform;
+}
 .gantt-row{display:flex;align-items:center;padding:8px 0;border-radius:10px;transition:all .2s;cursor:pointer;}
 .gantt-row:hover{background:rgba(255,255,255,.03);}
 .gantt-info{width:280px;min-width:280px;padding-right:16px;}
@@ -204,7 +236,7 @@ canvas{cursor:default;}
 .gantt-bar{flex:1;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;position:relative;}
 .gantt-bar:hover{transform:scaleY(1.2);z-index:5;}
 .bar-empty{background:var(--border);opacity:.35;}
-.bar-scheduled{background:linear-gradient(135deg,#0064B3,#004F8D);color:#fff;}
+.bar-scheduled{background:var(--accent);color:#fff;}
 .bar-completed{background:linear-gradient(135deg,#00e676,#00b248);color:#fff;}
 .bar-alert{background:linear-gradient(135deg,#ff3d57,#c9002a);color:#fff;animation:pulse 1.8s infinite;}
 .bar-inprogress{background:linear-gradient(135deg,#ffb300,#e67e00);color:#fff;}
@@ -301,8 +333,8 @@ canvas{cursor:default;}
 .dm-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);}
 table.dm-table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:2240px;table-layout:fixed;}
 table.dm-table th{background:var(--card2);color:var(--text-secondary);font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:6px 4px;border:1px solid var(--border);white-space:nowrap;text-align:center;vertical-align:middle;}
-table.dm-table thead tr:first-child th{background:linear-gradient(180deg,#0064B3,#004F8D);color:#fff;border-color:#003a68;}
-table.dm-table thead tr:nth-child(2) th{background:#3383bf;color:#ccd6f6;}
+table.dm-table thead tr:first-child th{background:var(--accent);color:#fff;border-color:var(--accent);}
+table.dm-table thead tr:nth-child(2) th{background:var(--accent);color:#fff;}
 table.dm-table td{border:1px solid var(--border);padding:0;vertical-align:middle;position:relative;}
 table.dm-table tbody tr:hover td{background:rgba(0,100,179,.06);}
 table.dm-table tbody tr.dm-ok-row td{background:rgba(0,230,118,.05);}
@@ -582,7 +614,7 @@ body.cl-open{overflow:hidden;}
 .checklist-overlay.active:not(.is-readonly){border-left:4px solid var(--success);}
 .checklist-overlay.active:not(.is-readonly) .cl-header{border-bottom-color:var(--success);}
 
-.gantt-bar-exec{position:absolute;top:-9px;right:-6px;width:22px;height:22px;border-radius:50%;border:2px solid var(--bg);background:linear-gradient(135deg,#0064B3,#004F8D);color:#fff;font-size:11px;font-weight:700;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:transform .15s;}
+.gantt-bar-exec{position:absolute;top:-9px;right:-6px;width:22px;height:22px;border-radius:50%;border:2px solid var(--bg);background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:transform .15s;}
 .gantt-bar-exec:hover{transform:scale(1.2);}
 .cl-edit-btn{background:linear-gradient(135deg,#ffb300,#ff8a00) !important;color:#1a1a1a !important;border:none !important;font-weight:700 !important;}
 .cl-auto-btn{
@@ -874,7 +906,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
        tipo:'layout' em cada registro, que separa as duas listas. -->
   <div id="view-layout" class="content" style="display:none;">
     <div style="margin-bottom:18px;">
-      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">📐 Cronograma de Inspeção de Layout — 2026</div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">📐 Inspeção de Layout</div>
       <div style="font-size:13px;color:var(--text-secondary);">Röchling Automotive Brasil · Cronograma de Inspeção de Layout</div>
     </div>
 
@@ -928,7 +960,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
         <div id="lGanttRows"></div>
       </div>
       <div class="gantt-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#0064B3,#004F8D);"></div>Agendado</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>Agendado</div>
         <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#00e676,#00b248);"></div>Concluído</div>
         <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#ffb300,#e67e00);"></div>Em andamento</div>
         <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#ff3d57,#c9002a);"></div>Atrasado</div>
@@ -2040,7 +2072,7 @@ function switchView(view, el) {
   });
   const titles = {layout:'Cronograma de Inspeção de Layout', layoutdash:'Dashboard — Inspeção de Layout', dimensionais:'Dimensionais dos Produtos', dimdash:'Dashboard — Dimensionais'};
   document.getElementById('viewTitle').textContent = titles[view] || view;
-  if (view === 'layout') { updateLayoutFilterOptions(); filterLayout(); }
+  if (view === 'layout') { updateLayoutFilterOptions(); filterLayout(); if (window.__syncGanttFixedHeader) window.__syncGanttFixedHeader(); }
   if (view === 'layoutdash') renderLayoutDash();
   if (view === 'dimensionais') {
     if (typeof window.dmRenderAll === 'function') window.dmRenderAll();
@@ -2992,9 +3024,14 @@ function expList() { return isLayoutViewActive() ? layoutOnly() : legacyOnly(); 
 function updateTopbarForView(view) {
   const lbl = document.getElementById('newItemBtnLabel');
   if (lbl) lbl.textContent = 'Novo Item de Layout';
-  // A aba Dimensionais tem a própria barra de ações; esconde a barra global.
+  // As abas de Dashboard (Layout e Dimensional) não usam as ações globais
+  // (Novo Item/Importar Excel/Exportar) — cada uma é só visualização. A aba
+  // Dimensionais também tem sua própria barra de ações e esconde a global.
+  const hideActions = (view === 'dimensionais' || view === 'layoutdash' || view === 'dimdash');
   const acts = document.querySelector('.topbar-actions');
-  if (acts) acts.style.display = (view === 'dimensionais') ? 'none' : '';
+  if (acts) acts.style.display = hideActions ? 'none' : '';
+  const topbar = document.querySelector('.topbar');
+  if (topbar) topbar.classList.toggle('topbar-min', hideActions);
 }
 
 // ===== MIGRA\u00c7\u00c3O DO CRONOGRAMA ANTIGO (localStorage rochling_layout_inspection_v1) =====
@@ -3827,20 +3864,20 @@ function printLayoutChecklist(onlyActive, reportOverride){
 
   /* ── HEADER ── */
   .page-header { display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; margin-bottom: 10px; border: 1px solid #dde3f0; }
-  .ph-brand { background: linear-gradient(145deg, #004F8D, #0064B3); color: #fff; padding: 12px 18px; display: flex; flex-direction: column; justify-content: center; min-width: 210px; }
+  .ph-brand { background: #0064B3; color: #fff; padding: 12px 18px; display: flex; flex-direction: column; justify-content: center; min-width: 210px; }
   .ph-brand .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
   .ph-brand .logo-row .ph-logo-svg { display: block; width: 110px; height: auto; }
   .ph-brand .co-name { font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: .85; }
   .ph-brand .doc-type { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; opacity: .7; margin-top: 2px; }
   .ph-brand .doc-ref { font-size: 8px; opacity: .55; margin-top: 6px; }
   .ph-center { flex: 1; background: linear-gradient(145deg, #f4f7fe, #eef2fc); padding: 10px 18px; display: flex; flex-direction: column; justify-content: center; border-left: 1px solid #dde3f0; border-right: 1px solid #dde3f0; }
-  .ph-center .doc-title { font-size: 15px; font-weight: 800; color: #004F8D; letter-spacing: .2px; }
-  .ph-center .doc-component { font-size: 9px; font-weight: 700; color: #004F8D; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  .ph-center .doc-title { font-size: 15px; font-weight: 800; color: #0064B3; letter-spacing: .2px; }
+  .ph-center .doc-component { font-size: 9px; font-weight: 700; color: #0064B3; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
   .ph-center .doc-checks { display: flex; gap: 14px; margin-top: 6px; font-size: 10px; color: #3a4568; }
   .ph-center .chk-item { font-weight: 600; }
   .ph-right { background: #fff; padding: 10px 16px; display: flex; flex-direction: column; justify-content: space-between; min-width: 190px; }
   .ph-right .meta-row { font-size: 8.5px; color: #4a5470; margin-bottom: 3px; }
-  .ph-right .meta-row strong { color: #004F8D; }
+  .ph-right .meta-row strong { color: #0064B3; }
   .ph-right .status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
 
   /* ── INFO GRID ── */
@@ -3858,8 +3895,8 @@ function printLayoutChecklist(onlyActive, reportOverride){
   /* Larguras das colunas vêm inline no <colgroup> (geradas em JS a partir do
      que o usuário ajustou na tela), não mais fixas aqui — assim a impressão
      acompanha a visualização. */
-  table.main thead th { background: linear-gradient(180deg, #0064B3, #004F8D); color: #fff; padding: 6px 4px; border: 1px solid #003a68; font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: .4px; text-align: center; }
-  table.main thead tr.th2 th { background: #3383bf; color: #ccd6f6; padding: 4px; font-size: 8px; }
+  table.main thead th { background: #0064B3; color: #fff; padding: 6px 4px; border: 1px solid #0064B3; font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: .4px; text-align: center; }
+  table.main thead tr.th2 th { background: #0064B3; color: #fff; padding: 4px; font-size: 8px; }
   table.main td { border: 1px solid #d0d8ed; padding: 5px 4px; vertical-align: middle; text-align: center; word-wrap: break-word; }
   table.main td.num { text-align: center; color: #8a94b0; font-weight: 700; background: #f5f7fd; }
   table.main td.pi { text-align: left; font-weight: 600; color: #1e2433; }
@@ -3872,7 +3909,7 @@ function printLayoutChecklist(onlyActive, reportOverride){
   /* ── SUMMARY ── */
   .summary-row { display: flex; gap: 10px; margin-top: 10px; }
   .sum-card { flex: 1; border: 1.5px solid #d0d8ed; border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f9fbff; }
-  .sum-card .sc-val { font-size: 20px; font-weight: 900; color: #004F8D; line-height: 1; }
+  .sum-card .sc-val { font-size: 20px; font-weight: 900; color: #0064B3; line-height: 1; }
   .sum-card .sc-lbl { font-size: 7.5px; text-transform: uppercase; letter-spacing: .6px; color: #6b7a9f; margin-top: 4px; font-weight: 600; }
   .sum-card.ok .sc-val { color: #0a6b2a; }
   .sum-card.nok .sc-val { color: #c0392b; }
@@ -7970,6 +8007,142 @@ else dmInit();
       else if(typeof dmLegacy === 'function'){ dmLegacy(); }
     }).catch(err=>{ console.error(err); if(typeof dmLegacy === 'function') dmLegacy(); });
   };
+})();
+</script>
+
+<script>
+// ===================================================================
+// Cabeçalho de meses do Gantt fixo durante o scroll vertical.
+//
+// Implementação via position:fixed com medição em tempo real do viewport,
+// escuta de scroll no container correto e sincronização horizontal.
+// ===================================================================
+(function () {
+  'use strict';
+
+  let wrap, head, rowsEl, fixedHead, fixedInner, topbar, mainEl;
+  let ticking = false;
+  let headerHeight = 0;
+
+  function buildFixedHeader() {
+    if (document.getElementById('lGanttHeadFixed')) return;
+    wrap = document.querySelector('.gantt-wrap');
+    head = document.getElementById('lGanttHead');
+    rowsEl = document.getElementById('lGanttRows');
+    topbar = document.querySelector('.topbar');
+    mainEl = document.querySelector('.main');
+    if (!wrap || !head || !topbar) return;
+
+    fixedHead = document.createElement('div');
+    fixedHead.id = 'lGanttHeadFixed';
+    fixedHead.className = 'gantt-head-fixed';
+
+    fixedInner = document.createElement('div');
+    fixedInner.className = 'gantt-head-fixed-inner';
+    fixedHead.appendChild(fixedInner);
+    document.body.appendChild(fixedHead);
+
+    // Scrollers verticais possíveis: o container .main (se tiver barra de rolagem)
+    // ou a janela/documento quando o body/html é quem rola.
+    const scrollers = [];
+    if (mainEl && mainEl.scrollHeight > mainEl.clientHeight) scrollers.push(mainEl);
+    scrollers.push(window);
+    scrollers.forEach(s => s.addEventListener('scroll', requestUpdate, { passive: true }));
+
+    window.addEventListener('resize', requestUpdate);
+    window.addEventListener('orientationchange', requestUpdate);
+    wrap.addEventListener('scroll', syncHorizontalOffset, { passive: true });
+
+    // Recalcula quando as linhas forem re-renderizadas (filtros, troca de aba).
+    if (rowsEl && window.MutationObserver) {
+      new MutationObserver(requestUpdate).observe(rowsEl, { childList: true, subtree: true });
+    }
+    if (topbar && window.ResizeObserver) {
+      new ResizeObserver(requestUpdate).observe(topbar);
+    }
+
+    // Rede de segurança: reavalia periodicamente.
+    setInterval(requestUpdate, 300);
+
+    requestUpdate();
+  }
+
+  function requestUpdate() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      try {
+        updateFixedHeader();
+      } catch (e) {
+        console.error('gantt-head-fixed update error:', e);
+      } finally {
+        ticking = false;
+      }
+    });
+  }
+
+  function syncHorizontalOffset() {
+    if (!fixedInner || !wrap) return;
+    fixedInner.style.transform = `translateX(${-wrap.scrollLeft}px)`;
+  }
+
+  function isLayoutTabVisible() {
+    const layoutView = document.getElementById('view-layout');
+    if (!layoutView) return false;
+    return layoutView.style.display !== 'none';
+  }
+
+  function updateFixedHeader() {
+    if (!wrap || !head || !fixedHead || !topbar) return;
+
+    // Só mostra na aba "Insp. de Layout".
+    if (!isLayoutTabVisible()) {
+      fixedHead.style.display = 'none';
+      return;
+    }
+
+    const topbarRect = topbar.getBoundingClientRect();
+    const stickTo = Math.max(0, topbarRect.bottom);
+    const headRect = head.getBoundingClientRect();
+    const rowsRect = rowsEl ? rowsEl.getBoundingClientRect() : null;
+
+    // Condições para exibir o clone fixo:
+    // 1. O cabeçalho original já rolou para cima da barra superior.
+    // 2. Ainda existem linhas da tabela visíveis abaixo da barra.
+    const pastHeader = headRect.bottom <= stickTo + 2;
+    const stillHasRows = rowsRect ? rowsRect.bottom > stickTo + 10 : true;
+
+    if (pastHeader && stillHasRows) {
+      const wrapRect = wrap.getBoundingClientRect();
+      fixedInner.innerHTML = MONTHS.map(m => `<div class="gantt-month-label">${m}</div>`).join('');
+      fixedHead.style.display = 'block';
+      fixedHead.style.top = stickTo + 'px';
+      fixedHead.style.left = wrapRect.left + 'px';
+      fixedHead.style.width = wrapRect.width + 'px';
+      // Use the real width of the original header.  wrap.scrollWidth also
+      // includes the horizontal padding of .gantt-wrap (and, in some
+      // browsers, the scrollbar), which made each month column wider in
+      // the fixed clone than in the rows below it.
+      fixedInner.style.width = headRect.width + 'px';
+      headerHeight = fixedHead.offsetHeight || headerHeight;
+      syncHorizontalOffset();
+    } else {
+      fixedHead.style.display = 'none';
+    }
+  }
+
+  function init() {
+    buildFixedHeader();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Exposto para troca de aba e reconstrução da tabela.
+  window.__syncGanttFixedHeader = requestUpdate;
 })();
 </script>
 
