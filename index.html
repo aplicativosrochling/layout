@@ -775,7 +775,7 @@ table.li-dim td.li-actioncell{position:relative}
 table.li-dim tbody tr.li-fill-row-target td{outline:2px dashed var(--warning,#e6a700);outline-offset:-2px}
 tr.dm-row.li-actioncell,
 td.dm-actioncell{position:relative}
-.dm-rowfillhandle{position:absolute;right:0;bottom:0;width:11px;height:11px;background:var(--warning,#e6a700);border:1px solid #fff;cursor:grab;z-index:5;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:7px;line-height:1;color:#fff;user-select:none}
+.dm-rowfillhandle{position:absolute;right:2px;bottom:2px;width:13px;height:13px;background:var(--warning,#e6a700);border:1px solid #fff;cursor:grab;z-index:5;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;line-height:1;color:#fff;user-select:none}
 .dm-rowfillhandle:active{cursor:grabbing}
 #dmTableBody tr.dm-fill-row-target td{outline:2px dashed var(--warning,#e6a700);outline-offset:-2px}
 table.li-dim td.li-cell-range-selected{background:rgba(0,100,179,.20) !important;box-shadow:inset 0 0 0 1.5px var(--accent);}
@@ -3519,6 +3519,21 @@ function closeDimensionalChecklist(){
 }
 
 function _lcKey(itemId, monthIndex){ return String(itemId) + '_' + monthIndex; }
+
+// Escolhe o mês padrão para abrir o checklist quando nenhum mês específico
+// foi informado (ex.: botão "Executar Checklist"). Prioriza o mês mais
+// urgente já agendado no cronograma (Atrasado > Em andamento > Agendado >
+// Concluído); se nada estiver agendado, cai no mês atual do calendário.
+function _clDefaultMonthFor(a){
+  if (a && Array.isArray(a.months)){
+    const priority = [4, 3, 1, 2]; // Atrasado, Em andamento, Agendado, Concluído
+    for (const st of priority){
+      const idx = a.months.findIndex(v => v === st);
+      if (idx >= 0) return idx;
+    }
+  }
+  return new Date().getMonth();
+}
 
 function openLayoutChecklist(itemId, monthIndex){
   const a = state.items.find(x => x.id === itemId);
