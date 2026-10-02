@@ -390,6 +390,35 @@ table.dm-table select option{background:var(--card);color:var(--text);}
   body.dm-print table.dm-table input,body.dm-print table.dm-table select{color:#000;-webkit-appearance:none;appearance:none;padding:4px 2px;}
   body.dm-print table.dm-table .dm-readonly{padding:4px 2px;color:#000;}
 }
+
+/* === Símbolos de características especiais do cliente === */
+td.sc-host{position:relative}
+.sc-btn{position:absolute;right:3px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:2px;min-width:20px;height:20px;padding:0 4px;border:1px dashed var(--border-hover);border-radius:6px;background:var(--card2);color:var(--text-secondary);font-size:12px;line-height:1;cursor:pointer;font-family:inherit;z-index:2}
+.sc-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sc-btn.has{border-style:solid;border-color:var(--accent);background:rgba(0,100,179,.12);color:var(--text);font-weight:700}
+.sc-btn.ro{pointer-events:none;opacity:.8}
+.sc-pop{position:fixed;z-index:6000;width:300px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--border-hover);border-radius:12px;box-shadow:var(--shadow-lg);padding:10px;color:var(--text);font-size:12px}
+.sc-grp{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-secondary);margin:10px 4px 2px;padding-top:6px;border-top:1px solid var(--border)}
+.sc-pop h4+.sc-grp{border-top:0;margin-top:2px;padding-top:0}
+.sc-pop h4{font-family:'Syne',sans-serif;font-size:12px;margin:0 0 6px}
+.sc-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer}
+.sc-opt:hover{background:var(--card2)}
+.sc-opt input{width:15px;height:15px;flex:none}
+.sc-opt .sym{font-size:17px;min-width:34px;text-align:center;font-weight:700}
+.sc-opt .lbl{flex:1;line-height:1.25}
+.sc-opt .cli{font-size:10px;color:var(--text-secondary)}
+.sc-pop .sc-foot{display:flex;justify-content:space-between;gap:6px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+.sc-ed{position:fixed;inset:0;z-index:6100;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px}
+.sc-ed-box{background:var(--card);border:1px solid var(--border-hover);border-radius:14px;width:min(760px,100%);max-height:88vh;display:flex;flex-direction:column;color:var(--text)}
+.sc-ed-box header{padding:14px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-weight:700}
+.sc-ed-body{padding:14px 18px;overflow:auto;font-size:12px}
+.sc-ed-row{display:grid;grid-template-columns:70px 1.4fr 1fr 34px;gap:6px;margin-bottom:6px}
+.sc-ed-row input{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 8px;font-size:12px;font-family:inherit}
+.sc-ed-row input.s{text-align:center;font-size:16px}
+.sc-ed-box footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.sc-sym-pick{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 12px}
+.sc-sym-pick button{width:30px;height:30px;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;cursor:pointer;font-size:15px}
+.sc-sym-pick button:hover{border-color:var(--accent)}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
 .modal-overlay.active{display:flex;}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;animation:modalIn .25s ease;box-shadow:var(--shadow-lg);}
@@ -1079,6 +1108,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
               <span id="dmSavedTag" style="font-size:11px;color:var(--text-secondary);"></span>
+              <button class="btn btn-sm" onclick="scOpenEditor()" title="Editar a lista de símbolos de características especiais dos clientes">◇ Símbolos</button>
               <button class="btn btn-sm" onclick="dmExportExcel()">⬇ Excel</button>
               <button class="btn btn-sm" onclick="dmExportCSV()">⬇ CSV</button>
               <button class="btn btn-sm" onclick="dmPrint()">🖨 Imprimir</button>
@@ -3752,7 +3782,7 @@ function printLayoutChecklist(onlyActive, reportOverride){
       const nokB = row.nok ? `<span class="chip chip-ko">✗ ${liEsc(row.nok)}</span>` : '&nbsp;';
       rowsHtml += `<tr class="${rowCls}">
         ${cellP('item','num',v(row.item))}
-        ${cellP('char','pi',v(row.char))}
+        ${cellP('char','pi',v(row.char)+(window.scPrintHtml?window.scPrintHtml(row):''))}
         ${cellP('nominal','c',v(row.nominal))}
         ${cellP('spec','c',v(row.spec))}
         ${cellP('low','c',v(row.low))}
@@ -3764,6 +3794,7 @@ function printLayoutChecklist(onlyActive, reportOverride){
     });
 
 
+    const scLegend = window.scLegendHtml ? window.scLegendHtml(sh.rows) : '';
     pagesHtml += `
 <!-- ════════════════ PÁGINA INDEPENDENTE DO COMPONENTE: ${liEsc(compName)} ════════════════ -->
 <section class="li-print-page${si > 0 ? ' li-page-break' : ''}">
@@ -3832,6 +3863,7 @@ function printLayoutChecklist(onlyActive, reportOverride){
     ${rowsHtml}
   </tbody>
 </table>
+${scLegend}
 
 <div class="summary-row">
   <div class="sum-card"><div class="sc-val">${st.total}</div><div class="sc-lbl">Itens avaliados</div></div>
@@ -4412,6 +4444,7 @@ if (document.readyState === 'loading') {
         <button class="btn btn-sm" id="liBtnUnmerge" onclick="liUnmergeCells()" title="Desmesclar seleção ou célula em foco (Ctrl+Shift+M)">⊟ Desmesclar</button>
         <button class="btn btn-sm" id="liBtnTol" onclick="liAutoTolerance()" title="Preencher tolerâncias automaticamente">± Tolerância</button>
         <button class="btn btn-sm" id="liBtnSim" onclick="liSimulate()" title="Gerar medições simuladas">🎲 Simular</button>
+        <button class="btn btn-sm" onclick="scOpenEditor()" title="Editar a lista de símbolos de características especiais dos clientes">◇ Símbolos</button>
       </div>
       <div class="li-tb-section-label">Edição</div>
     </div>
@@ -5494,6 +5527,7 @@ function liRenderRows(){
         ${row._manual?'<option value="auto">↺ Voltar ao automático</option>':''}
         <option value="del">🗑 Remover</option>
       </select><span class="li-rowfillhandle" title="Arraste para copiar esta linha inteira para as linhas abaixo/acima"></span></td>`;
+    if(window.scAttach)window.scAttach(tr,row,()=>{liPersist();liSetDirty(true);});
     tr.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{
       const f=inp.dataset.f;
       if(f==='ok'||f==='nok'){
@@ -5661,7 +5695,7 @@ window.liExportSheetExcel=function(){
       [r.headers.item,r.headers.char,r.headers.nominal,r.headers.spec,r.headers.low,r.headers.upper,'1','2','3','4','5',r.headers.ok,r.headers.nok]
     ];
     const DATA_ROW0=aoa.length; // primeira linha de dados na planilha exportada
-    (sh.rows||[]).forEach(row=>aoa.push([row.item,row.char,row.nominal,row.spec,row.low,row.upper,...row.m,row.ok,row.nok]));
+    (sh.rows||[]).forEach(row=>aoa.push([row.item,(row.char||'')+((window.scText&&window.scText(row))?'  '+window.scText(row):''),row.nominal,row.spec,row.low,row.upper,...row.m,row.ok,row.nok]));
     aoa.push([],['Observações',hh.obs],['Name',hh.signName,'Title',hh.signTitle,'Date',hh.signDate]);
     let sheetName=(sh.name||('Componente '+(i+1))).replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31)||('Comp'+(i+1));
     if(usedNames[sheetName]){usedNames[sheetName]++;sheetName=(sheetName.slice(0,28)+' '+usedNames[sheetName]);}
@@ -7247,6 +7281,11 @@ function dmRenderEditor(){
     </tr>`;
   }).join('') || `<tr><td colspan="14" class="dm-empty">Nenhuma cota cadastrada. Clique em <b>＋ Nova Cota</b>.</td></tr>`;
 
+  (p.rows||[]).forEach(r => {
+    const tr = document.querySelector('#dmTableBody tr[data-row="' + r.id + '"]');
+    if (tr && window.scAttach) window.scAttach(tr, r, () => dmPersist(p));
+  });
+
   dmRenderStats(p);
   dmRenderRevStatus(p);
 }
@@ -7897,7 +7936,7 @@ else dmInit();
     const D0 = R2 + 1;
     rows.forEach((row, ri)=>{
       const rr = D0 + ri;
-      const vals = [row.item,row.char,row.nominal,row.spec,row.low,row.upper,
+      const vals = [row.item,(row.char||'')+((window.scText&&window.scText(row))?'  '+window.scText(row):''),row.nominal,row.spec,row.low,row.upper,
         ...(row.m||['','','','','']), row.ok?('✓ '+row.ok):'', row.nok?('✗ '+row.nok):''];
       vals.forEach((v,i)=>{ ws.getCell(rr,i+1).value = (v===''||v==null)?null:v; });
       const bg = row.nok ? C.nokBg : (row.ok ? C.okBg : null);
@@ -8158,6 +8197,207 @@ else dmInit();
 
   // Exposto para troca de aba e reconstrução da tabela.
   window.__syncGanttFixedHeader = requestUpdate;
+})();
+</script>
+
+
+<script>
+/* =========================================================================
+   SÍMBOLOS DE CARACTERÍSTICAS ESPECIAIS DOS CLIENTES
+   Disponível nos dois formulários (Inspeção de Layout e Dimensionais).
+   Cada linha guarda row.sc = [chaves dos símbolos]. O catálogo é editável
+   (botão "◇ Símbolos") e fica salvo neste navegador.
+   ========================================================================= */
+(function(){
+  'use strict';
+  const KEY='rl_special_char_catalog_v2';
+  const KEY_V1='rl_special_char_catalog_v1';
+  /* Catálogo atualizado (out/2026) com base nas exigências específicas de cliente (IATF 16949 CSR):
+     Ford CSR jun/2025 · Stellantis/FCA CSR (CEP12679) · VW Group CSR (D/TLD) · GM GMW15049 (KCDS) · Toyota SQAM · Renault Group CSR v4.0.
+     Símbolos de BMW e Mercedes são proprietários: cadastre-os em "◇ Símbolos" conforme a norma do cliente. */
+  const DEFAULTS=[
+    /* Ford */
+    {k:'cc',  sym:'▽',   label:'Característica Crítica (CC) — segurança ou legal', client:'Ford (delta invertido)'},
+    {k:'sc',  sym:'◇',   label:'Característica Significativa (SC)',               client:'Interno / geral (Ford: sem símbolo oficial)'},
+    {k:'hi',  sym:'HI',  label:'Alto Impacto (High Impact)',                      client:'Ford (FMEA Handbook)'},
+    {k:'os',  sym:'OS',  label:'Segurança do Operador (Operator Safety)',         client:'Ford (FMEA Handbook)'},
+    /* Stellantis / FCA */
+    {k:'shd', sym:'⛨',   label:'Escudo — segurança / regulamentar do produto',    client:'Stellantis / FCA (CEP12679)'},
+    {k:'emi', sym:'Ⓔ',   label:'Emissões regulamentadas (E)',                     client:'Stellantis / FCA'},
+    {k:'dia', sym:'◆',   label:'Diamante — característica-chave de função e aceitação do cliente', client:'Stellantis / FCA'},
+    {k:'hq',  sym:'HQ',  label:'Capabilidade inicial (Cpk ≥ 1,33 no PPAP)',       client:'Stellantis / FCA'},
+    /* GM */
+    {k:'kpc', sym:'⬡',   label:'Característica-Chave do Produto (KPC)',           client:'GM (GMW15049)'},
+    {k:'kcc', sym:'KCC', label:'Característica-Chave de Controle (KCC) — processo', client:'GM (GMW15049)'},
+    /* VW Group */
+    {k:'doc', sym:'Ⓓ',   label:'Marcação D — documentação obrigatória',           client:'VW / Audi / Porsche'},
+    {k:'tld', sym:'TLD', label:'Marcação TLD',                                    client:'VW Group'},
+    /* Renault Group (CSR v4.0, mar/2025 · norma 00-10-415 · RGPQP) */
+    {k:'rns', sym:'S',   label:'Característica de Segurança (Safety)',            client:'Renault Group'},
+    {k:'rnr', sym:'R',   label:'Característica Regulamentar (Regulatory)',        client:'Renault Group'},
+    {k:'rnk', sym:'KF',  label:'Característica-Chave (Key Feature) — diagrama de Special Characteristics & Key Features', client:'Renault Group'},
+    /* Toyota */
+    {k:'tyr', sym:'▽R',  label:'Regulamentar (Regulation)',                       client:'Toyota'},
+    {k:'tys', sym:'▽S',  label:'Segurança (Safety)',                              client:'Toyota'},
+    {k:'tye', sym:'▽E',  label:'Emissões (Emissions)',                            client:'Toyota'},
+    {k:'tya', sym:'▽A',  label:'Crítica para montagem (Assembly)',                client:'Toyota'},
+    /* Genéricos / internos */
+    {k:'kc',  sym:'★',   label:'Característica-Chave (KC)',                       client:'Geral'},
+    {k:'saf', sym:'Ⓢ',   label:'Segurança (Safety)',                              client:'Geral'},
+    {k:'reg', sym:'Ⓡ',   label:'Regulamentar / Legal',                            client:'Geral'},
+    {k:'fit', sym:'Ⓕ',   label:'Montagem / Função (Fit/Function)',                client:'Geral'}
+  ];
+  /* Padrão anterior (v1) — usado só para saber o que o usuário NÃO editou ao migrar */
+  const OLD_V1={
+    cc:  ['▽','Característica Crítica (CC)','Ford / geral'],
+    sc:  ['◇','Característica Significativa (SC)','Ford / geral'],
+    kpc: ['⬡','Característica-Chave do Produto (KPC)','GM'],
+    kc:  ['★','Característica-Chave (KC)','Geral'],
+    saf: ['Ⓢ','Segurança (Safety)','Geral'],
+    reg: ['Ⓡ','Regulamentar / Legal','Geral'],
+    doc: ['Ⓓ','Documentação / Rastreabilidade (D)','VW / Audi'],
+    fit: ['Ⓕ','Montagem / Função (Fit/Function)','Geral']
+  };
+  const SYMS=['▽','▼','△','▲','◇','◆','○','●','□','■','⬡','⬢','⬟','⛨','☆','★','Ⓢ','Ⓡ','Ⓓ','Ⓕ','Ⓔ','Ⓒ','Ⓚ','Ⓣ','Ⓜ','Ⓐ','Ⓑ','⚠','✱','▽R','▽S','▽E','▽A','HI','OS','HQ','KCC','TLD','S','R','KF'];
+  let cat;
+  function migrateV1(old){
+    /* mantém edições e símbolos próprios do usuário; atualiza só entradas padrão intocadas; acrescenta as novas */
+    const out=[];
+    old.forEach(c=>{
+      const o=OLD_V1[c.k], d=DEFAULTS.find(x=>x.k===c.k);
+      if(o&&d&&c.sym===o[0]&&c.label===o[1]&&c.client===o[2])out.push(Object.assign({},d));
+      else out.push(c);
+    });
+    DEFAULTS.forEach(d=>{if(!out.some(c=>c.k===d.k))out.push(Object.assign({},d));});
+    /* ordena: padrões na ordem nova, depois os cadastrados pelo usuário */
+    const order=DEFAULTS.map(d=>d.k);
+    return out.sort((a,b)=>{const ia=order.indexOf(a.k),ib=order.indexOf(b.k);return (ia<0?999:ia)-(ib<0?999:ib);});
+  }
+  const KEY_SEEN='rl_special_char_seen_v1';
+  /* chaves padrão já oferecidas ao usuário nas versões anteriores (para não recriar as que ele apagou) */
+  const PREV_KEYS=['cc','sc','hi','os','shd','emi','dia','hq','kpc','kcc','doc','tld','tyr','tys','tye','tya','kc','saf','reg','fit'];
+  function addNewDefaults(){
+    let seen=null;try{seen=JSON.parse(localStorage.getItem(KEY_SEEN)||'null')}catch(e){}
+    if(!Array.isArray(seen))seen=PREV_KEYS;
+    let added=false;
+    DEFAULTS.forEach(d=>{if(seen.indexOf(d.k)<0&&!cat.some(c=>c.k===d.k)){cat.push(Object.assign({},d));added=true;}});
+    if(added){const order=DEFAULTS.map(d=>d.k);cat.sort((a,b)=>{const ia=order.indexOf(a.k),ib=order.indexOf(b.k);return (ia<0?999:ia)-(ib<0?999:ib);});save();}
+    try{localStorage.setItem(KEY_SEEN,JSON.stringify(DEFAULTS.map(d=>d.k)))}catch(e){}
+  }
+  function load(){
+    try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(Array.isArray(x)&&x.length){cat=x;addNewDefaults();return}}catch(e){}
+    try{const v1=JSON.parse(localStorage.getItem(KEY_V1)||'null');if(Array.isArray(v1)&&v1.length){cat=migrateV1(v1);save();addNewDefaults();return}}catch(e){}
+    cat=DEFAULTS.map(d=>Object.assign({},d));
+    try{localStorage.setItem(KEY_SEEN,JSON.stringify(DEFAULTS.map(d=>d.k)))}catch(e){}
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(cat))}catch(e){}}
+  load();
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const byKey=k=>cat.find(c=>c.k===k);
+  const rowKeys=row=>(Array.isArray(row&&row.sc)?row.sc:[]).filter(byKey);
+
+  window.scText=function(row){return rowKeys(row).map(k=>byKey(k).sym).join(' ')};
+  window.scPrintHtml=function(row){
+    const ks=rowKeys(row);if(!ks.length)return '';
+    return ' <span style="white-space:nowrap;font-weight:700;">'+ks.map(k=>'<span title="'+esc(byKey(k).label)+'" style="display:inline-block;border:1px solid #333;border-radius:3px;padding:0 3px;margin-left:2px;font-size:10px;line-height:1.3;">'+esc(byKey(k).sym)+'</span>').join('')+'</span>';
+  };
+  window.scLegendHtml=function(rows){
+    const used=[];(rows||[]).forEach(r=>rowKeys(r).forEach(k=>{if(used.indexOf(k)<0)used.push(k)}));
+    if(!used.length)return '';
+    return '<div style="margin:6px 0 2px;font-size:9px;color:#444;"><b>Características especiais:</b> '+used.map(k=>'<span style="margin-right:12px;white-space:nowrap;"><b style="font-size:11px;">'+esc(byKey(k).sym)+'</b> '+esc(byKey(k).label)+(byKey(k).client?' ('+esc(byKey(k).client)+')':'')+'</span>').join('')+'</div>';
+  };
+
+  function paintBtn(btn,row){
+    const t=window.scText(row);
+    btn.textContent=t||'◇+';
+    btn.classList.toggle('has',!!t);
+    btn.title=t?rowKeys(row).map(k=>byKey(k).sym+' '+byKey(k).label).join('\n'):'Adicionar símbolo de característica especial';
+    const inp=btn.parentNode&&btn.parentNode.querySelector('input[data-f="char"]');
+    if(inp)inp.style.paddingRight=(t?(14+rowKeys(row).length*16):30)+'px';
+  }
+
+  window.scAttach=function(tr,row,onChange){
+    const inp=tr.querySelector('input[data-f="char"]');
+    if(!inp)return;
+    const td=inp.closest('td');if(!td||td.querySelector('.sc-btn'))return;
+    td.classList.add('sc-host');
+    const btn=document.createElement('button');
+    btn.type='button';btn.className='sc-btn';
+    ['mousedown','touchstart','click','dblclick'].forEach(ev=>btn.addEventListener(ev,e=>e.stopPropagation()));
+    btn.addEventListener('click',e=>{
+      const ro=(typeof lcRO!=='undefined'&&lcRO&&btn.closest('#liSheetOverlay')&&!window._dmChecklistMode);
+      if(ro)return;
+      openPicker(btn,row,()=>{paintBtn(btn,row);onChange&&onChange();});
+    });
+    btn._scRow=row;
+    td.appendChild(btn);
+    paintBtn(btn,row);
+  };
+
+  function closePicker(){const p=document.getElementById('scPop');if(p)p.remove();document.removeEventListener('mousedown',outside,true)}
+  function outside(e){const p=document.getElementById('scPop');if(p&&!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.sc-btn')))closePicker()}
+
+  function openPicker(btn,row,done){
+    closePicker();
+    const sel=new Set(rowKeys(row));
+    const pop=document.createElement('div');pop.id='scPop';pop.className='sc-pop';
+    let lastCli=null;
+    pop.innerHTML='<h4>Características especiais do cliente</h4>'+cat.map(c=>
+      ((c.client||'')!==lastCli?(lastCli=(c.client||''),'<div class="sc-grp">'+esc(lastCli||'Outros')+'</div>'):'')+
+      '<label class="sc-opt"><input type="checkbox" data-k="'+esc(c.k)+'"'+(sel.has(c.k)?' checked':'')+'><span class="sym">'+esc(c.sym)+'</span><span class="lbl">'+esc(c.label)+'</span></label>').join('')+
+      '<div class="sc-foot"><button class="btn btn-sm" type="button" data-a="clear">Limpar</button><button class="btn btn-sm" type="button" data-a="edit">⚙ Editar lista</button><button class="btn btn-sm btn-primary" type="button" data-a="ok">OK</button></div>';
+    document.body.appendChild(pop);
+    const r=btn.getBoundingClientRect();
+    const w=300,h=pop.offsetHeight;
+    pop.style.left=Math.max(8,Math.min(window.innerWidth-w-8,r.right-w))+'px';
+    pop.style.top=Math.max(8,Math.min(window.innerHeight-h-8,r.bottom+4))+'px';
+    pop.addEventListener('change',e=>{
+      const k=e.target.dataset&&e.target.dataset.k;if(!k)return;
+      if(e.target.checked)sel.add(k);else sel.delete(k);
+      row.sc=cat.map(c=>c.k).filter(x=>sel.has(x));   // sempre um array novo (evita compartilhar ao copiar linhas)
+      done();
+    });
+    pop.addEventListener('click',e=>{
+      const a=e.target.dataset&&e.target.dataset.a;if(!a)return;
+      if(a==='clear'){sel.clear();row.sc=[];pop.querySelectorAll('input').forEach(i=>i.checked=false);done();}
+      if(a==='ok')closePicker();
+      if(a==='edit'){closePicker();window.scOpenEditor();}
+    });
+    setTimeout(()=>document.addEventListener('mousedown',outside,true),0);
+  }
+
+  /* ---------- Editor do catálogo ---------- */
+  window.scOpenEditor=function(){
+    closePicker();
+    const old=document.getElementById('scEd');if(old)old.remove();
+    let work=cat.map(c=>Object.assign({},c));
+    const ov=document.createElement('div');ov.id='scEd';ov.className='sc-ed';
+    ov.innerHTML='<div class="sc-ed-box"><header>◇ Símbolos de características especiais dos clientes</header><div class="sc-ed-body"><div style="color:var(--text-secondary);margin-bottom:8px;">Cada linha é um símbolo disponível nos formulários. Clique num símbolo abaixo para colocá-lo na última célula “Símbolo” em foco, ou digite/cole o seu próprio (ex.: o símbolo exato exigido pelo cliente).</div><div class="sc-sym-pick" id="scSymPick"></div><div class="sc-ed-row" style="font-weight:700;color:var(--text-secondary);"><div>Símbolo</div><div>Significado</div><div>Cliente / norma</div><div></div></div><div id="scEdRows"></div><button class="btn btn-sm" type="button" id="scAdd">＋ Novo símbolo</button></div><footer><div style="display:flex;gap:8px;"><button class="btn btn-sm" type="button" id="scReset">↺ Restaurar padrão</button></div><div style="display:flex;gap:8px;"><button class="btn btn-sm" type="button" id="scCancel">Cancelar</button><button class="btn btn-sm btn-primary" type="button" id="scSave">💾 Salvar</button></div></footer></div>';
+    document.body.appendChild(ov);
+    let lastSym=null;
+    const rowsBox=ov.querySelector('#scEdRows');
+    function draw(){
+      rowsBox.innerHTML=work.map((c,i)=>'<div class="sc-ed-row" data-i="'+i+'"><input class="s" data-p="sym" value="'+esc(c.sym)+'" maxlength="4"><input data-p="label" value="'+esc(c.label)+'"><input data-p="client" value="'+esc(c.client)+'"><button class="btn btn-sm btn-danger" type="button" data-del="'+i+'" title="Remover">✖</button></div>').join('');
+    }
+    draw();
+    ov.querySelector('#scSymPick').innerHTML=SYMS.map(s=>'<button type="button" data-s="'+s+'">'+s+'</button>').join('');
+    ov.addEventListener('focusin',e=>{if(e.target.dataset&&e.target.dataset.p==='sym')lastSym=e.target});
+    ov.addEventListener('input',e=>{const t=e.target,row=t.closest&&t.closest('.sc-ed-row');if(!row||!t.dataset.p)return;work[+row.dataset.i][t.dataset.p]=t.value});
+    ov.addEventListener('click',e=>{
+      const t=e.target;
+      if(t.dataset.s){const el=lastSym||rowsBox.querySelector('input[data-p="sym"]:last-of-type');if(el){el.value=t.dataset.s;el.dispatchEvent(new Event('input',{bubbles:true}));}return;}
+      if(t.dataset.del!=null){work.splice(+t.dataset.del,1);draw();return;}
+      if(t.id==='scAdd'){work.push({k:'u'+Date.now().toString(36),sym:'◇',label:'',client:''});draw();return;}
+      if(t.id==='scReset'){if(confirm('Restaurar a lista padrão de símbolos?')){work=DEFAULTS.map(d=>Object.assign({},d));draw();}return;}
+      if(t.id==='scCancel'){ov.remove();return;}
+      if(t.id==='scSave'){
+        work=work.filter(c=>String(c.sym).trim());
+        if(!work.length){alert('Mantenha ao menos um símbolo.');return;}
+        cat=work;save();ov.remove();
+        document.querySelectorAll('.sc-btn').forEach(b=>{if(b._scRow)paintBtn(b,b._scRow);});
+      }
+    });
+  };
 })();
 </script>
 
