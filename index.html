@@ -714,7 +714,7 @@ body.cl-open{overflow:hidden;}
 /* --- Folha do checklist (idêntica ao módulo Editor) --- */
 .li-sheet-overlay{position:fixed;inset:0;background:var(--bg);z-index:400;overflow:auto;display:none}
 /* ===== BARRA DE RELATÓRIOS ABERTOS (multi-checklist) ===== */
-.lc-openbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:9;}
+.lc-openbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:var(--li-top-h,0px);z-index:9;}
 .lc-openbar-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-secondary);margin-right:4px;}
 .lc-tab{display:inline-flex;align-items:center;gap:6px;padding:5px 8px 5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--card2);color:var(--text-secondary);font-size:11.5px;font-weight:600;cursor:pointer;transition:.15s;max-width:260px;}
 .lc-tab:hover{border-color:var(--border-hover);color:var(--text);}
@@ -735,7 +735,7 @@ body.cl-open{overflow:hidden;}
 .li-sheet-overlay.active{display:block}
 body.li-open .sidebar,body.li-open .topbar{filter:none}
 /* ── Ribbon toolbar for dimensional inspection ─────────────────── */
-.li-sheet-top{position:sticky;top:0;z-index:5;display:flex;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;}
+.li-sheet-top{position:sticky;top:0;z-index:10;display:flex;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;}
 .li-tb-section{display:flex;flex-direction:column;border-right:1px solid var(--border);flex-shrink:0;}
 .li-tb-section:last-child{border-right:0;}
 .li-tb-section-btns{display:flex;align-items:center;gap:4px;padding:8px 12px;flex:1;}
@@ -815,6 +815,10 @@ table.li-dim td.li-merged::after{content:'⇕';position:absolute;left:2px;top:1p
 table.li-dim td.li-col-merged{background:rgba(255,165,0,.07);position:relative;}
 table.li-dim td.li-col-merged>input{text-align:center;font-weight:600;}
 table.li-dim td.li-col-merged::before{content:'⇔';position:absolute;right:3px;top:1px;font-size:8px;opacity:.5;pointer-events:none;color:var(--warning,#f59e0b);}
+/* Medida dentro de retângulo (ex.: caixa "DIM 153.1" do desenho) */
+table.li-dim td.li-boxed>input{border:1.5px solid var(--text);border-radius:0;width:calc(100% - 10px);margin:3px 5px;padding:4px 4px;font-weight:600;text-align:center}
+table.li-dim td.li-boxed>input:focus{box-shadow:inset 0 0 0 1px var(--accent);border-color:var(--accent)}
+#liBtnBox.on{background:rgba(0,100,179,.18);border-color:var(--accent);color:var(--accent)}
 table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;box-shadow:inset 0 0 0 1.5px #a855f7;}
 /* --- Colunas redimensionáveis (checklist de Inspeção de Layout) --- */
 .li-table-wrap{position:relative;overflow-x:auto;border-radius:6px;}
@@ -3776,7 +3780,10 @@ function printLayoutChecklist(onlyActive, reportOverride){
         const cn = cs(row, f);
         const spanAttrs = (n > 1 ? ` rowspan="${n}"` : '') + (cn > 1 ? ` colspan="${cn}"` : '');
         const spanStyle = (n > 1 || cn > 1) ? ` style="vertical-align:middle;text-align:center;"` : '';
-        return `<td class="${cls}"${spanAttrs}${spanStyle}>${html}</td>`;
+        const inner = (row._box && row._box[f] && String(html).replace(/&nbsp;|\s/g,''))
+          ? `<span style="display:inline-block;border:1.5px solid #000;padding:2px 10px;min-width:44px;font-weight:700;text-align:center;">${html}</span>`
+          : html;
+        return `<td class="${cls}"${spanAttrs}${spanStyle}>${inner}</td>`;
       };
       const okB  = row.ok  ? `<span class="chip chip-ok">✓ ${liEsc(row.ok)}</span>`   : '&nbsp;';
       const nokB = row.nok ? `<span class="chip chip-ko">✗ ${liEsc(row.nok)}</span>` : '&nbsp;';
@@ -4442,6 +4449,7 @@ if (document.readyState === 'loading') {
         <button class="btn btn-sm" id="liBtnMerge" onclick="liMergeCells()"
           title="Mesclar células selecionadas. Linhas: arraste/Shift+clique na mesma COLUNA. Colunas: Shift+clique em campos diferentes da mesma LINHA. Ctrl+M.">⊞ Mesclar</button>
         <button class="btn btn-sm" id="liBtnUnmerge" onclick="liUnmergeCells()" title="Desmesclar seleção ou célula em foco (Ctrl+Shift+M)">⊟ Desmesclar</button>
+        <button class="btn btn-sm" id="liBtnBox" onclick="liToggleBox()" title="Colocar a medida/texto da célula selecionada dentro de um retângulo (clique de novo para remover). Funciona na célula em foco, em várias linhas da mesma coluna ou em campos da mesma linha. Ctrl+Shift+B.">▭ Retângulo</button>
         <button class="btn btn-sm" id="liBtnTol" onclick="liAutoTolerance()" title="Preencher tolerâncias automaticamente">± Tolerância</button>
         <button class="btn btn-sm" id="liBtnSim" onclick="liSimulate()" title="Gerar medições simuladas">🎲 Simular</button>
         <button class="btn btn-sm" onclick="scOpenEditor()" title="Editar a lista de símbolos de características especiais dos clientes">◇ Símbolos</button>
@@ -5506,7 +5514,7 @@ function liRenderRows(){
       if(colCovRow.has(f))return '';                   // coberta por colspan à esquerda
       const n=liSpanOf(row,f);
       const cn=(row._colSpan&&row._colSpan[f])||1;
-      const cls=[tdCls||'',n>1?'li-merged':'',cn>1?'li-col-merged':''].filter(Boolean).join(' ');
+      const cls=[tdCls||'',n>1?'li-merged':'',cn>1?'li-col-merged':'',(row._box&&row._box[f])?'li-boxed':''].filter(Boolean).join(' ');
       return `<td${n>1?` rowspan="${n}"`:''}${cn>1?` colspan="${cn}"`:''}${cls?` class="${cls}"`:''}><input value="${liEsc(liFieldVal(row,f))}" data-f="${f}"${inpStyle?` style="${inpStyle}"`:''}><span class="li-fillhandle" data-f="${f}"></span></td>`;
     };
     tr.innerHTML=`
@@ -5552,6 +5560,47 @@ function liRenderRows(){
   });
   liSelectedRows.forEach(i=>{const tr=tb.children[i];if(tr)tr.classList.add('li-row-selected')});
 }
+/* ── Retângulo ao redor da medida (row._box = { campo:true }) ── */
+let liLastCell=null;
+document.getElementById('liDimBody').addEventListener('focusin',e=>{
+  const inp=e.target;
+  if(inp&&inp.matches&&inp.matches('input[data-f]')){const tr=inp.closest('tr');if(tr)liLastCell={idx:+tr.dataset.idx,field:inp.dataset.f};}
+});
+window.liToggleBox=function(){
+  if(typeof lcRO!=='undefined'&&lcRO){liToast('Relatório em modo leitura','error');return}
+  const r=liGetReport(liCurrent);
+  let cells=[];
+  if(typeof liColRangeSelection!=='undefined'&&liColRangeSelection){
+    const{rowIdx,loCol,hiCol}=liColRangeSelection;
+    for(let ci=loCol;ci<=hiCol;ci++)cells.push({idx:rowIdx,field:LI_MERGE_FIELDS[ci]});
+  }else if(typeof liCellSelection!=='undefined'&&liCellSelection){
+    const{field,lo,hi}=liCellSelection;
+    for(let i=lo;i<=hi;i++)cells.push({idx:i,field});
+  }else if(liLastCell){cells=[liLastCell];}
+  cells=cells.filter(c=>r.rows[c.idx]&&c.field);
+  if(!cells.length){liToast('Clique em uma célula (ex.: NOMINAL ou CHARACTERISTIC) e depois em ▭ Retângulo','error');return}
+  const allOn=cells.every(c=>r.rows[c.idx]._box&&r.rows[c.idx]._box[c.field]);
+  liSnapshot();
+  cells.forEach(c=>{
+    const row=r.rows[c.idx];
+    if(allOn){
+      delete row._box[c.field];
+      if(!Object.keys(row._box).length)delete row._box;
+    }else{
+      row._box=row._box||{};
+      row._box[c.field]=true;
+    }
+  });
+  liCommitSnapshot();
+  liRenderRows();liUpdateSummary();liPersist();liSetDirty(true);
+  liToast(allOn?'Retângulo removido':'▭ Retângulo aplicado em '+cells.length+' célula(s)','success');
+};
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.shiftKey&&(e.key==='B'||e.key==='b')){
+    const ov=document.getElementById('liSheetOverlay');
+    if(ov&&ov.classList.contains('active')){e.preventDefault();window.liToggleBox();}
+  }
+});
 function liSyncStatusInputs(tr,row){
   const io=tr.querySelector('[data-f=ok]'),ino=tr.querySelector('[data-f=nok]');
   if(io&&io!==document.activeElement)io.value=row.ok||'';
@@ -7262,7 +7311,7 @@ function dmRenderEditor(){
   set('dmObs', p.obs); set('dmSignName', p.signName); set('dmSignTitle', p.signTitle); set('dmSignDate', p.signDate);
 
   const cell = (r, f, cls, style) =>
-    `<td${cls?` class="${cls}"`:''}><input value="${dmEsc(f.length===2&&f[0]==='m' ? (r.m||[])[+f[1]] : r[f])}" data-f="${f}"${style?` style="${style}"`:''} oninput="dmRowChange('${r.id}','${f}',this.value)"></td>`;
+    `<td${(cls||(r._box&&r._box[f]))?` class="${[cls,(r._box&&r._box[f])?'li-boxed':''].filter(Boolean).join(' ')}"`:''}><input value="${dmEsc(f.length===2&&f[0]==='m' ? (r.m||[])[+f[1]] : r[f])}" data-f="${f}"${style?` style="${style}"`:''} oninput="dmRowChange('${r.id}','${f}',this.value)"></td>`;
 
   document.getElementById('dmTableBody').innerHTML = (p.rows||[]).map(r => {
     dmAutoStatus(r);
@@ -7946,6 +7995,13 @@ else dmInit();
         c.border = box;
         if(bg) c.fill = fill(bg);
       });
+      if(row._box) Object.keys(row._box).forEach(f=>{
+        const ci=FIELDS.indexOf(f); if(ci<0||!row._box[f]) return;
+        const mb={style:'medium',color:{argb:'FF000000'}};
+        const c=ws.getCell(rr,ci+1);
+        c.border={top:mb,left:mb,bottom:mb,right:mb};
+        c.font=Object.assign({},c.font,{bold:true});
+      });
       ws.getCell(rr,12).font = {size:9,bold:true,color:{argb:C.okTx},name:'Arial'};
       ws.getCell(rr,13).font = {size:9,bold:true,color:{argb:C.nokTx},name:'Arial'};
       ws.getRow(rr).height = 18;
@@ -8401,5 +8457,19 @@ else dmInit();
 })();
 </script>
 
+<script>
+/* Mantém a barra de ferramentas da folha fixa ao rolar: a barra de "Relatórios abertos"
+   fica logo abaixo dela (antes as duas colavam em top:0 e uma cobria a outra). */
+(function(){
+  const ov=document.getElementById('liSheetOverlay');
+  const top=ov&&ov.querySelector('.li-sheet-top');
+  if(!top)return;
+  const upd=()=>ov.style.setProperty('--li-top-h',top.offsetHeight+'px');
+  if(window.ResizeObserver)new ResizeObserver(upd).observe(top);
+  window.addEventListener('resize',upd);
+  new MutationObserver(upd).observe(ov,{attributes:true,attributeFilter:['class']});
+  upd();
+})();
+</script>
 </body>
 </html>
