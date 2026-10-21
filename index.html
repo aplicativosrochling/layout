@@ -784,6 +784,24 @@ table.li-dim th input#liSelAllChk{cursor:pointer}
 .li-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 .li-sign .cell{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
 .li-sign input{width:100%;background:transparent;border:0;color:var(--text);font-size:12.5px;font-family:inherit;outline:none}
+/* --- Croqui dos pontos de medição (por componente) --- */
+.li-croqui{margin-top:16px;border:1px solid var(--border);border-radius:10px;background:var(--card);padding:12px 14px}
+.li-croqui-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.li-croqui-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--accent)}
+.li-croqui-count{font-size:11px;color:var(--text-secondary);margin-left:4px}
+.li-croqui-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cq-drop{border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center;font-size:12px;color:var(--text-secondary);cursor:pointer;transition:all .15s;outline:none}
+.cq-drop:hover,.cq-drop:focus,.cq-drop.drag-over{border-color:var(--accent);color:var(--accent);background:rgba(0,100,179,.06)}
+.li-croqui-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
+.cq-card{margin:0;position:relative;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card2);display:flex;flex-direction:column}
+.cq-card img{width:100%;height:190px;object-fit:contain;background:#fff;cursor:zoom-in;display:block}
+.cq-card .cq-cap{width:100%;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;padding:7px 9px;font-family:inherit;outline:none}
+.cq-card .cq-cap:focus{box-shadow:inset 0 0 0 1px var(--accent)}
+.cq-card .cq-del{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(220,38,38,.92);color:#fff;cursor:pointer;font-size:12px;line-height:1}
+.cq-card .cq-num{position:absolute;top:6px;left:6px;background:rgba(0,100,179,.92);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:2px 8px}
+.cq-empty{grid-column:1/-1;text-align:center;font-size:12px;color:var(--text-secondary);padding:6px}
+.cq-lightbox{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+.cq-lightbox img{max-width:100%;max-height:100%;background:#fff;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
 .li-tag{font-size:11px;border-radius:20px;padding:3px 10px;border:1px solid var(--border);background:var(--card2);color:var(--text-secondary)}
 .li-tag.ok{color:var(--success);border-color:rgba(0,230,118,.35)}
 .li-tag.nok{color:var(--danger);border-color:rgba(255,61,87,.35)}
@@ -3900,6 +3918,24 @@ ${scLegend}
 </div>
 
 </section>`;
+
+    const cqList = Array.isArray(sh.croquis) ? sh.croquis.filter(c => c && c.url) : [];
+    if (cqList.length) {
+      pagesHtml += `
+<section class="li-print-page li-page-break cq-page">
+  <div class="cq-top">
+    <div class="cq-t1">Croqui dos Pontos de Medição</div>
+    <div class="cq-t2">${liEsc(compName)} · P/N ${liEsc(hdr.partNumber) || '—'} · ${liEsc(hdr.partName) || ''} · Report N° ${liEsc(hdr.reportN) || '—'}</div>
+  </div>
+  <div class="cq-grid${cqList.length === 1 ? ' one' : ''}">
+    ${cqList.map((c, ci) => `<figure class="cq-fig"><img src="${liEsc(c.url)}" alt=""><figcaption>${liEsc(c.cap) || ('Croqui ' + (ci + 1))}</figcaption></figure>`).join('')}
+  </div>
+  <div class="page-footer">
+    <div class="pf-left"><span><b>Röchling Automotive do Brasil Ltda</b> · <span class="pf-confidential">⚠ Documento Confidencial — Uso Interno</span></span></div>
+    <div style="text-align:right;"><b>Doc. ID:</b> ${docId}</div>
+  </div>
+</section>`;
+    }
   });
 
   const win = window.open('', '_blank');
@@ -3983,6 +4019,17 @@ ${scLegend}
   .pf-left { display: flex; flex-direction: column; gap: 1px; }
   .pf-confidential { font-weight: 700; color: #c0392b; text-transform: uppercase; letter-spacing: .5px; font-size: 7px; }
 
+  /* ── CROQUI ── */
+  .cq-top { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #0064B3; padding-bottom: 4px; margin-bottom: 8px; }
+  .cq-t1 { font-size: 14px; font-weight: 800; color: #0064B3; }
+  .cq-t2 { font-size: 9px; color: #4a5470; font-weight: 600; }
+  .cq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cq-grid.one { grid-template-columns: 1fr; }
+  .cq-fig { border: 1.5px solid #d0d8ed; border-radius: 8px; padding: 5px; text-align: center; page-break-inside: avoid; break-inside: avoid; background: #fff; }
+  .cq-fig img { max-width: 100%; max-height: 78mm; object-fit: contain; display: block; margin: 0 auto; }
+  .cq-grid.one .cq-fig img { max-height: 158mm; }
+  .cq-fig figcaption { font-size: 8.5px; font-weight: 700; color: #1e2433; margin-top: 4px; }
+
   @media print {
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     table.main tr { page-break-inside: avoid; }
@@ -3993,7 +4040,9 @@ ${scLegend}
 ${pagesHtml}
 <scr` + `ipt>
   window.onload = () => {
-    setTimeout(() => { window.print(); }, 800);
+    const imgs = Array.from(document.images);
+    Promise.all(imgs.map(i => i.complete ? 1 : new Promise(r => { i.onload = i.onerror = r; })))
+      .then(() => setTimeout(() => { window.print(); }, 600));
   };
 <\/script>
 </body>
@@ -4564,6 +4613,21 @@ if (document.readyState === 'loading') {
       <span style="font-size:11px;color:var(--text-secondary);align-self:center;">💡 OK / NOT OK é calculado automaticamente a partir de NOMINAL + LOW/UPPER. Digitar manualmente trava a linha. Clique e arraste (ou Shift+clique) em células de uma mesma coluna para selecionar um intervalo, igual Excel — Ctrl+C copia, Ctrl+V cola (cria linhas se precisar), Delete apaga os valores selecionados. Ctrl/Shift+clique numa linha (fora das células) seleciona linhas inteiras — Ctrl+C/Ctrl+V/Delete também funcionam nelas, e "Excluir linhas selecionadas" remove várias linhas inteiras de uma vez. Os botões "Adicionar linha(s)" perguntam quantas linhas criar. A alcinha 🔲 do canto da célula preenche em série.</span>
     </div>
 
+    <div class="li-croqui" id="liCroquiBox">
+      <div class="li-croqui-head">
+        <div><span class="li-croqui-title">📐 Croqui dos pontos de medição</span><span class="li-croqui-count" id="liCroquiCount"></span></div>
+        <div class="li-croqui-actions cq-edit">
+          <button type="button" class="btn btn-sm" onclick="liCqPasteBtn()" title="Cola o print que está na área de transferência (Win+Shift+S)">📋 Colar print</button>
+          <button type="button" class="btn btn-sm" onclick="document.getElementById('liCroquiFile').click()">＋ Anexar imagem</button>
+          <input type="file" id="liCroquiFile" accept="image/*" multiple style="display:none" onchange="liCqAdd(this.files);this.value=''">
+        </div>
+      </div>
+      <div class="cq-drop cq-edit" id="liCroquiDrop" tabindex="0" onclick="document.getElementById('liCroquiFile').click()">
+        Arraste os prints do croqui aqui, ou passe o mouse sobre esta área e pressione <b>Ctrl+V</b>
+      </div>
+      <div class="li-croqui-list" id="liCroquiList"></div>
+    </div>
+
     <div class="li-obs">
       <label>Observações</label>
       <textarea data-lk="obs"></textarea>
@@ -4788,6 +4852,7 @@ function liEnsureSheets(r){
   const hasLegacy=Object.keys(legacyHeader).some(k=>legacyHeader[k]!=null&&legacyHeader[k]!=='');
   r.sheets.forEach((sh,i)=>{
     if(!sh.id)sh.id=liUid();
+    if(!Array.isArray(sh.croquis))sh.croquis=[];
     if(!sh.name)sh.name='Componente '+(i+1);
     sh.rows=(sh.rows||[]).map(row=>{
       row.m=Array.isArray(row.m)?row.m.slice(0,5):['','','','',''];
@@ -4837,6 +4902,7 @@ function liNormalizeReport(saved, itemInfo){
       id:sh.id||liUid(),
       name:sh.name||('Componente '+(i+1)),
       rows:cloneRows(sh.rows),
+      croquis:Array.isArray(sh.croquis)?JSON.parse(JSON.stringify(sh.croquis)):[],
       header:sh.header?Object.assign({},liBlankHeader(itemInfo),sh.header):null // null = migra no liEnsureSheets
     }));
     r.activeSheet=(saved.activeSheet!=null)?saved.activeSheet:0;
@@ -4917,6 +4983,7 @@ window.liExportRecord=function(finalize){
   return payload;
 };
 window.liSetReadonly=function(ro){
+  window._liRO=!!ro;
   const ov=document.getElementById('liSheetOverlay');if(!ov)return;
   ov.querySelectorAll('input, textarea, select').forEach(el=>{
     el.readOnly = ro && el.tagName!=='SELECT';
@@ -4929,6 +4996,7 @@ window.liSetReadonly=function(ro){
   set('liBtnMerge',!ro); set('liBtnUnmerge',!ro);
   set('liBtnAddRow',!ro); set('liBtnInsertRow0',!ro); set('liBtnReset',!ro);
   set('liBtnEdit',ro); set('liBtnDelete',ro); set('liReadonlyBadge',ro);
+  try{liRenderCroqui();}catch(e){}
 };
 
 /* ---------- utils ---------- */
@@ -5120,7 +5188,7 @@ function liRenderSheet(){
     else if(el.isContentEditable)el.textContent=val||'';
     else el.value=val||'';
   });
-  liRenderTabs();liRenderHeaders();liRenderRows();liUpdateSummary();
+  liRenderTabs();liRenderHeaders();liRenderRows();liUpdateSummary();try{liRenderCroqui();}catch(e){}
   liInitColResize();
 }
 function liRenderTabs(){
@@ -5771,6 +5839,157 @@ window.liExportSheetExcel=function(){
   const firstPn=(r.sheets[0]&&r.sheets[0].header&&r.sheets[0].header.partNumber)||'relatorio';
   XLSX.writeFile(wb,'checklist_layout_'+firstPn+'.xlsx');
 };
+
+/* ================= CROQUI DOS PONTOS DE MEDIÇÃO =================
+   Cada componente (aba) guarda sua própria lista sh.croquis = [{id,name,cap,url,path}].
+   Os arquivos vão para o Firebase Storage (mesmo mecanismo dos desenhos do item) e só a
+   URL fica no relatório — o documento do Firestore não engorda. Aparece na impressão
+   (página extra por componente) e no Excel (aba CROQUI com as imagens). */
+const LI_CQ_MAX=12;
+let liCqBusy=false;
+function liCqCompress(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=2400;
+      let w=img.naturalWidth,h=img.naturalHeight;
+      const s=Math.min(1,MAX/Math.max(w,h));
+      w=Math.round(w*s);h=Math.round(h*s);
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      c.toBlob(b=>b?res(b):rej(new Error('Falha ao converter imagem')),'image/jpeg',0.9);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Imagem inválida'));};
+    img.src=url;
+  });
+}
+function liRenderCroqui(){
+  const box=document.getElementById('liCroquiList');
+  if(!box||!liCurrent)return;
+  const r=liGetReport(liCurrent);
+  const sh=r.sheets[r.activeSheet];if(!sh)return;
+  const list=sh.croquis||(sh.croquis=[]);
+  const ro=!!window._liRO;
+  document.querySelectorAll('#liCroquiBox .cq-edit').forEach(el=>{el.style.display=ro?'none':'';});
+  const cnt=document.getElementById('liCroquiCount');
+  if(cnt)cnt.textContent=list.length?(' ('+list.length+')'):'';
+  box.innerHTML=list.length?list.map((c,i)=>`
+    <figure class="cq-card">
+      <span class="cq-num">${i+1}</span>
+      ${ro?'':`<button type="button" class="cq-del" title="Remover croqui" onclick="liCqRemove(${i})">✕</button>`}
+      <img src="${liEsc(c.url)}" alt="Croqui ${i+1}" loading="lazy" onclick="liCqZoom(${i})">
+      <input class="cq-cap" placeholder="Legenda (ex.: Vista frontal — pontos P1 a P4)" value="${liEsc(c.cap||'')}" ${ro?'readonly':''} oninput="liCqCaption(${i},this.value)">
+    </figure>`).join(''):'<div class="cq-empty">Nenhum croqui anexado a este componente.</div>';
+}
+window.liCqAdd=async function(files){
+  if(window._liRO||!liCurrent)return;
+  files=Array.from(files||[]).filter(f=>/^image\//.test(f.type));
+  if(!files.length){liToast('Use arquivos de imagem (PNG, JPG…)','error');return}
+  if(!(window.CloudSync&&window.CloudSync.ready&&window.CloudSync.uploadDrawing)){
+    liToast('Sem conexão com a nuvem — não é possível anexar o croqui agora','error');return}
+  if(liCqBusy){liToast('Aguarde o envio anterior terminar','error');return}
+  const r=liGetReport(liCurrent);
+  const sh=r.sheets[r.activeSheet];if(!sh)return;
+  const list=sh.croquis||(sh.croquis=[]);
+  const room=LI_CQ_MAX-list.length;
+  if(room<=0){liToast('Limite de '+LI_CQ_MAX+' croquis por componente','error');return}
+  if(files.length>room){liToast('Só '+room+' imagem(ns) serão enviadas (limite de '+LI_CQ_MAX+' por componente)','error');files=files.slice(0,room)}
+  const itemId=String((typeof lcItemId!=='undefined'&&lcItemId!=null&&!window._dmChecklistMode)?lcItemId:liCurrent).replace(/[^\w\-]/g,'_');
+  liCqBusy=true;
+  let sent=0;
+  try{
+    for(const f of files){
+      liToast('Enviando croqui…','success');
+      let blob;
+      try{blob=await liCqCompress(f);}catch(e){liToast('Não foi possível ler a imagem: '+(e.message||''),'error');continue}
+      const n=list.length+1;
+      const up=new File([blob],'croqui_'+Date.now()+'_'+n+'.jpg',{type:'image/jpeg'});
+      const res=await window.CloudSync.uploadDrawing(itemId,up);
+      if(res&&res.ok){
+        list.push({id:liUid(),name:up.name,cap:'',url:res.url,path:res.path});
+        sent++;
+        const cur=liGetReport(liCurrent);
+        if(cur.sheets[cur.activeSheet]===sh)liRenderCroqui();
+      }else{
+        liToast('Falha ao enviar croqui: '+((res&&res.error)||''),'error');
+      }
+    }
+  }finally{liCqBusy=false;}
+  if(sent){
+    liSetDirty(true);liPersist();
+    liToast('Croqui anexado ✔ — clique em Salvar para gravar no relatório','success');
+  }
+};
+window.liCqRemove=function(i){
+  if(window._liRO)return;
+  const r=liGetReport(liCurrent);const sh=r.sheets[r.activeSheet];
+  if(!sh||!sh.croquis||!sh.croquis[i])return;
+  if(!confirm('Remover este croqui do componente?'))return;
+  sh.croquis.splice(i,1);
+  liSetDirty(true);liPersist();liRenderCroqui();
+};
+window.liCqCaption=function(i,v){
+  const r=liGetReport(liCurrent);const sh=r.sheets[r.activeSheet];
+  if(!sh||!sh.croquis||!sh.croquis[i])return;
+  sh.croquis[i].cap=v;
+  liSetDirty(true);liPersist();
+};
+window.liCqZoom=function(i){
+  const r=liGetReport(liCurrent);const sh=r.sheets[r.activeSheet];
+  const c=sh&&sh.croquis&&sh.croquis[i];if(!c)return;
+  const lb=document.createElement('div');lb.className='cq-lightbox';
+  lb.innerHTML='<img src="'+liEsc(c.url)+'" alt="">';
+  const close=()=>{lb.remove();document.removeEventListener('keydown',onKey,true);};
+  const onKey=e=>{if(e.key==='Escape')close();};
+  lb.addEventListener('click',close);
+  document.addEventListener('keydown',onKey,true);
+  document.body.appendChild(lb);
+};
+window.liCqPasteBtn=async function(){
+  try{
+    const items=await navigator.clipboard.read();
+    const files=[];
+    for(const it of items){
+      const t=it.types.find(t=>t.startsWith('image/'));
+      if(t){const b=await it.getType(t);files.push(new File([b],'print.'+t.split('/')[1],{type:t}));}
+    }
+    if(!files.length){liToast('Nenhuma imagem na área de transferência. Tire o print (Win+Shift+S) e tente de novo','error');return}
+    window.liCqAdd(files);
+  }catch(e){
+    liToast('Não consegui ler a área de transferência — passe o mouse sobre a área do croqui e use Ctrl+V','error');
+  }
+};
+// Ctrl+V com um print na área de transferência
+document.addEventListener('paste',e=>{
+  const ov=document.getElementById('liSheetOverlay');
+  if(!ov||!ov.classList.contains('active')||window._liRO)return;
+  const files=Array.from((e.clipboardData&&e.clipboardData.files)||[]).filter(f=>/^image\//.test(f.type));
+  if(!files.length)return;
+  e.preventDefault();
+  window.liCqAdd(files);
+});
+// Arrastar e soltar
+document.addEventListener('dragover',e=>{
+  const d=e.target.closest&&e.target.closest('#liCroquiBox');
+  if(!d||window._liRO)return;
+  e.preventDefault();
+  const z=document.getElementById('liCroquiDrop');if(z)z.classList.add('drag-over');
+});
+document.addEventListener('dragleave',e=>{
+  const z=document.getElementById('liCroquiDrop');
+  if(z&&(!e.relatedTarget||!(e.relatedTarget.closest&&e.relatedTarget.closest('#liCroquiBox'))))z.classList.remove('drag-over');
+});
+document.addEventListener('drop',e=>{
+  const d=e.target.closest&&e.target.closest('#liCroquiBox');
+  const z=document.getElementById('liCroquiDrop');if(z)z.classList.remove('drag-over');
+  if(!d||window._liRO)return;
+  e.preventDefault();
+  window.liCqAdd(e.dataTransfer&&e.dataTransfer.files);
+});
+// marca quando o mouse está sobre a área (para o Ctrl+V de linhas não "roubar" o print)
+document.addEventListener('mouseover',e=>{window._liCqHover=!!(e.target.closest&&e.target.closest('#liCroquiBox'));});
 
 /* ---------- GD&T ---------- */
 let liLastField=null;
@@ -6575,6 +6794,7 @@ document.addEventListener('keydown',e=>{
   const isCopy=(e.ctrlKey||e.metaKey)&&(e.key==='c'||e.key==='C');
   const isPaste=(e.ctrlKey||e.metaKey)&&(e.key==='v'||e.key==='V');
   const isDelete=!e.ctrlKey&&!e.metaKey&&(e.key==='Delete'||e.key==='Backspace');
+  if(isPaste&&(window._liCqHover||(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#liCroquiBox'))))return; // deixa o paste de imagem do croqui acontecer
   if(!isCopy&&!isPaste&&!isDelete)return;
   const activeIsCell=document.activeElement&&document.activeElement.matches&&document.activeElement.matches('input[data-f]');
   if(isCopy){
@@ -8073,6 +8293,42 @@ else dmInit();
     ws.pageSetup.printTitlesRow = R1 + ':' + R2;
   }
 
+  /* ── Aba CROQUI com as imagens dos pontos de medição (uma por componente) ── */
+  async function addCroquiSheet(wb, sh, i, multi){
+    const list = (sh.croquis||[]).filter(c=>c&&c.url);
+    if(!list.length) return;
+    let nm = ('CROQUI' + (multi ? ' - ' + (sh.name||('Comp'+(i+1))) : '')).replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31);
+    const base = nm; let n = 2;
+    while(wb.worksheets.some(w=>w.name===nm)){ nm = base.slice(0,28) + ' ' + (n++); }
+    const ws = wb.addWorksheet(nm, {views:[{showGridLines:false}]});
+    ws.getColumn(1).width = 2;
+    let row = 1;
+    for(let k=0;k<list.length;k++){
+      const c = list[k];
+      ws.getCell(row,2).value = c.cap || ('Croqui ' + (k+1));
+      ws.getCell(row,2).font = {bold:true,size:11,name:'Arial',color:{argb:C.navy}};
+      row++;
+      try{
+        const resp = await fetch(c.url);
+        if(!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        const buf = await blob.arrayBuffer();
+        const bmp = await createImageBitmap(blob);
+        const s = Math.min(1, 1100 / bmp.width);
+        const w = Math.round(bmp.width * s), h = Math.round(bmp.height * s);
+        const id = wb.addImage({buffer: buf, extension: /png/i.test(blob.type) ? 'png' : 'jpeg'});
+        ws.addImage(id, {tl:{col:1,row:row-1}, ext:{width:w,height:h}});
+        row += Math.ceil(h/20) + 2;
+      }catch(e){
+        console.warn('Croqui não embutido no Excel (usando link):', e);
+        ws.getCell(row,2).value = {text:'Abrir imagem do croqui', hyperlink:c.url};
+        ws.getCell(row,2).font = {color:{argb:'FF0064B3'},underline:true,name:'Arial',size:10};
+        row += 3;
+      }
+    }
+    ws.pageSetup = {orientation:'landscape', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0};
+  }
+
   window.liExportFormattedExcel = async function(report, filename, isDimensional){
     if(typeof ExcelJS === 'undefined') return false;
     const r = report;
@@ -8081,6 +8337,7 @@ else dmInit();
     wb.creator = 'Röchling Automotive'; wb.created = new Date();
     const opts = {used:{}, isDimensional:!!isDimensional};
     sheets.forEach((sh, i)=> buildSheet(wb, sh, r, i, opts));
+    for(let i=0;i<sheets.length;i++){ await addCroquiSheet(wb, sheets[i], i, sheets.length>1); }
     const buf = await wb.xlsx.writeBuffer();
     const url = URL.createObjectURL(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
     const a = document.createElement('a');
