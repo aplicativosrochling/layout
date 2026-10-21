@@ -801,7 +801,9 @@ table.li-dim th input#liSelAllChk{cursor:pointer}
 .cq-card .cq-num{position:absolute;top:6px;left:6px;background:rgba(0,100,179,.92);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:2px 8px}
 .cq-empty{grid-column:1/-1;text-align:center;font-size:12px;color:var(--text-secondary);padding:6px}
 .cq-lightbox{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
-.cq-lightbox img{max-width:100%;max-height:100%;background:#fff;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.cq-lb-close{position:fixed;top:16px;right:20px;width:44px;height:44px;border-radius:50%;border:2px solid #fff;background:rgba(220,38,38,.95);color:#fff;font-size:20px;line-height:1;cursor:pointer;z-index:100001;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.cq-lb-close:hover{background:#b91c1c}
+.cq-lightbox img{cursor:default;max-width:100%;max-height:100%;background:#fff;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
 .li-tag{font-size:11px;border-radius:20px;padding:3px 10px;border:1px solid var(--border);background:var(--card2);color:var(--text-secondary)}
 .li-tag.ok{color:var(--success);border-color:rgba(0,230,118,.35)}
 .li-tag.nok{color:var(--danger);border-color:rgba(255,61,87,.35)}
@@ -4788,13 +4790,14 @@ function liLoad(){
 function liPersist(){
   clearTimeout(liPersistTimer);
   liPersistTimer=setTimeout(()=>{
-    try{localStorage.setItem(LI_KEY,JSON.stringify(liState))}catch(e){}
+    // Fonte de verdade única: Dimensional -> produto (dmPersistChecklist);
+    // Layout -> a.layoutChecklists via autosave (saveLayoutChecklist).
+    // Não duplica mais o relatório inteiro em localStorage (LI_KEY).
     if(window._dmChecklistMode&&typeof window.dmPersistChecklist==='function')window.dmPersistChecklist();
   },250);
 }
 function liPersistNow(){
   clearTimeout(liPersistTimer);
-  try{localStorage.setItem(LI_KEY,JSON.stringify(liState))}catch(e){}
   if(window._dmChecklistMode&&typeof window.dmPersistChecklist==='function')window.dmPersistChecklist();
 }
 function liUid(){return 'L'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
@@ -5940,11 +5943,22 @@ window.liCqZoom=function(i){
   const r=liGetReport(liCurrent);const sh=r.sheets[r.activeSheet];
   const c=sh&&sh.croquis&&sh.croquis[i];if(!c)return;
   const lb=document.createElement('div');lb.className='cq-lightbox';
-  lb.innerHTML='<img src="'+liEsc(c.url)+'" alt="">';
-  const close=()=>{lb.remove();document.removeEventListener('keydown',onKey,true);};
-  const onKey=e=>{if(e.key==='Escape')close();};
-  lb.addEventListener('click',close);
+  lb.innerHTML='<button type="button" class="cq-lb-close" title="Fechar (Esc)" aria-label="Fechar">✕</button><img src="'+liEsc(c.url)+'" alt="">';
+  let closed=false;
+  const close=(fromPop)=>{
+    if(closed)return;closed=true;
+    lb.remove();
+    document.removeEventListener('keydown',onKey,true);
+    window.removeEventListener('popstate',onPop);
+    if(!fromPop&&history.state&&history.state.cqLightbox)history.back();
+  };
+  const onKey=e=>{if(e.key==='Escape'){e.stopPropagation();close();}};
+  const onPop=()=>close(true); // botão "Voltar" do navegador fecha só o croqui, não a página
+  lb.addEventListener('click',()=>close());
+  lb.querySelector('img').addEventListener('click',e=>e.stopPropagation());
+  lb.querySelector('.cq-lb-close').addEventListener('click',e=>{e.stopPropagation();close();});
   document.addEventListener('keydown',onKey,true);
+  try{history.pushState({cqLightbox:true},'');window.addEventListener('popstate',onPop);}catch(e){}
   document.body.appendChild(lb);
 };
 window.liCqPasteBtn=async function(){
