@@ -1481,7 +1481,11 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
       <div class="drw-section">
         <div class="drw-head">
           <div class="view-label">📎 Desenhos do Produto</div>
-          <button type="button" class="btn btn-sm" onclick="toggleDrwLinkForm()">+ Adicionar link</button>
+          <span style="display:flex;gap:6px;flex:none;">
+            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('drwFile').click()">📎 Anexar arquivo</button>
+            <button type="button" class="btn btn-sm" onclick="toggleDrwLinkForm()">+ Adicionar link</button>
+            <input type="file" id="drwFile" accept="image/*,application/pdf,.pdf" multiple style="display:none" onchange="drwAddFiles(this.files);this.value=''">
+          </span>
         </div>
         <div class="drw-linkform" id="drwLinkForm" style="display:none;">
           <input type="text" id="drwLinkName" placeholder="Nome (ex.: REV.09 - HR10 GUIDE AIR G.pdf)" maxlength="120">
@@ -1491,7 +1495,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
             <button type="button" class="btn btn-sm btn-primary" onclick="addDrawingLink()">Salvar link</button>
           </div>
         </div>
-        <div class="drw-hint">Cole o link de compartilhamento do SharePoint/OneDrive (PDF, DWG, imagem…) ou um caminho de rede · até 10 por item · só o link é salvo no banco, o arquivo fica no seu SharePoint/servidor</div>
+        <div class="drw-hint">Anexe <b>imagens</b> (PNG/JPG, comprimidas automaticamente) ou <b>PDF até ~700 KB</b> direto no sistema. Para DWG, STEP ou arquivos maiores, use <b>+ Adicionar link</b> (SharePoint/OneDrive ou caminho de rede) · até 10 por item</div>
         <div class="drw-list" id="drwList"></div>
       </div>
     </div>
@@ -1598,6 +1602,10 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
       console.warn('Erro ao salvar croqui:', e);
       return { ok: false, error: _friendlyError(e) };
     }
+  };
+  window.CloudSync.deleteCroqui = async function(id) {
+    try { await deleteDoc(doc(db, CQ_COL, String(id))); return true; }
+    catch (e) { console.warn('Erro ao apagar anexo:', e); return false; }
   };
   window.CloudSync.getCroqui = async function(id) {
     try {
@@ -2342,6 +2350,7 @@ function toggleDrwLinkForm(show) {
   }
 }
 
+const _drwTried = {};
 function renderDrawingsList(a) {
   const box = document.getElementById('drwList');
   if (!box) return;
@@ -2351,6 +2360,17 @@ function renderDrawingsList(a) {
     const name = drwEsc(d.name || 'arquivo');
     const url = d.url || '';
     const rm = `<button type="button" class="drw-remove" onclick="event.preventDefault();event.stopPropagation();removeDrawing(${i})" title="Remover">✕</button>`;
+    if (typeof url === 'string' && url.startsWith('fs:')) {
+      const fid = url.slice(3);
+      const data = (window._cqCache || {})[fid];
+      const isImg = (d.type || '').startsWith('image/');
+      if (!data && !_drwTried[fid]) {
+        _drwTried[fid] = 1;
+        if (window.CloudSync && window.CloudSync.getCroqui) window.CloudSync.getCroqui(fid).then(r => { if (r) { (window._cqCache = window._cqCache || {})[fid] = r; } renderDrawingsList(a); });
+      }
+      const thumb = (isImg && data) ? `<img class="drw-thumb" src="${drwEsc(data)}" alt="${name}">` : `<div class="drw-icon">${isImg ? (data ? '🖼️' : '⏳') : '📄'}</div>`;
+      return `<a class="drw-card" href="#" onclick="event.preventDefault();drwOpen(${i})" title="Clique para abrir">${rm}${thumb}<div class="drw-name" title="${name}">${name}</div><div class="drw-sub">anexado no sistema</div></a>`;
+    }
     if (d.path) {
       // anexo antigo (Firebase Storage) — o bucket está bloqueado, mas o registro continua visível
       const isImg = (d.type || '').startsWith('image/');
@@ -2403,14 +2423,101 @@ function removeDrawing(idx) {
   const id = state.currentViewId;
   const a = state.items.find(x => x.id === id);
   if (!a || !Array.isArray(a.drawings) || !a.drawings[idx]) return;
-  if (!confirm('Remover este desenho da lista? (o arquivo original não é apagado)')) return;
+  const dd = a.drawings[idx];
+  const isFs = dd && typeof dd.url === 'string' && dd.url.startsWith('fs:');
+  if (!confirm(isFs ? 'Remover este anexo? (o arquivo será apagado do sistema)' : 'Remover este desenho da lista? (o arquivo original não é apagado)')) return;
+  if (isFs && window.CloudSync && window.CloudSync.deleteCroqui) window.CloudSync.deleteCroqui(dd.url.slice(3));
   a.drawings.splice(idx, 1);
   renderDrawingsList(a);
   saveItems(id);
 }
 
 // handleDrawingUpload mantido só por compatibilidade (o input de arquivo foi removido da tela)
-function handleDrawingUpload() { notify('Upload desativado — use "+ Adicionar link"', 'error'); }
+function handleDrawingUpload(files) { return drwAddFiles(files); }
+
+// ===== UPLOAD DE DESENHOS (imagens e PDFs pequenos) → Firestore croquis_imgs/{id} =====
+const DRW_PDF_MAX = 700 * 1024;   // base64 infla ~33% → cabe no limite de 1 MiB por documento
+let _drwBusy = false;
+function drwReadAsDataURL(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('Falha ao ler arquivo')); r.readAsDataURL(file); });
+}
+function drwCompressImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const LIMIT = 850000;
+      const tries = [[2000,.85],[1600,.78],[1300,.72],[1000,.65],[800,.6]];
+      for (const [MAX, Q] of tries) {
+        const sc = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth * sc), h = Math.round(img.naturalHeight * sc);
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
+        const d = c.toDataURL('image/jpeg', Q);
+        if (d.length <= LIMIT) { res(d); return; }
+      }
+      rej(new Error('imagem muito pesada'));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('imagem inválida')); };
+    img.src = url;
+  });
+}
+async function drwAddFiles(files) {
+  const a = state.items.find(x => x.id === state.currentViewId);
+  if (!a) return;
+  if (!(window.CloudSync && window.CloudSync.ready && window.CloudSync.saveCroqui)) { notify('Sem conexão com a nuvem — não é possível anexar agora', 'error'); return; }
+  if (_drwBusy) { notify('Aguarde o envio anterior terminar', 'error'); return; }
+  if (!Array.isArray(a.drawings)) a.drawings = [];
+  files = Array.from(files || []);
+  if (!files.length) return;
+  _drwBusy = true;
+  let sent = 0;
+  try {
+    for (const f of files) {
+      if (a.drawings.length >= DRW_MAX_COUNT) { notify('Limite de ' + DRW_MAX_COUNT + ' anexos por item atingido', 'error'); break; }
+      const isImg = /^image\//.test(f.type);
+      const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+      let dataUrl, type;
+      try {
+        if (isImg) { notify('Comprimindo ' + f.name + '…'); dataUrl = await drwCompressImage(f); type = 'image/jpeg'; }
+        else if (isPdf) {
+          if (f.size > DRW_PDF_MAX) { notify('"' + f.name + '" tem ' + Math.round(f.size/1024) + ' KB (máx. ~700 KB). Use "+ Adicionar link" para PDFs grandes', 'error'); continue; }
+          dataUrl = await drwReadAsDataURL(f); type = 'application/pdf';
+        } else { notify('"' + f.name + '": só imagem ou PDF podem ser anexados. Para DWG/STEP use "+ Adicionar link"', 'error'); continue; }
+      } catch (e) { notify('Não foi possível usar "' + f.name + '": ' + (e.message || ''), 'error'); continue; }
+      const fid = 'drw_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const res = await window.CloudSync.saveCroqui(fid, dataUrl);
+      if (res && res.ok) {
+        (window._cqCache = window._cqCache || {})[fid] = dataUrl;
+        const nm = isImg ? f.name.replace(/\.[^.]+$/, '') + '.jpg' : f.name;
+        a.drawings.push({ name: nm.slice(0, 120), url: 'fs:' + fid, type, uploadedAt: new Date().toISOString() });
+        sent++;
+        renderDrawingsList(a);
+      } else { notify('Falha ao salvar "' + f.name + '": ' + ((res && res.error) || ''), 'error'); }
+    }
+  } finally { _drwBusy = false; }
+  if (sent) { saveItems(a.id); notify('✅ ' + sent + ' anexo(s) salvo(s)'); }
+}
+function drwOpen(idx) {
+  const a = state.items.find(x => x.id === state.currentViewId);
+  const d = a && a.drawings && a.drawings[idx];
+  if (!d || typeof d.url !== 'string') return;
+  const fid = d.url.slice(3);
+  const go = (data) => {
+    try {
+      const m = /^data:([^;]+);base64,(.*)$/.exec(data);
+      const bin = atob(m[2]); const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      const blobUrl = URL.createObjectURL(new Blob([arr], { type: m[1] }));
+      window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (e) { notify('Não foi possível abrir o anexo', 'error'); }
+  };
+  const cached = (window._cqCache || {})[fid];
+  if (cached) return go(cached);
+  window.CloudSync.getCroqui(fid).then(r => { if (r) { (window._cqCache = window._cqCache || {})[fid] = r; go(r); } else notify('Anexo indisponível', 'error'); });
+}
 
 function exportToPrint() {
   const win = window.open('','_blank');
@@ -4341,7 +4448,7 @@ Object.assign(window, {
   openNewModal, closeModal, saveNew,
   openEditModal, saveEdit, deleteItem,
   viewItem, openEditFromView,
-  renderDrawingsList, handleDrawingUpload, removeDrawing, toggleDrwLinkForm, addDrawingLink, copyDrawingPath,
+  renderDrawingsList, handleDrawingUpload, drwAddFiles, drwOpen, removeDrawing, toggleDrwLinkForm, addDrawingLink, copyDrawingPath,
   toggleMonth,
   filterLayout, clearFiltersL, renderLayoutGantt, renderLayoutDash,
   updateLayoutFilterOptions, updateTopbarForView,
@@ -8827,3 +8934,4 @@ else dmInit();
 </script>
 </body>
 </html>
+  
