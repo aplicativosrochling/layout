@@ -1484,7 +1484,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
           <span style="display:flex;gap:6px;flex:none;">
             <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('drwFile').click()">📎 Anexar arquivo</button>
             <button type="button" class="btn btn-sm" onclick="toggleDrwLinkForm()">+ Adicionar link</button>
-            <input type="file" id="drwFile" accept="image/*,application/pdf,.pdf" multiple style="display:none" onchange="drwAddFiles(this.files);this.value=''">
+            <input type="file" id="drwFile" multiple style="display:none" onchange="drwAddFiles(this.files);this.value=''">
           </span>
         </div>
         <div class="drw-linkform" id="drwLinkForm" style="display:none;">
@@ -1495,7 +1495,7 @@ table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;
             <button type="button" class="btn btn-sm btn-primary" onclick="addDrawingLink()">Salvar link</button>
           </div>
         </div>
-        <div class="drw-hint">Anexe <b>imagens</b> (PNG/JPG, comprimidas automaticamente) ou <b>PDF até ~700 KB</b> direto no sistema. Para DWG, STEP ou arquivos maiores, use <b>+ Adicionar link</b> (SharePoint/OneDrive ou caminho de rede) · até 10 por item</div>
+        <div class="drw-hint">Anexe qualquer arquivo (PDF, DWG, STEP, imagem…) de até <b>8 MB</b> direto no sistema; imagens são comprimidas automaticamente. Arquivos grandes são divididos em partes no banco. Também dá para usar <b>+ Adicionar link</b> · até 10 por item</div>
         <div class="drw-list" id="drwList"></div>
       </div>
     </div>
@@ -2364,12 +2364,12 @@ function renderDrawingsList(a) {
       const fid = url.slice(3);
       const data = (window._cqCache || {})[fid];
       const isImg = (d.type || '').startsWith('image/');
-      if (!data && !_drwTried[fid]) {
+      if (isImg && !data && !_drwTried[fid]) {
         _drwTried[fid] = 1;
         if (window.CloudSync && window.CloudSync.getCroqui) window.CloudSync.getCroqui(fid).then(r => { if (r) { (window._cqCache = window._cqCache || {})[fid] = r; } renderDrawingsList(a); });
       }
-      const thumb = (isImg && data) ? `<img class="drw-thumb" src="${drwEsc(data)}" alt="${name}">` : `<div class="drw-icon">${isImg ? (data ? '🖼️' : '⏳') : '📄'}</div>`;
-      return `<a class="drw-card" href="#" onclick="event.preventDefault();drwOpen(${i})" title="Clique para abrir">${rm}${thumb}<div class="drw-name" title="${name}">${name}</div><div class="drw-sub">anexado no sistema</div></a>`;
+      const thumb = (isImg && data) ? `<img class="drw-thumb" src="${drwEsc(data)}" alt="${name}">` : `<div class="drw-icon">${isImg ? (data ? '🖼️' : '⏳') : drwIcon(d.name, d.name)}</div>`;
+      return `<a class="drw-card" href="#" onclick="event.preventDefault();drwOpen(${i})" title="Clique para abrir">${rm}${thumb}<div class="drw-name" title="${name}">${name}</div><div class="drw-sub">${d.size ? Math.round(d.size/1024) + ' KB · ' : ''}anexado no sistema</div></a>`;
     }
     if (d.path) {
       // anexo antigo (Firebase Storage) — o bucket está bloqueado, mas o registro continua visível
@@ -2426,7 +2426,7 @@ function removeDrawing(idx) {
   const dd = a.drawings[idx];
   const isFs = dd && typeof dd.url === 'string' && dd.url.startsWith('fs:');
   if (!confirm(isFs ? 'Remover este anexo? (o arquivo será apagado do sistema)' : 'Remover este desenho da lista? (o arquivo original não é apagado)')) return;
-  if (isFs && window.CloudSync && window.CloudSync.deleteCroqui) window.CloudSync.deleteCroqui(dd.url.slice(3));
+  if (isFs && window.CloudSync && window.CloudSync.deleteCroqui) drwIds(dd).forEach(i => window.CloudSync.deleteCroqui(i));
   a.drawings.splice(idx, 1);
   renderDrawingsList(a);
   saveItems(id);
@@ -2435,9 +2435,17 @@ function removeDrawing(idx) {
 // handleDrawingUpload mantido só por compatibilidade (o input de arquivo foi removido da tela)
 function handleDrawingUpload(files) { return drwAddFiles(files); }
 
-// ===== UPLOAD DE DESENHOS (imagens e PDFs pequenos) → Firestore croquis_imgs/{id} =====
-const DRW_PDF_MAX = 700 * 1024;   // base64 infla ~33% → cabe no limite de 1 MiB por documento
+// ===== UPLOAD DE DESENHOS → Firestore (croquis_imgs). Arquivos grandes são divididos em partes =====
+const DRW_FILE_MAX = 8 * 1024 * 1024;   // 8 MB por arquivo
+const DRW_CHUNK = 900000;               // caracteres base64 por documento (< 1 MiB)
 let _drwBusy = false;
+// ids dos documentos de um anexo: único ({fid}) ou em partes ({fid}_c0, _c1…)
+function drwIds(d) {
+  const fid = String(d.url).slice(3);
+  const n = d.chunks || 1;
+  if (n <= 1) return [fid];
+  return Array.from({ length: n }, (_, k) => fid + '_c' + k);
+}
 function drwReadAsDataURL(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('Falha ao ler arquivo')); r.readAsDataURL(file); });
 }
@@ -2447,7 +2455,6 @@ function drwCompressImage(file) {
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const LIMIT = 850000;
       const tries = [[2000,.85],[1600,.78],[1300,.72],[1000,.65],[800,.6]];
       for (const [MAX, Q] of tries) {
         const sc = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
@@ -2455,7 +2462,7 @@ function drwCompressImage(file) {
         const c = document.createElement('canvas'); c.width = w; c.height = h;
         const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
         const d = c.toDataURL('image/jpeg', Q);
-        if (d.length <= LIMIT) { res(d); return; }
+        if (d.length <= 850000) { res(d); return; }   // imagem cabe num único documento (miniatura rápida)
       }
       rej(new Error('imagem muito pesada'));
     };
@@ -2476,47 +2483,65 @@ async function drwAddFiles(files) {
   try {
     for (const f of files) {
       if (a.drawings.length >= DRW_MAX_COUNT) { notify('Limite de ' + DRW_MAX_COUNT + ' anexos por item atingido', 'error'); break; }
+      if (f.size > DRW_FILE_MAX) { notify('"' + f.name + '" tem ' + (f.size/1048576).toFixed(1) + ' MB (máx. 8 MB). Use "+ Adicionar link"', 'error'); continue; }
       const isImg = /^image\//.test(f.type);
-      const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
-      let dataUrl, type;
+      let dataUrl, type, name = f.name;
       try {
-        if (isImg) { notify('Comprimindo ' + f.name + '…'); dataUrl = await drwCompressImage(f); type = 'image/jpeg'; }
-        else if (isPdf) {
-          if (f.size > DRW_PDF_MAX) { notify('"' + f.name + '" tem ' + Math.round(f.size/1024) + ' KB (máx. ~700 KB). Use "+ Adicionar link" para PDFs grandes', 'error'); continue; }
-          dataUrl = await drwReadAsDataURL(f); type = 'application/pdf';
-        } else { notify('"' + f.name + '": só imagem ou PDF podem ser anexados. Para DWG/STEP use "+ Adicionar link"', 'error'); continue; }
+        if (isImg) { dataUrl = await drwCompressImage(f); type = 'image/jpeg'; name = f.name.replace(/\.[^.]+$/, '') + '.jpg'; }
+        else { dataUrl = await drwReadAsDataURL(f); type = f.type || 'application/octet-stream'; }
       } catch (e) { notify('Não foi possível usar "' + f.name + '": ' + (e.message || ''), 'error'); continue; }
+
       const fid = 'drw_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      const res = await window.CloudSync.saveCroqui(fid, dataUrl);
-      if (res && res.ok) {
-        (window._cqCache = window._cqCache || {})[fid] = dataUrl;
-        const nm = isImg ? f.name.replace(/\.[^.]+$/, '') + '.jpg' : f.name;
-        a.drawings.push({ name: nm.slice(0, 120), url: 'fs:' + fid, type, uploadedAt: new Date().toISOString() });
-        sent++;
-        renderDrawingsList(a);
-      } else { notify('Falha ao salvar "' + f.name + '": ' + ((res && res.error) || ''), 'error'); }
+      const n = Math.max(1, Math.ceil(dataUrl.length / DRW_CHUNK));
+      const ids = n === 1 ? [fid] : Array.from({ length: n }, (_, k) => fid + '_c' + k);
+      let ok = true, err = '';
+      for (let k = 0; k < n; k++) {
+        if (n > 1) notify('Enviando ' + name + ' (' + (k + 1) + '/' + n + ')…');
+        const res = await window.CloudSync.saveCroqui(ids[k], dataUrl.slice(k * DRW_CHUNK, (k + 1) * DRW_CHUNK));
+        if (!(res && res.ok)) { ok = false; err = (res && res.error) || ''; break; }
+      }
+      if (!ok) {
+        ids.forEach(i => window.CloudSync.deleteCroqui && window.CloudSync.deleteCroqui(i)); // não deixa pedaços órfãos
+        notify('Falha ao salvar "' + f.name + '": ' + err, 'error');
+        continue;
+      }
+      if (n === 1) (window._cqCache = window._cqCache || {})[fid] = dataUrl;
+      a.drawings.push({ name: name.slice(0, 120), url: 'fs:' + fid, type, chunks: n, size: f.size, uploadedAt: new Date().toISOString() });
+      sent++;
+      renderDrawingsList(a);
     }
   } finally { _drwBusy = false; }
   if (sent) { saveItems(a.id); notify('✅ ' + sent + ' anexo(s) salvo(s)'); }
 }
-function drwOpen(idx) {
+async function drwLoad(d) {
+  const ids = drwIds(d);
+  if (ids.length === 1) {
+    const c = (window._cqCache || {})[ids[0]];
+    if (c) return c;
+    const r = await window.CloudSync.getCroqui(ids[0]);
+    if (r) (window._cqCache = window._cqCache || {})[ids[0]] = r;
+    return r;
+  }
+  const parts = await Promise.all(ids.map(i => window.CloudSync.getCroqui(i)));
+  return parts.some(x => !x) ? null : parts.join('');
+}
+async function drwOpen(idx) {
   const a = state.items.find(x => x.id === state.currentViewId);
   const d = a && a.drawings && a.drawings[idx];
   if (!d || typeof d.url !== 'string') return;
-  const fid = d.url.slice(3);
-  const go = (data) => {
-    try {
-      const m = /^data:([^;]+);base64,(.*)$/.exec(data);
-      const bin = atob(m[2]); const arr = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-      const blobUrl = URL.createObjectURL(new Blob([arr], { type: m[1] }));
-      window.open(blobUrl, '_blank');
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-    } catch (e) { notify('Não foi possível abrir o anexo', 'error'); }
-  };
-  const cached = (window._cqCache || {})[fid];
-  if (cached) return go(cached);
-  window.CloudSync.getCroqui(fid).then(r => { if (r) { (window._cqCache = window._cqCache || {})[fid] = r; go(r); } else notify('Anexo indisponível', 'error'); });
+  if ((d.chunks || 1) > 1) notify('Carregando arquivo…');
+  const data = await drwLoad(d);
+  if (!data) { notify('Anexo indisponível', 'error'); return; }
+  try {
+    const m = /^data:([^;,]*);base64,(.*)$/.exec(data);
+    const bin = atob(m[2]); const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const mime = d.type || m[1] || 'application/octet-stream';
+    const blobUrl = URL.createObjectURL(new Blob([arr], { type: mime }));
+    if (/^image\//.test(mime) || mime === 'application/pdf') window.open(blobUrl, '_blank');
+    else { const l = document.createElement('a'); l.href = blobUrl; l.download = d.name || 'arquivo'; document.body.appendChild(l); l.click(); l.remove(); }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+  } catch (e) { notify('Não foi possível abrir o anexo', 'error'); }
 }
 
 function exportToPrint() {
@@ -8934,4 +8959,3 @@ else dmInit();
 </script>
 </body>
 </html>
-  
