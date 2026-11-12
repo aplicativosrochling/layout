@@ -845,6 +845,17 @@ table.li-dim td.li-boxed>input{border:1.5px solid var(--text);border-radius:0;wi
 table.li-dim td.li-boxed>input:focus{box-shadow:inset 0 0 0 1px var(--accent);border-color:var(--accent)}
 #liBtnBox.on{background:rgba(0,100,179,.18);border-color:var(--accent);color:var(--accent)}
 table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;box-shadow:inset 0 0 0 1.5px #a855f7;}
+
+/* --- Formatação de células (negrito, itálico, sublinhado, cor da fonte e do fundo) --- */
+.li-fmt-btn{min-width:30px;padding:5px 8px!important;font-size:13px!important;line-height:1}
+.li-fmt-btn.on{background:rgba(0,100,179,.18);border-color:var(--accent);color:var(--accent)}
+.li-fmt-grp{display:flex;align-items:center;gap:3px;padding:0 6px;border-left:1px solid var(--border)}
+.li-fmt-grp:first-child{border-left:0;padding-left:0}
+.li-fmt-lbl{font-size:10px;color:var(--text-secondary);margin-right:2px;white-space:nowrap}
+.li-fmt-sw{width:16px;height:16px;border-radius:4px;border:1px solid var(--border-hover,#888);cursor:pointer;padding:0;flex:none}
+.li-fmt-sw:hover{transform:scale(1.2);border-color:var(--accent)}
+.li-fmt-sw.none{background:linear-gradient(135deg,transparent 45%,#e53935 45%,#e53935 55%,transparent 55%),var(--bg)}
+.li-fmt-pick{width:26px;height:22px;padding:0;border:1px solid var(--border);border-radius:5px;background:transparent;cursor:pointer;flex:none}
 /* --- Colunas redimensionáveis (checklist de Inspeção de Layout) --- */
 .li-table-wrap{position:relative;overflow-x:auto;border-radius:6px;}
 .li-table-wrap table.li-dim{width:100%;}
@@ -3981,7 +3992,8 @@ function _printLayoutChecklistImpl(onlyActive, reportOverride){
         const n = sp(row, f);
         const cn = cs(row, f);
         const spanAttrs = (n > 1 ? ` rowspan="${n}"` : '') + (cn > 1 ? ` colspan="${cn}"` : '');
-        const spanStyle = (n > 1 || cn > 1) ? ` style="vertical-align:middle;text-align:center;"` : '';
+        const fm = (typeof window.liFmtCss === 'function') ? window.liFmtCss(row, f) : { all: '' };
+        const spanStyle = ((n > 1 || cn > 1) || fm.all) ? ` style="${(n > 1 || cn > 1) ? 'vertical-align:middle;text-align:center;' : ''}${fm.all}"` : '';
         const inner = (row._box && row._box[f] && String(html).replace(/&nbsp;|\s/g,''))
           ? `<span style="display:inline-block;border:1.5px solid #000;padding:2px 10px;min-width:44px;font-weight:700;text-align:center;">${html}</span>`
           : html;
@@ -4688,6 +4700,28 @@ if (document.readyState === 'loading') {
         <button class="btn btn-sm" onclick="scOpenEditor()" title="Editar a lista de símbolos de características especiais dos clientes">◇ Símbolos</button>
       </div>
       <div class="li-tb-section-label">Edição</div>
+    </div>
+
+    <!-- ④b Formatação -->
+    <div class="li-tb-section">
+      <div class="li-tb-section-btns" style="gap:4px;">
+        <button class="btn btn-sm li-fmt-btn" id="liFmtB" onmousedown="event.preventDefault()" onclick="liFmt('b')" title="Negrito (Ctrl+B)"><b>N</b></button>
+        <button class="btn btn-sm li-fmt-btn" id="liFmtI" onmousedown="event.preventDefault()" onclick="liFmt('i')" title="Itálico (Ctrl+I)"><i>I</i></button>
+        <button class="btn btn-sm li-fmt-btn" id="liFmtU" onmousedown="event.preventDefault()" onclick="liFmt('u')" title="Sublinhado (Ctrl+U)"><u>S</u></button>
+        <div class="li-fmt-grp">
+          <span class="li-fmt-lbl" title="Cor da fonte">A</span>
+          <button type="button" class="li-fmt-sw" style="background:#000000" title="#000000" onmousedown="event.preventDefault()" onclick="liFmt('c','#000000')"></button><button type="button" class="li-fmt-sw" style="background:#d32f2f" title="#d32f2f" onmousedown="event.preventDefault()" onclick="liFmt('c','#d32f2f')"></button><button type="button" class="li-fmt-sw" style="background:#1565c0" title="#1565c0" onmousedown="event.preventDefault()" onclick="liFmt('c','#1565c0')"></button><button type="button" class="li-fmt-sw" style="background:#2e7d32" title="#2e7d32" onmousedown="event.preventDefault()" onclick="liFmt('c','#2e7d32')"></button><button type="button" class="li-fmt-sw" style="background:#ef6c00" title="#ef6c00" onmousedown="event.preventDefault()" onclick="liFmt('c','#ef6c00')"></button><button type="button" class="li-fmt-sw" style="background:#ffffff" title="#ffffff" onmousedown="event.preventDefault()" onclick="liFmt('c','#ffffff')"></button>
+          <input type="color" class="li-fmt-pick" id="liFmtColor" value="#d32f2f" title="Cor da fonte personalizada" onchange="liFmt('c',this.value)">
+        </div>
+        <div class="li-fmt-grp">
+          <span class="li-fmt-lbl" title="Cor de fundo">▧</span>
+          <button type="button" class="li-fmt-sw" style="background:#fff59d" title="#fff59d" onmousedown="event.preventDefault()" onclick="liFmt('bg','#fff59d')"></button><button type="button" class="li-fmt-sw" style="background:#a5d6a7" title="#a5d6a7" onmousedown="event.preventDefault()" onclick="liFmt('bg','#a5d6a7')"></button><button type="button" class="li-fmt-sw" style="background:#ef9a9a" title="#ef9a9a" onmousedown="event.preventDefault()" onclick="liFmt('bg','#ef9a9a')"></button><button type="button" class="li-fmt-sw" style="background:#90caf9" title="#90caf9" onmousedown="event.preventDefault()" onclick="liFmt('bg','#90caf9')"></button><button type="button" class="li-fmt-sw" style="background:#ffcc80" title="#ffcc80" onmousedown="event.preventDefault()" onclick="liFmt('bg','#ffcc80')"></button><button type="button" class="li-fmt-sw" style="background:#e0e0e0" title="#e0e0e0" onmousedown="event.preventDefault()" onclick="liFmt('bg','#e0e0e0')"></button>
+          <button type="button" class="li-fmt-sw none" title="Sem cor de fundo" onmousedown="event.preventDefault()" onclick="liFmt('bg',null)"></button>
+          <input type="color" class="li-fmt-pick" id="liFmtBg" value="#fff59d" title="Cor de fundo personalizada" onchange="liFmt('bg',this.value)">
+        </div>
+        <button class="btn btn-sm" onmousedown="event.preventDefault()" onclick="liFmt('clear')" title="Remover toda a formatação das células selecionadas">✕ Limpar</button>
+      </div>
+      <div class="li-tb-section-label">Formatação</div>
     </div>
 
     <!-- ⑤ Exportar -->
@@ -5768,7 +5802,9 @@ function liRenderRows(){
       const n=liSpanOf(row,f);
       const cn=(row._colSpan&&row._colSpan[f])||1;
       const cls=[tdCls||'',n>1?'li-merged':'',cn>1?'li-col-merged':'',(row._box&&row._box[f])?'li-boxed':''].filter(Boolean).join(' ');
-      return `<td${n>1?` rowspan="${n}"`:''}${cn>1?` colspan="${cn}"`:''}${cls?` class="${cls}"`:''}><input value="${liEsc(liFieldVal(row,f))}" data-f="${f}"${inpStyle?` style="${inpStyle}"`:''}><span class="li-fillhandle" data-f="${f}"></span></td>`;
+      const fm=liFmtCss(row,f);
+      const inpSt=[inpStyle||'',fm.inp].filter(Boolean).join(';');
+      return `<td${n>1?` rowspan="${n}"`:''}${cn>1?` colspan="${cn}"`:''}${cls?` class="${cls}"`:''}${fm.td?` style="${fm.td}"`:''}><input value="${liEsc(liFieldVal(row,f))}" data-f="${f}"${inpSt?` style="${inpSt}"`:''}><span class="li-fillhandle" data-f="${f}"></span></td>`;
     };
     tr.innerHTML=`
       ${cellHtml('item')}
@@ -5853,6 +5889,76 @@ document.addEventListener('keydown',e=>{
     const ov=document.getElementById('liSheetOverlay');
     if(ov&&ov.classList.contains('active')){e.preventDefault();window.liToggleBox();}
   }
+});
+
+/* ── Formatação de células: row._fmt = { campo:{b,i,u,c,bg} } ── */
+function liFmtHexOk(x){return typeof x==='string'&&/^#[0-9a-f]{6}$/i.test(x)}
+function liFmtContrast(hex){
+  const n=parseInt(hex.slice(1),16),r=n>>16&255,g=n>>8&255,b=n&255;
+  return (0.299*r+0.587*g+0.114*b)>150?'#000000':'#ffffff';
+}
+window.liFmtCss=function(row,f){
+  const x=row&&row._fmt&&row._fmt[f];
+  if(!x)return{td:'',inp:'',all:''};
+  const bg=liFmtHexOk(x.bg)?x.bg:'',c=liFmtHexOk(x.c)?x.c:'';
+  let td='',inp='';
+  if(bg)td='background:'+bg+';';
+  const color=c||((bg&&f!=='ok'&&f!=='nok')?liFmtContrast(bg):'');
+  if(color)inp+='color:'+color+';';
+  if(x.b)inp+='font-weight:700;';
+  if(x.i)inp+='font-style:italic;';
+  if(x.u)inp+='text-decoration:underline;';
+  return{td:td,inp:inp.replace(/;$/,''),all:td+inp};
+};
+function liFmtTargets(){
+  const r=liGetReport(liCurrent);
+  let cells=[];
+  if(typeof liColRangeSelection!=='undefined'&&liColRangeSelection){
+    const{rowIdx,loCol,hiCol}=liColRangeSelection;
+    for(let ci=loCol;ci<=hiCol;ci++)cells.push({idx:rowIdx,field:LI_MERGE_FIELDS[ci]});
+  }else if(typeof liCellSelection!=='undefined'&&liCellSelection){
+    const{field,lo,hi}=liCellSelection;
+    for(let i=lo;i<=hi;i++)cells.push({idx:i,field});
+  }else if(liSelectedRows&&liSelectedRows.size){
+    liSelectedRows.forEach(i=>LI_MERGE_FIELDS.forEach(f=>cells.push({idx:i,field:f})));
+  }else if(liLastCell){cells=[liLastCell];}
+  return cells.filter(c=>r.rows[c.idx]&&c.field);
+}
+window.liFmt=function(kind,val){
+  if(typeof lcRO!=='undefined'&&lcRO){liToast('Relatório em modo leitura','error');return}
+  const r=liGetReport(liCurrent);
+  const cells=liFmtTargets();
+  if(!cells.length){liToast('Clique em uma célula (ou selecione várias / marque linhas) e depois escolha a formatação','error');return}
+  const get=c=>r.rows[c.idx]._fmt&&r.rows[c.idx]._fmt[c.field];
+  liSnapshot();
+  const allOn=(kind==='b'||kind==='i'||kind==='u')?cells.every(c=>{const x=get(c);return x&&x[kind]}):false;
+  cells.forEach(c=>{
+    const row=r.rows[c.idx];
+    if(kind==='clear'){
+      if(row._fmt){delete row._fmt[c.field];if(!Object.keys(row._fmt).length)delete row._fmt}
+      return;
+    }
+    row._fmt=row._fmt||{};
+    const x=row._fmt[c.field]=row._fmt[c.field]||{};
+    if(kind==='b'||kind==='i'||kind==='u'){if(allOn)delete x[kind];else x[kind]=1}
+    else if(kind==='c'){if(liFmtHexOk(val))x.c=val;else delete x.c}
+    else if(kind==='bg'){if(liFmtHexOk(val))x.bg=val;else delete x.bg}
+    if(!Object.keys(x).length)delete row._fmt[c.field];
+    if(!Object.keys(row._fmt).length)delete row._fmt;
+  });
+  liCommitSnapshot();
+  liRenderRows();liUpdateSummary();liPersist();liSetDirty(true);
+  liToast(kind==='clear'?'Formatação removida':'🎨 Formatação aplicada em '+cells.length+' célula(s)','success');
+};
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey)return;
+  const k=(e.key||'').toLowerCase();
+  if(k!=='b'&&k!=='i'&&k!=='u')return;
+  const ov=document.getElementById('liSheetOverlay');
+  if(!ov||!ov.classList.contains('active'))return;
+  const t=e.target;
+  if(!(t&&t.matches&&t.matches('#liDimBody input[data-f]')))return; // não interfere com títulos/observações
+  e.preventDefault();window.liFmt(k);
 });
 function liSyncStatusInputs(tr,row){
   const io=tr.querySelector('[data-f=ok]'),ino=tr.querySelector('[data-f=nok]');
@@ -7757,7 +7863,7 @@ function dmRenderEditor(){
   set('dmObs', p.obs); set('dmSignName', p.signName); set('dmSignTitle', p.signTitle); set('dmSignDate', p.signDate);
 
   const cell = (r, f, cls, style) =>
-    `<td${(cls||(r._box&&r._box[f]))?` class="${[cls,(r._box&&r._box[f])?'li-boxed':''].filter(Boolean).join(' ')}"`:''}><input value="${dmEsc(f.length===2&&f[0]==='m' ? (r.m||[])[+f[1]] : r[f])}" data-f="${f}"${style?` style="${style}"`:''} oninput="dmRowChange('${r.id}','${f}',this.value)"></td>`;
+    `<td${(cls||(r._box&&r._box[f]))?` class="${[cls,(r._box&&r._box[f])?'li-boxed':''].filter(Boolean).join(' ')}"`:''}${(window.liFmtCss&&window.liFmtCss(r,f).td)?` style="${window.liFmtCss(r,f).td}"`:''}><input value="${dmEsc(f.length===2&&f[0]==='m' ? (r.m||[])[+f[1]] : r[f])}" data-f="${f}"${(style||(window.liFmtCss&&window.liFmtCss(r,f).inp))?` style="${[style,window.liFmtCss?window.liFmtCss(r,f).inp:''].filter(Boolean).join(';')}"`:''} oninput="dmRowChange('${r.id}','${f}',this.value)"></td>`;
 
   document.getElementById('dmTableBody').innerHTML = (p.rows||[]).map(r => {
     dmAutoStatus(r);
@@ -8450,6 +8556,23 @@ else dmInit();
       });
       ws.getCell(rr,12).font = {size:9,bold:true,color:{argb:C.okTx},name:'Arial'};
       ws.getCell(rr,13).font = {size:9,bold:true,color:{argb:C.nokTx},name:'Arial'};
+      if(row._fmt) Object.keys(row._fmt).forEach(f=>{
+        const ci=FIELDS.indexOf(f); if(ci<0) return;
+        const x=row._fmt[f]||{}, hexOk=h=>typeof h==='string'&&/^#[0-9a-f]{6}$/i.test(h);
+        const c=ws.getCell(rr,ci+1), fo=Object.assign({},c.font);
+        if(hexOk(x.bg)){
+          c.fill=fill('FF'+x.bg.slice(1).toUpperCase());
+          if(!hexOk(x.c)&&f!=='ok'&&f!=='nok'){
+            const n=parseInt(x.bg.slice(1),16),lum=0.299*(n>>16&255)+0.587*(n>>8&255)+0.114*(n&255);
+            fo.color={argb:lum>150?'FF000000':'FFFFFFFF'};
+          }
+        }
+        if(hexOk(x.c)) fo.color={argb:'FF'+x.c.slice(1).toUpperCase()};
+        if(x.b) fo.bold=true;
+        if(x.i) fo.italic=true;
+        if(x.u) fo.underline=true;
+        c.font=fo;
+      });
       ws.getRow(rr).height = 18;
       // rowspan
       FIELDS.forEach((f,ci)=>{
