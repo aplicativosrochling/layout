@@ -846,6 +846,10 @@ table.li-dim td.li-boxed>input:focus{box-shadow:inset 0 0 0 1px var(--accent);bo
 #liBtnBox.on{background:rgba(0,100,179,.18);border-color:var(--accent);color:var(--accent)}
 table.li-dim td.li-cell-col-selected{background:rgba(168,85,247,.18) !important;box-shadow:inset 0 0 0 1.5px #a855f7;}
 
+/* --- Cada medição (CAV.1…5): verde = dentro do especificado, rosa = fora --- */
+table.li-dim tbody tr td.li-mcell-ok{background:rgba(0,200,100,.24)}
+table.li-dim tbody tr td.li-mcell-nok{background:rgba(255,61,87,.30)}
+table.li-dim tbody tr td.li-mcell-nok input{font-weight:700}
 /* --- Formatação de células (negrito, itálico, sublinhado, cor da fonte e do fundo) --- */
 .li-fmt-btn{min-width:30px;padding:5px 8px!important;font-size:13px!important;line-height:1}
 .li-fmt-btn.on{background:rgba(0,100,179,.18);border-color:var(--accent);color:var(--accent)}
@@ -3993,7 +3997,12 @@ function _printLayoutChecklistImpl(onlyActive, reportOverride){
         const cn = cs(row, f);
         const spanAttrs = (n > 1 ? ` rowspan="${n}"` : '') + (cn > 1 ? ` colspan="${cn}"` : '');
         const fm = (typeof window.liFmtCss === 'function') ? window.liFmtCss(row, f) : { all: '' };
-        const spanStyle = ((n > 1 || cn > 1) || fm.all) ? ` style="${(n > 1 || cn > 1) ? 'vertical-align:middle;text-align:center;' : ''}${fm.all}"` : '';
+        let mBg = '';
+        if (/^m[0-4]$/.test(f) && typeof window.liMeasState === 'function' && !(row._fmt && row._fmt[f] && row._fmt[f].bg)) {
+          const ms = window.liMeasState(row, (row.m || [])[+f[1]]);
+          if (ms === 'ok') mBg = 'background:#d6f5e3;'; else if (ms === 'nok') mBg = 'background:#fbd0d6;font-weight:700;';
+        }
+        const spanStyle = ((n > 1 || cn > 1) || fm.all || mBg) ? ` style="${(n > 1 || cn > 1) ? 'vertical-align:middle;text-align:center;' : ''}${mBg}${fm.all}"` : '';
         const inner = (row._box && row._box[f] && String(html).replace(/&nbsp;|\s/g,''))
           ? `<span style="display:inline-block;border:1.5px solid #000;padding:2px 10px;min-width:44px;font-weight:700;text-align:center;">${html}</span>`
           : html;
@@ -5265,13 +5274,21 @@ function liTol(row){
   if(isFinite(lo)&&upBlank)up=0;
   return{lo,up};
 }
+/* Estado de UMA medição: 'ok' (dentro do especificado), 'nok' (fora) ou '' (vazia / sem limites) */
+function liMeasState(row,v){
+  const x=liParseNum(v);if(isNaN(x))return '';
+  const{lo,up}=liTol(row);const nom=liBase(row);
+  if(isNaN(nom)||isNaN(lo)||isNaN(up))return '';
+  return (x<nom+lo-1e-9||x>nom+up+1e-9)?'nok':'ok';
+}
+window.liMeasState=liMeasState;
 function liAutoStatus(row){
   if(row._manual)return;
   const{lo,up}=liTol(row);const nom=liBase(row);
   let allOk=true,any=false;
   row.m.forEach(v=>{
     const x=liParseNum(v);
-    if(!isNaN(x)){any=true;if(!isNaN(nom)&&!isNaN(lo)&&!isNaN(up)){if(x<nom+lo||x>nom+up)allOk=false}}
+    if(!isNaN(x)){any=true;if(!isNaN(nom)&&!isNaN(lo)&&!isNaN(up)){if(x<nom+lo-1e-9||x>nom+up+1e-9)allOk=false}}
   });
   if(any){row.ok=allOk?'OK':'';row.nok=allOk?'':'NOT OK';}
   else{row.ok='';row.nok='';}   // limpa status obsoleto quando não há medições
@@ -5980,7 +5997,17 @@ function liSyncStatusInputs(tr,row){
   if(io&&io!==document.activeElement)io.value=row.ok||'';
   if(ino&&ino!==document.activeElement)ino.value=row.nok||'';
 }
+function liPaintMeas(tr,row){
+  for(let i=0;i<5;i++){
+    const inp=tr.querySelector('[data-f="m'+i+'"]');if(!inp)continue;
+    const td=inp.closest('td');if(!td)continue;
+    const st=liMeasState(row,(row.m||[])[i]);
+    td.classList.toggle('li-mcell-ok',st==='ok');
+    td.classList.toggle('li-mcell-nok',st==='nok');
+  }
+}
 function liPaintRow(tr,row){
+  liPaintMeas(tr,row);
   tr.classList.toggle('nokrow',(row.nok||'').toUpperCase().includes('NOT'));
   tr.classList.toggle('okrow',(row.ok||'').toUpperCase().includes('OK'));
   tr.title=row._manual?'Status definido manualmente':'Status calculado automaticamente';
@@ -7897,7 +7924,7 @@ function dmRenderEditor(){
   set('dmObs', p.obs); set('dmSignName', p.signName); set('dmSignTitle', p.signTitle); set('dmSignDate', p.signDate);
 
   const cell = (r, f, cls, style) =>
-    `<td${(cls||(r._box&&r._box[f]))?` class="${[cls,(r._box&&r._box[f])?'li-boxed':''].filter(Boolean).join(' ')}"`:''}${(window.liFmtCss&&window.liFmtCss(r,f).td)?` style="${window.liFmtCss(r,f).td}"`:''}><input value="${dmEsc(f.length===2&&f[0]==='m' ? (r.m||[])[+f[1]] : r[f])}" data-f="${f}"${(style||(window.liFmtCss&&window.liFmtCss(r,f).inp))?` style="${[style,window.liFmtCss?window.liFmtCss(r,f).inp:''].filter(Boolean).join(';')}"`:''} oninput="dmRowChange('${r.id}','${f}',this.value)"></td>`;
+    `<td${(cls||(r._box&&r._box[f])||(/^m[0-4]$/.test(f)&&window.liMeasState&&window.liMeasState(r,(r.m||[])[+f[1]])))?` class="${[cls,(r._box&&r._box[f])?'li-boxed':'',(/^m[0-4]$/.test(f)&&window.liMeasState)?({ok:'li-mcell-ok',nok:'li-mcell-nok'}[window.liMeasState(r,(r.m||[])[+f[1]])]||''):''].filter(Boolean).join(' ')}"`:''}${(window.liFmtCss&&window.liFmtCss(r,f).td)?` style="${window.liFmtCss(r,f).td}"`:''}><input value="${dmEsc(f.length===2&&f[0]==='m' ? (r.m||[])[+f[1]] : r[f])}" data-f="${f}"${(style||(window.liFmtCss&&window.liFmtCss(r,f).inp))?` style="${[style,window.liFmtCss?window.liFmtCss(r,f).inp:''].filter(Boolean).join(';')}"`:''} oninput="dmRowChange('${r.id}','${f}',this.value)"></td>`;
 
   document.getElementById('dmTableBody').innerHTML = (p.rows||[]).map(r => {
     dmAutoStatus(r);
@@ -8590,6 +8617,14 @@ else dmInit();
       });
       ws.getCell(rr,12).font = {size:9,bold:true,color:{argb:C.okTx},name:'Arial'};
       ws.getCell(rr,13).font = {size:9,bold:true,color:{argb:C.nokTx},name:'Arial'};
+      if(window.liMeasState) for(let mi=0;mi<5;mi++){
+        const ms=window.liMeasState(row,(row.m||[])[mi]);
+        if(ms){
+          const c=ws.getCell(rr,7+mi);
+          c.fill=fill(ms==='ok'?'FFD6F5E3':'FFFBD0D6');
+          if(ms==='nok') c.font=Object.assign({},c.font,{bold:true,color:{argb:'FFB71C1C'}});
+        }
+      }
       if(row._fmt) Object.keys(row._fmt).forEach(f=>{
         const ci=FIELDS.indexOf(f); if(ci<0) return;
         const x=row._fmt[f]||{}, hexOk=h=>typeof h==='string'&&/^#[0-9a-f]{6}$/i.test(h);
