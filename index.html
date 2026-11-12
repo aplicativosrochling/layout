@@ -5224,9 +5224,24 @@ window.liEsc=liEsc; // exposto p/ printLayoutChecklist(), definida fora desta II
 function liParseNum(v){
   if(v==null||v==='')return NaN;
   if(typeof v==='number')return v;
-  const s=String(v).replace(/\s+/g,'').replace(/[()\[\]]/g,'');
-  const m=s.match(/-?\d+(?:[.,]\d+)?/);
-  return m?parseFloat(m[0].replace(',','.')):NaN;
+  /* normaliza sinais "−" (U+2212), "–", "—" para "-" e remove parênteses/colchetes */
+  let s=String(v).replace(/[\u2212\u2012\u2013\u2014\uFE63\uFF0D]/g,'-').replace(/[()\[\]]/g,'').trim();
+  if(/^[\s\d.,+-]+$/.test(s))s=s.replace(/\s+/g,'');          // só números: "1 234,5" -> 1234,5
+  const re=/(-?)\s*(\d+(?:[.,]\d+)?)/g;let m;
+  while((m=re.exec(s))){
+    const dashAt=m.index;                                      // posição do "-" (se houver)
+    let neg=false;
+    if(m[1]==='-'){
+      const prev=dashAt>0?s[dashAt-1]:'';
+      /* "-" é sinal se estiver no início ou colado ao número sem letra/dígito antes (ex.: "-0.1", "ALT -2");
+         em "ALT - 2" ou "ALT-2" é só separador e o número é positivo */
+      neg = dashAt===0 || !/[A-Za-z0-9]/.test(prev);
+      if(neg && dashAt>0 && /\s/.test(s.slice(dashAt+1,m.index+m[0].length-m[2].length))) neg=false;
+    }
+    const n=parseFloat(m[2].replace(',','.'));
+    return neg?-n:n;
+  }
+  return NaN;
 }
 const GDT_KEYWORDS=['posic','posit','position','runout','batiment','perfil','profile','planeza','flatness','circularidad','circularity','cilindricidad','cylindricity','concentricidad','concentricity','simetria','symmetry','perpendicular','paralel','parallel','angularidad','angularity','retitude','straightness'];
 const GDT_SYMBOLS=['⏤','⏥','○','⌭','⌒','⌓','⊥','∥','∠','⌖','◎','⌯','↗','⌰','⊕','⌀','±','Ⓜ','Ⓛ','Ⓢ','Ⓟ','△','▱'];
@@ -7186,12 +7201,31 @@ function dmBlankRow(){
   return { id: dmId(), item:'', char:'', nominal:'', spec:'', low:'', upper:'',
            m:['','','','',''], ok:'', nok:'', _manual:false };
 }
+function liParseNum_shared(v){
+  if(v==null||v==='')return NaN;
+  if(typeof v==='number')return v;
+  /* normaliza sinais "−" (U+2212), "–", "—" para "-" e remove parênteses/colchetes */
+  let s=String(v).replace(/[\u2212\u2012\u2013\u2014\uFE63\uFF0D]/g,'-').replace(/[()\[\]]/g,'').trim();
+  if(/^[\s\d.,+-]+$/.test(s))s=s.replace(/\s+/g,'');          // só números: "1 234,5" -> 1234,5
+  const re=/(-?)\s*(\d+(?:[.,]\d+)?)/g;let m;
+  while((m=re.exec(s))){
+    const dashAt=m.index;                                      // posição do "-" (se houver)
+    let neg=false;
+    if(m[1]==='-'){
+      const prev=dashAt>0?s[dashAt-1]:'';
+      /* "-" é sinal se estiver no início ou colado ao número sem letra/dígito antes (ex.: "-0.1", "ALT -2");
+         em "ALT - 2" ou "ALT-2" é só separador e o número é positivo */
+      neg = dashAt===0 || !/[A-Za-z0-9]/.test(prev);
+      if(neg && dashAt>0 && /\s/.test(s.slice(dashAt+1,m.index+m[0].length-m[2].length))) neg=false;
+    }
+    const n=parseFloat(m[2].replace(',','.'));
+    return neg?-n:n;
+  }
+  return NaN;
+}
 /* Mesma regra de OK / NOT OK do checklist de Inspeção de Layout */
 function dmParseNum(v){
-  if (v == null || v === '') return NaN;
-  const s = String(v).replace(/\s+/g,'').replace(/[()\[\]]/g,'');
-  const m = s.match(/-?\d+(?:[.,]\d+)?/);
-  return m ? parseFloat(m[0].replace(',','.')) : NaN;
+  return liParseNum_shared(v);
 }
 function dmTol(r){
   let lo = dmParseNum(r.low), up = dmParseNum(r.upper);
